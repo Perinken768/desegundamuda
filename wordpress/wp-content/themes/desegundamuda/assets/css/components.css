@@ -1,0 +1,206 @@
+.dsm-auth {
+    display: flex;
+    justify-content: center;
+    padding: var(--dsm-space-7) var(--dsm-space-4);
+}
+
+.dsm-auth__card {
+    width: 100%;
+    max-width: var(--dsm-auth-width);
+    padding: var(--dsm-space-6);
+
+    background: var(--dsm-color-surface);
+    border: 1px solid var(--dsm-color-border);
+    border-radius: var(--dsm-radius-lg);
+    box-shadow: var(--dsm-shadow-card);
+}
+
+.dsm-auth__header {
+    margin-bottom: var(--dsm-space-5);
+}
+
+.dsm-auth__title {
+    margin-bottom: var(--dsm-space-2);
+    font-size: var(--dsm-font-size-2xl);
+    line-height: var(--dsm-line-height-sm);
+}
+
+.dsm-auth__description {
+    margin-bottom: 0;
+    color: var(--dsm-color-text-muted);
+}
+
+.dsm-auth__footer {
+    margin-top: var(--dsm-space-5);
+    color: var(--dsm-color-text-muted);
+    text-align: center;
+}
+
+.dsm-auth__footer p {
+    margin-bottom: 0;
+}
+
+.dsm-form {
+    display: grid;
+    gap: var(--dsm-space-4);
+}
+
+.dsm-form__field {
+    display: grid;
+    gap: var(--dsm-space-2);
+}
+
+.dsm-form__label {
+    font-size: var(--dsm-font-size-sm);
+    font-weight: 700;
+}
+
+.dsm-form__input {
+    width: 100%;
+    min-height: 48px;
+    padding: var(--dsm-space-3) var(--dsm-space-4);
+
+    color: var(--dsm-color-text);
+    background: var(--dsm-color-surface);
+
+    border: 1px solid var(--dsm-color-border);
+    border-radius: var(--dsm-radius-md);
+
+    transition:
+        border-color var(--dsm-transition-fast),
+        box-shadow var(--dsm-transition-fast);
+}
+
+.dsm-form__input:hover {
+    border-color: var(--dsm-color-text-muted);
+}
+
+.dsm-form__input:focus {
+    border-color: var(--dsm-color-focus);
+    outline: 0;
+    box-shadow: 0 0 0 3px color-mix(
+        in srgb,
+        var(--dsm-color-focus) 18%,
+        transparent
+    );
+}
+
+.dsm-button {
+    min-height: 48px;
+    padding: var(--dsm-space-3) var(--dsm-space-4);
+
+    border: 0;
+    border-radius: var(--dsm-radius-md);
+
+    font-weight: 800;
+    cursor: pointer;
+
+    transition:
+        background-color var(--dsm-transition-fast),
+        transform var(--dsm-transition-fast);
+}
+
+.dsm-button:hover {
+    transform: translateY(-1px);
+}
+
+.dsm-button--primary {
+    color: var(--dsm-color-text-inverse);
+    background: var(--dsm-color-primary);
+}
+
+.dsm-button--primary:hover {
+    background: var(--dsm-color-primary-hover);
+}
+
+.dsm-button--block {
+    width: 100%;
+}
+
+.dsm-alert {
+    margin-bottom: var(--dsm-space-4);
+    padding: var(--dsm-space-4);
+
+    border: 1px solid transparent;
+    border-radius: var(--dsm-radius-md);
+}
+
+.dsm-alert--error {
+    color: var(--dsm-color-error);
+    background: var(--dsm-color-error-background);
+    border-color: color-mix(
+        in srgb,
+        var(--dsm-color-error) 20%,
+        transparent
+    );
+}
+
+@media (max-width: 600px) {
+    .dsm-auth {
+        padding-top: var(--dsm-space-5);
+    }
+
+    .dsm-auth__card {
+        padding: var(--dsm-space-5);
+    }
+}
+
+.dsm-account {
+    padding: var(--dsm-space-7) 0;
+}
+
+.dsm-account__header {
+    margin-bottom: var(--dsm-space-5);
+}
+
+.dsm-account__title {
+    margin-bottom: var(--dsm-space-2);
+    font-size: var(--dsm-font-size-2xl);
+}
+
+.dsm-account__description {
+    color: var(--dsm-color-text-muted);
+}
+
+.dsm-account__grid {
+    display: grid;
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(280px, 1fr)
+    );
+    gap: var(--dsm-space-5);
+}
+
+.dsm-card {
+    padding: var(--dsm-space-5);
+    background: var(--dsm-color-surface);
+    border: 1px solid var(--dsm-color-border);
+    border-radius: var(--dsm-radius-lg);
+    box-shadow: var(--dsm-shadow-sm);
+}
+
+.dsm-card__title {
+    margin-bottom: var(--dsm-space-4);
+    font-size: var(--dsm-font-size-lg);
+}
+
+.dsm-definition-list {
+    display: grid;
+    gap: var(--dsm-space-4);
+    margin: 0;
+}
+
+.dsm-definition-list div {
+    display: grid;
+    gap: var(--dsm-space-1);
+}
+
+.dsm-definition-list dt {
+    color: var(--dsm-color-text-muted);
+    font-size: var(--dsm-font-size-sm);
+    font-weight: 700;
+}
+
+.dsm-definition-list dd {
+    margin: 0;
+}

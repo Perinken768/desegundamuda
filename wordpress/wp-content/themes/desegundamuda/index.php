@@ -1,28 +1,54 @@
 <?php
+
 declare(strict_types=1);
 
 if (!defined('ABSPATH')) {
     exit;
 }
+
+get_header();
 ?>
-<!doctype html>
-<html <?php language_attributes(); ?>>
-<head>
-    <meta charset="<?php bloginfo('charset'); ?>">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <?php wp_head(); ?>
-</head>
 
-<body <?php body_class(); ?>>
+<main class="dsm-site-main">
+    <div class="dsm-container">
 
-<?php wp_body_open(); ?>
+        <?php
+        if (have_posts()) {
+            while (have_posts()) {
+                the_post();
+                ?>
 
-<main>
-    <h1>DeSegundaMuda</h1>
-    <p>Tema propio funcionando.</p>
+                <article
+                    id="post-<?php the_ID(); ?>"
+                    <?php post_class('dsm-entry'); ?>
+                >
+                    <h1 class="dsm-entry__title">
+                        <?php the_title(); ?>
+                    </h1>
+
+                    <div class="dsm-entry__content">
+                        <?php the_content(); ?>
+                    </div>
+                </article>
+
+                <?php
+            }
+        } else {
+            ?>
+            <p>
+                <?php
+                esc_html_e(
+                    'No se ha encontrado contenido.',
+                    'desegundamuda'
+                );
+                ?>
+            </p>
+            <?php
+        }
+        ?>
+
+    </div>
 </main>
 
-<?php wp_footer(); ?>
-
-</body>
-</html>
+<?php
+get_footer();

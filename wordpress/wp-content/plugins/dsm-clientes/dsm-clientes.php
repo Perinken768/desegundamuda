@@ -24,11 +24,15 @@ require_once DSM_CLIENTES_PATH . 'src/Support/Autoloader.php';
 
 use DSM\Clientes\Database\Installer;
 use DSM\Clientes\Frontend\AuthController;
+use DSM\Clientes\Frontend\LoginShortcode;
+use DSM\Clientes\Frontend\AccountShortcode;
 use DSM\Clientes\Support\Autoloader;
 
 Autoloader::register();
 
 AuthController::register();
+LoginShortcode::register();
+AccountShortcode::register();
 
 register_activation_hook(
     __FILE__,

@@ -9,6 +9,7 @@ use DSM\Clientes\Application\LogoutCustomer;
 use DSM\Clientes\Authentication\CustomerCookie;
 use DSM\Clientes\Authentication\CustomerSessionRepository;
 use DSM\Clientes\Customer\CustomerRepository;
+use RuntimeException;
 use Throwable;
 
 if (!defined('ABSPATH')) {
@@ -56,11 +57,15 @@ final class AuthController
             : '';
 
         $ipAddress = isset($_SERVER['REMOTE_ADDR'])
-            ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR']))
+            ? sanitize_text_field(
+                wp_unslash($_SERVER['REMOTE_ADDR'])
+            )
             : null;
 
         $userAgent = isset($_SERVER['HTTP_USER_AGENT'])
-            ? sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT']))
+            ? sanitize_text_field(
+                wp_unslash($_SERVER['HTTP_USER_AGENT'])
+            )
             : null;
 
         try {
@@ -81,7 +86,7 @@ final class AuthController
             );
 
             if ($expiresTimestamp === false) {
-                throw new \RuntimeException(
+                throw new RuntimeException(
                     'No se pudo calcular la expiración de la sesión.'
                 );
             }

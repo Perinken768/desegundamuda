@@ -1,0 +1,43 @@
+.dsm-container {
+    width: min(
+        calc(100% - (var(--dsm-space-4) * 2)),
+        var(--dsm-container-width)
+    );
+    margin-inline: auto;
+}
+
+.dsm-site-header {
+    padding-block: var(--dsm-space-4);
+    background: var(--dsm-color-surface);
+    border-bottom: 1px solid var(--dsm-color-border);
+}
+
+.dsm-site-brand {
+    color: var(--dsm-color-primary);
+    font-size: var(--dsm-font-size-xl);
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.dsm-site-main {
+    min-height: calc(100vh - 150px);
+}
+
+.dsm-page {
+    width: 100%;
+}
+
+.dsm-page__content {
+    width: 100%;
+}
+
+.dsm-site-footer {
+    padding-block: var(--dsm-space-5);
+    color: var(--dsm-color-text-muted);
+    background: var(--dsm-color-surface);
+    border-top: 1px solid var(--dsm-color-border);
+}
+
+.dsm-site-footer p {
+    margin: 0;
+}
