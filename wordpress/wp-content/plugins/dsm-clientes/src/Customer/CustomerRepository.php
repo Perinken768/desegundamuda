@@ -1,0 +1,224 @@
+<?php
+
+declare(strict_types=1);
+
+namespace DSM\Clientes\Customer;
+
+use RuntimeException;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+final class CustomerRepository
+{
+    private string $tableName;
+
+    public function __construct()
+    {
+        global $wpdb;
+
+        $this->tableName = $wpdb->prefix . 'dsm_customers';
+    }
+
+    public function findById(int $id): ?Customer
+    {
+        global $wpdb;
+
+        $row = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT
+                    id,
+                    email,
+                    status,
+                    email_verified_at,
+                    last_login_at,
+                    created_at,
+                    updated_at
+                FROM {$this->tableName}
+                WHERE id = %d
+                LIMIT 1",
+                $id
+            ),
+            ARRAY_A
+        );
+
+        return $row === null
+            ? null
+            : $this->hydrate($row);
+    }
+
+    public function findByEmail(string $email): ?Customer
+    {
+        global $wpdb;
+
+        $email = strtolower(trim($email));
+
+        $row = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT
+                    id,
+                    email,
+                    status,
+                    email_verified_at,
+                    last_login_at,
+                    created_at,
+                    updated_at
+                FROM {$this->tableName}
+                WHERE email = %s
+                LIMIT 1",
+                $email
+            ),
+            ARRAY_A
+        );
+
+        return $row === null
+            ? null
+            : $this->hydrate($row);
+    }
+
+    public function emailExists(string $email): bool
+    {
+        global $wpdb;
+
+        $email = strtolower(trim($email));
+
+        $id = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT id
+                FROM {$this->tableName}
+                WHERE email = %s
+                LIMIT 1",
+                $email
+            )
+        );
+
+        return $id !== null;
+    }
+
+    /**
+ * Obtiene únicamente los datos necesarios para autenticar.
+ *
+ * @return array{
+ *     id: int,
+ *     password_hash: string,
+ *     status: string
+ * }|null
+ */
+public function findCredentialsByEmail(string $email): ?array
+{
+    global $wpdb;
+
+    $email = strtolower(trim($email));
+
+    $row = $wpdb->get_row(
+        $wpdb->prepare(
+            "SELECT
+                id,
+                password_hash,
+                status
+            FROM {$this->tableName}
+            WHERE email = %s
+            LIMIT 1",
+            $email
+        ),
+        ARRAY_A
+    );
+
+    if ($row === null) {
+        return null;
+    }
+
+    return [
+        'id'            => (int) $row['id'],
+        'password_hash' => (string) $row['password_hash'],
+        'status'        => (string) $row['status'],
+    ];
+}
+
+    public function create(
+        string $email,
+        string $passwordHash,
+        string $status = CustomerStatus::PENDING
+    ): Customer {
+        global $wpdb;
+
+        $email = strtolower(trim($email));
+
+        if (!is_email($email)) {
+            throw new RuntimeException(
+                'El correo electrónico no es válido.'
+            );
+        }
+
+        if (!CustomerStatus::isValid($status)) {
+            throw new RuntimeException(
+                'El estado del cliente no es válido.'
+            );
+        }
+
+        if ($this->emailExists($email)) {
+            throw new RuntimeException(
+                'Ya existe un cliente con este correo electrónico.'
+            );
+        }
+
+        $now = current_time('mysql', true);
+
+        $result = $wpdb->insert(
+            $this->tableName,
+            [
+                'email'         => $email,
+                'password_hash' => $passwordHash,
+                'status'        => $status,
+                'created_at'    => $now,
+                'updated_at'    => $now,
+            ],
+            [
+                '%s',
+                '%s',
+                '%s',
+                '%s',
+                '%s',
+            ]
+        );
+
+        if ($result === false) {
+            throw new RuntimeException(
+                'No se pudo crear el cliente.'
+            );
+        }
+
+        $customer = $this->findById(
+            (int) $wpdb->insert_id
+        );
+
+        if ($customer === null) {
+            throw new RuntimeException(
+                'El cliente fue creado pero no pudo recuperarse.'
+            );
+        }
+
+        return $customer;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function hydrate(array $row): Customer
+    {
+        return new Customer(
+            (int) $row['id'],
+            (string) $row['email'],
+            (string) $row['status'],
+            $row['email_verified_at'] !== null
+                ? (string) $row['email_verified_at']
+                : null,
+            $row['last_login_at'] !== null
+                ? (string) $row['last_login_at']
+                : null,
+            (string) $row['created_at'],
+            (string) $row['updated_at']
+        );
+    }
+}

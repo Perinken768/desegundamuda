@@ -90,6 +90,7 @@ final class Installer
         return [
             1 => DSM_CLIENTES_PATH . 'database/migrations/001-create-customers.php',
             2 => DSM_CLIENTES_PATH . 'database/migrations/002-create-customer-profiles.php',
+            3 => DSM_CLIENTES_PATH . 'database/migrations/003-create-customer-sessions.php',
         ];
     }
 
