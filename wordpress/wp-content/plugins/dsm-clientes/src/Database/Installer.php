@@ -12,81 +12,112 @@ final class Installer
 {
     private const DB_VERSION_OPTION = 'dsm_clientes_db_version';
 
+    /**
+     * Se ejecuta al activar el plugin.
+     */
     public static function activate(): void
     {
         self::migrate();
     }
 
+    /**
+     * Ejecuta las migraciones pendientes.
+     */
     public static function migrate(): void
     {
-        $installedVersion = get_option(self::DB_VERSION_OPTION, '0.0.0');
+        $installedVersion = self::getInstalledVersion();
+        $targetVersion    = DSM_CLIENTES_DB_VERSION;
 
-        if (version_compare($installedVersion, '0.1.0', '<')) {
-            self::migration001();
+        if ($installedVersion >= $targetVersion) {
+            return;
+        }
+
+        $migrations = self::getMigrations();
+
+        foreach ($migrations as $version => $migrationFile) {
+            if ($version <= $installedVersion) {
+                continue;
+            }
+
+            self::runMigration($migrationFile);
 
             update_option(
                 self::DB_VERSION_OPTION,
-                '0.1.0',
+                $version,
                 false
             );
+
+            $installedVersion = $version;
         }
     }
 
-    private static function migration001(): void
+    /**
+     * Devuelve la versión de esquema actualmente instalada.
+     */
+    private static function getInstalledVersion(): int
     {
-        global $wpdb;
+        $version = get_option(self::DB_VERSION_OPTION, 0);
 
-        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+        /*
+         * Compatibilidad con nuestra primera instalación.
+         *
+         * La versión 0.1.0 original ya creó:
+         * - dsm_customers
+         * - dsm_customer_profiles
+         *
+         * Equivale, por tanto, a las migraciones 1 y 2.
+         */
+        if ($version === '0.1.0') {
+            update_option(
+                self::DB_VERSION_OPTION,
+                2,
+                false
+            );
 
-        $charsetCollate = $wpdb->get_charset_collate();
+            return 2;
+        }
 
-        $customersTable = $wpdb->prefix . 'dsm_customers';
-        $profilesTable  = $wpdb->prefix . 'dsm_customer_profiles';
+        return (int) $version;
+    }
 
-        $customersSql = "
-            CREATE TABLE {$customersTable} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                email VARCHAR(190) NOT NULL,
-                password_hash VARCHAR(255) NOT NULL,
-                status VARCHAR(30) NOT NULL DEFAULT 'pending',
+    /**
+     * Migraciones conocidas por esta versión del plugin.
+     *
+     * @return array<int, string>
+     */
+    private static function getMigrations(): array
+    {
+        return [
+            1 => DSM_CLIENTES_PATH . 'database/migrations/001-create-customers.php',
+            2 => DSM_CLIENTES_PATH . 'database/migrations/002-create-customer-profiles.php',
+        ];
+    }
 
-                email_verified_at DATETIME NULL,
-                last_login_at DATETIME NULL,
+    /**
+     * Ejecuta una migración individual.
+     */
+    private static function runMigration(string $migrationFile): void
+    {
+        if (!is_file($migrationFile)) {
+            throw new \RuntimeException(
+                sprintf(
+                    'No se encontró la migración DSM Clientes: %s',
+                    $migrationFile
+                )
+            );
+        }
 
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NOT NULL,
+        $migration = require $migrationFile;
 
-                PRIMARY KEY (id),
-                UNIQUE KEY email (email),
-                KEY status (status)
-            ) {$charsetCollate};
-        ";
+        if (!is_callable($migration)) {
+            throw new \RuntimeException(
+                sprintf(
+                    'La migración DSM Clientes no es ejecutable: %s',
+                    $migrationFile
+                )
+            );
+        }
 
-        $profilesSql = "
-            CREATE TABLE {$profilesTable} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                customer_id BIGINT UNSIGNED NOT NULL,
-
-                display_name VARCHAR(150) NOT NULL,
-                phone VARCHAR(30) NULL,
-                whatsapp_phone VARCHAR(30) NULL,
-                avatar_attachment_id BIGINT UNSIGNED NULL,
-                bio TEXT NULL,
-
-                island_id BIGINT UNSIGNED NULL,
-                municipality_id BIGINT UNSIGNED NULL,
-
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NOT NULL,
-
-                PRIMARY KEY (id),
-                UNIQUE KEY customer_id (customer_id),
-                KEY island_id (island_id),
-                KEY municipality_id (municipality_id)
-            ) {$charsetCollate};
-        ";
-
-        dbDelta($customersSql);
-        dbDelta($profilesSql);
+        $migration();
     }
 }
