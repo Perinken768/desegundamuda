@@ -23,15 +23,17 @@ define('DSM_CLIENTES_URL', plugin_dir_url(__FILE__));
 require_once DSM_CLIENTES_PATH . 'src/Support/Autoloader.php';
 
 use DSM\Clientes\Database\Installer;
+use DSM\Clientes\Frontend\AccountShortcode;
 use DSM\Clientes\Frontend\AuthController;
 use DSM\Clientes\Frontend\LoginShortcode;
-use DSM\Clientes\Frontend\AccountShortcode;
+use DSM\Clientes\Frontend\RegisterShortcode;
 use DSM\Clientes\Support\Autoloader;
 
 Autoloader::register();
 
 AuthController::register();
 LoginShortcode::register();
+RegisterShortcode::register();
 AccountShortcode::register();
 
 register_activation_hook(

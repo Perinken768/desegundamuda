@@ -204,3 +204,9 @@
 .dsm-definition-list dd {
     margin: 0;
 }
+
+.dsm-form__help {
+    color: var(--dsm-color-text-muted);
+    font-size: var(--dsm-font-size-xs);
+    line-height: var(--dsm-line-height-sm);
+}
