@@ -47,3 +47,9 @@ Thumbs.db
 # ----------------------------------------------------------
 .vscode/
 .idea/
+
+# Instalación ejecutada de WordPress
+public/
+
+# Excepciones: ninguna por ahora.
+# El código propio se mantiene en wordpress/wp-content/
