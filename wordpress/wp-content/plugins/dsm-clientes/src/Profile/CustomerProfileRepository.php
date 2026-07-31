@@ -103,6 +103,12 @@ final class CustomerProfileRepository
             );
         }
 
+        if (mb_strlen($displayName) > 150) {
+            throw new RuntimeException(
+                'El nombre visible del perfil es demasiado largo.'
+            );
+        }
+
         if ($this->findByCustomerId($customerId) !== null) {
             throw new RuntimeException(
                 'El cliente ya tiene un perfil asociado.'
@@ -144,6 +150,101 @@ final class CustomerProfileRepository
         }
 
         return $profile;
+    }
+
+    public function update(
+        int $customerId,
+        string $displayName,
+        ?string $phone,
+        ?string $whatsappPhone,
+        ?string $bio
+    ): CustomerProfile {
+        global $wpdb;
+
+        $displayName = trim($displayName);
+        $phone = $this->normalizeNullableText($phone);
+        $whatsappPhone = $this->normalizeNullableText($whatsappPhone);
+        $bio = $this->normalizeNullableText($bio);
+
+        if ($customerId <= 0) {
+            throw new RuntimeException(
+                'El identificador del cliente no es válido.'
+            );
+        }
+
+        if ($displayName === '') {
+            throw new RuntimeException(
+                'El nombre visible no puede estar vacío.'
+            );
+        }
+
+        if (mb_strlen($displayName) > 150) {
+            throw new RuntimeException(
+                'El nombre visible es demasiado largo.'
+            );
+        }
+
+        $profile = $this->findByCustomerId($customerId);
+
+        if ($profile === null) {
+            throw new RuntimeException(
+                'No se encontró el perfil del cliente.'
+            );
+        }
+
+        $result = $wpdb->update(
+            $this->tableName,
+            [
+                'display_name' => $displayName,
+                'phone' => $phone,
+                'whatsapp_phone' => $whatsappPhone,
+                'bio' => $bio,
+                'updated_at' => current_time('mysql', true),
+            ],
+            [
+                'customer_id' => $customerId,
+            ],
+            [
+                '%s',
+                '%s',
+                '%s',
+                '%s',
+                '%s',
+            ],
+            [
+                '%d',
+            ]
+        );
+
+        if ($result === false) {
+            throw new RuntimeException(
+                'No se pudo actualizar el perfil del cliente.'
+            );
+        }
+
+        $updatedProfile = $this->findByCustomerId($customerId);
+
+        if ($updatedProfile === null) {
+            throw new RuntimeException(
+                'El perfil fue actualizado pero no pudo recuperarse.'
+            );
+        }
+
+        return $updatedProfile;
+    }
+
+    private function normalizeNullableText(
+        ?string $value
+    ): ?string {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim($value);
+
+        return $value === ''
+            ? null
+            : $value;
     }
 
     /**

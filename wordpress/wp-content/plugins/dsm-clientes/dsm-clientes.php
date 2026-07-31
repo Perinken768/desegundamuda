@@ -27,14 +27,18 @@ use DSM\Clientes\Frontend\AccountShortcode;
 use DSM\Clientes\Frontend\AuthController;
 use DSM\Clientes\Frontend\LoginShortcode;
 use DSM\Clientes\Frontend\RegisterShortcode;
+use DSM\Clientes\Frontend\ProfileController;
+use DSM\Clientes\Frontend\ProfileShortcode;
 use DSM\Clientes\Support\Autoloader;
 
 Autoloader::register();
 
 AuthController::register();
+ProfileController::register();
 LoginShortcode::register();
 RegisterShortcode::register();
 AccountShortcode::register();
+ProfileShortcode::register();
 
 register_activation_hook(
     __FILE__,

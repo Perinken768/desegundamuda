@@ -1,3 +1,7 @@
+/* ==========================================================
+   AUTENTICACIÓN
+   ========================================================== */
+
 .dsm-auth {
     display: flex;
     justify-content: center;
@@ -39,6 +43,11 @@
 .dsm-auth__footer p {
     margin-bottom: 0;
 }
+
+
+/* ==========================================================
+   FORMULARIOS
+   ========================================================== */
 
 .dsm-form {
     display: grid;
@@ -85,7 +94,27 @@
     );
 }
 
+.dsm-form__textarea {
+    min-height: 150px;
+    resize: vertical;
+}
+
+.dsm-form__help {
+    color: var(--dsm-color-text-muted);
+    font-size: var(--dsm-font-size-xs);
+    line-height: var(--dsm-line-height-sm);
+}
+
+
+/* ==========================================================
+   BOTONES
+   ========================================================== */
+
 .dsm-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
     min-height: 48px;
     padding: var(--dsm-space-3) var(--dsm-space-4);
 
@@ -93,15 +122,24 @@
     border-radius: var(--dsm-radius-md);
 
     font-weight: 800;
+    line-height: 1;
+    text-decoration: none;
+
     cursor: pointer;
 
     transition:
         background-color var(--dsm-transition-fast),
+        color var(--dsm-transition-fast),
+        border-color var(--dsm-transition-fast),
         transform var(--dsm-transition-fast);
 }
 
 .dsm-button:hover {
     transform: translateY(-1px);
+}
+
+.dsm-button:active {
+    transform: translateY(0);
 }
 
 .dsm-button--primary {
@@ -110,12 +148,31 @@
 }
 
 .dsm-button--primary:hover {
+    color: var(--dsm-color-text-inverse);
     background: var(--dsm-color-primary-hover);
+}
+
+.dsm-button--secondary {
+    color: var(--dsm-color-primary);
+    background: var(--dsm-color-secondary);
+
+    border: 1px solid var(--dsm-color-border);
+}
+
+.dsm-button--secondary:hover {
+    color: var(--dsm-color-text-inverse);
+    background: var(--dsm-color-primary);
+    border-color: var(--dsm-color-primary);
 }
 
 .dsm-button--block {
     width: 100%;
 }
+
+
+/* ==========================================================
+   ALERTAS
+   ========================================================== */
 
 .dsm-alert {
     margin-bottom: var(--dsm-space-4);
@@ -135,15 +192,20 @@
     );
 }
 
-@media (max-width: 600px) {
-    .dsm-auth {
-        padding-top: var(--dsm-space-5);
-    }
-
-    .dsm-auth__card {
-        padding: var(--dsm-space-5);
-    }
+.dsm-alert--success {
+    color: var(--dsm-color-success);
+    background: var(--dsm-color-success-background);
+    border-color: color-mix(
+        in srgb,
+        var(--dsm-color-success) 20%,
+        transparent
+    );
 }
+
+
+/* ==========================================================
+   ÁREA PRIVADA
+   ========================================================== */
 
 .dsm-account {
     padding: var(--dsm-space-7) 0;
@@ -171,18 +233,44 @@
     gap: var(--dsm-space-5);
 }
 
+
+/* ==========================================================
+   TARJETAS
+   ========================================================== */
+
 .dsm-card {
     padding: var(--dsm-space-5);
+
     background: var(--dsm-color-surface);
     border: 1px solid var(--dsm-color-border);
     border-radius: var(--dsm-radius-lg);
     box-shadow: var(--dsm-shadow-sm);
 }
 
+.dsm-card--form {
+    max-width: 720px;
+}
+
 .dsm-card__title {
     margin-bottom: var(--dsm-space-4);
     font-size: var(--dsm-font-size-lg);
 }
+
+.dsm-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--dsm-space-3);
+}
+
+.dsm-card__actions form {
+    margin: 0;
+}
+
+
+/* ==========================================================
+   LISTAS DE DEFINICIÓN
+   ========================================================== */
 
 .dsm-definition-list {
     display: grid;
@@ -205,8 +293,32 @@
     margin: 0;
 }
 
-.dsm-form__help {
-    color: var(--dsm-color-text-muted);
-    font-size: var(--dsm-font-size-xs);
-    line-height: var(--dsm-line-height-sm);
+
+/* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+
+@media (max-width: 600px) {
+    .dsm-auth {
+        padding-top: var(--dsm-space-5);
+    }
+
+    .dsm-auth__card {
+        padding: var(--dsm-space-5);
+    }
+
+    .dsm-account {
+        padding-top: var(--dsm-space-5);
+    }
+
+    .dsm-card__actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .dsm-card__actions .dsm-button,
+    .dsm-card__actions form,
+    .dsm-card__actions form .dsm-button {
+        width: 100%;
+    }
 }

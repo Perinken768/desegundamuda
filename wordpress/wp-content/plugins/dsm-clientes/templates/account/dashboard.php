@@ -20,10 +20,12 @@ if (!defined('ABSPATH')) {
 
         <header class="dsm-account__header">
             <h1 class="dsm-account__title">
-                <?php esc_html_e(
+                <?php
+                esc_html_e(
                     'Mi cuenta',
                     'dsm-clientes'
-                ); ?>
+                );
+                ?>
             </h1>
 
             <p class="dsm-account__description">
@@ -43,56 +45,119 @@ if (!defined('ABSPATH')) {
 
             <article class="dsm-card">
                 <h2 class="dsm-card__title">
-                    <?php esc_html_e(
+                    <?php
+                    esc_html_e(
                         'Perfil',
                         'dsm-clientes'
-                    ); ?>
+                    );
+                    ?>
                 </h2>
 
                 <dl class="dsm-definition-list">
                     <div>
                         <dt>
-                            <?php esc_html_e(
+                            <?php
+                            esc_html_e(
                                 'Nombre visible',
                                 'dsm-clientes'
-                            ); ?>
+                            );
+                            ?>
                         </dt>
 
                         <dd>
-                            <?php echo esc_html(
+                            <?php
+                            echo esc_html(
                                 $profile?->getDisplayName()
-                                    ?? 'Sin nombre'
-                            ); ?>
+                                    ?? __(
+                                        'Sin nombre',
+                                        'dsm-clientes'
+                                    )
+                            );
+                            ?>
                         </dd>
                     </div>
 
                     <div>
                         <dt>
-                            <?php esc_html_e(
+                            <?php
+                            esc_html_e(
                                 'Correo electrónico',
                                 'dsm-clientes'
-                            ); ?>
+                            );
+                            ?>
                         </dt>
 
                         <dd>
-                            <?php echo esc_html(
+                            <?php
+                            echo esc_html(
                                 $customer->getEmail()
-                            ); ?>
+                            );
+                            ?>
                         </dd>
                     </div>
 
                     <div>
                         <dt>
-                            <?php esc_html_e(
-                                'Estado',
+                            <?php
+                            esc_html_e(
+                                'Teléfono',
                                 'dsm-clientes'
-                            ); ?>
+                            );
+                            ?>
                         </dt>
 
                         <dd>
-                            <?php echo esc_html(
+                            <?php
+                            echo esc_html(
+                                $profile?->getPhone()
+                                    ?? __(
+                                        'No indicado',
+                                        'dsm-clientes'
+                                    )
+                            );
+                            ?>
+                        </dd>
+                    </div>
+
+                    <div>
+                        <dt>
+                            <?php
+                            esc_html_e(
+                                'WhatsApp',
+                                'dsm-clientes'
+                            );
+                            ?>
+                        </dt>
+
+                        <dd>
+                            <?php
+                            echo esc_html(
+                                $profile?->getWhatsappPhone()
+                                    ?? __(
+                                        'No indicado',
+                                        'dsm-clientes'
+                                    )
+                            );
+                            ?>
+                        </dd>
+                    </div>
+
+                    <div>
+                        <dt>
+                            <?php
+                            esc_html_e(
+                                'Estado',
+                                'dsm-clientes'
+                            );
+                            ?>
+                        </dt>
+
+                        <dd>
+                            <?php
+                            echo esc_html(
                                 $customer->getStatus()
-                            ); ?>
+                            );
+                            ?>
                         </dd>
                     </div>
                 </dl>
@@ -100,41 +165,61 @@ if (!defined('ABSPATH')) {
 
             <article class="dsm-card">
                 <h2 class="dsm-card__title">
-                    <?php esc_html_e(
+                    <?php
+                    esc_html_e(
                         'Acciones',
                         'dsm-clientes'
-                    ); ?>
-                </h2>
-
-                <form
-                    method="post"
-                    action="<?php echo esc_url(
-                        admin_url('admin-post.php')
-                    ); ?>"
-                >
-                    <input
-                        type="hidden"
-                        name="action"
-                        value="dsm_customer_logout"
-                    >
-
-                    <?php
-                    wp_nonce_field(
-                        'dsm_customer_logout',
-                        'dsm_logout_nonce'
                     );
                     ?>
+                </h2>
 
-                    <button
-                        class="dsm-button dsm-button--primary"
-                        type="submit"
+                <div class="dsm-card__actions">
+                    <a
+                        class="dsm-button dsm-button--secondary"
+                        href="<?php echo esc_url(
+                            home_url('/editar-perfil/')
+                        ); ?>"
                     >
-                        <?php esc_html_e(
-                            'Cerrar sesión',
+                        <?php
+                        esc_html_e(
+                            'Editar perfil',
                             'dsm-clientes'
-                        ); ?>
-                    </button>
-                </form>
+                        );
+                        ?>
+                    </a>
+
+                    <form
+                        method="post"
+                        action="<?php echo esc_url(
+                            admin_url('admin-post.php')
+                        ); ?>"
+                    >
+                        <input
+                            type="hidden"
+                            name="action"
+                            value="dsm_customer_logout"
+                        >
+
+                        <?php
+                        wp_nonce_field(
+                            'dsm_customer_logout',
+                            'dsm_logout_nonce'
+                        );
+                        ?>
+
+                        <button
+                            class="dsm-button dsm-button--primary"
+                            type="submit"
+                        >
+                            <?php
+                            esc_html_e(
+                                'Cerrar sesión',
+                                'dsm-clientes'
+                            );
+                            ?>
+                        </button>
+                    </form>
+                </div>
             </article>
 
         </div>
