@@ -11,6 +11,8 @@ use DSM\Clientes\Authentication\CustomerCookie;
 use DSM\Clientes\Authentication\CustomerSessionRepository;
 use DSM\Clientes\Authentication\LoginResult;
 use DSM\Clientes\Customer\CustomerRepository;
+use DSM\Clientes\Application\SendCustomerVerificationEmail;
+use DSM\Clientes\Authentication\EmailVerificationRepository;
 use DSM\Clientes\Profile\CustomerProfileRepository;
 use RuntimeException;
 use Throwable;
@@ -160,10 +162,19 @@ final class AuthController
                 new CustomerProfileRepository()
             );
 
-            $register->execute(
+            $registration = $register->execute(
                 $email,
                 $password,
                 $displayName
+            );
+
+            $verificationEmail =
+                new SendCustomerVerificationEmail(
+                    new EmailVerificationRepository()
+            );
+
+            $verificationEmail->execute(
+                $registration['customer']
             );
 
             /*

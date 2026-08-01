@@ -91,6 +91,7 @@ final class Installer
             1 => DSM_CLIENTES_PATH . 'database/migrations/001-create-customers.php',
             2 => DSM_CLIENTES_PATH . 'database/migrations/002-create-customer-profiles.php',
             3 => DSM_CLIENTES_PATH . 'database/migrations/003-create-customer-sessions.php',
+            4 => DSM_CLIENTES_PATH . 'database/migrations/004-create-email-verifications.php',
         ];
     }
 

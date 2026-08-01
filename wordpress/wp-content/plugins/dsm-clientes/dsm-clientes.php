@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 define('DSM_CLIENTES_VERSION', '0.1.0');
-define('DSM_CLIENTES_DB_VERSION', 3);
+define('DSM_CLIENTES_DB_VERSION', 4);
 
 define('DSM_CLIENTES_PATH', plugin_dir_path(__FILE__));
 define('DSM_CLIENTES_URL', plugin_dir_url(__FILE__));
@@ -29,12 +29,15 @@ use DSM\Clientes\Frontend\LoginShortcode;
 use DSM\Clientes\Frontend\RegisterShortcode;
 use DSM\Clientes\Frontend\ProfileController;
 use DSM\Clientes\Frontend\ProfileShortcode;
+use DSM\Clientes\Frontend\EmailVerificationController;
 use DSM\Clientes\Support\Autoloader;
 
 Autoloader::register();
 
 AuthController::register();
+EmailVerificationController::register();
 ProfileController::register();
+
 LoginShortcode::register();
 RegisterShortcode::register();
 AccountShortcode::register();

@@ -97,44 +97,44 @@ final class CustomerRepository
     }
 
     /**
- * Obtiene únicamente los datos necesarios para autenticar.
- *
- * @return array{
- *     id: int,
- *     password_hash: string,
- *     status: string
- * }|null
- */
-public function findCredentialsByEmail(string $email): ?array
-{
-    global $wpdb;
+     * Obtiene únicamente los datos necesarios para autenticar.
+     *
+     * @return array{
+     *     id: int,
+     *     password_hash: string,
+     *     status: string
+     * }|null
+     */
+    public function findCredentialsByEmail(string $email): ?array
+    {
+        global $wpdb;
 
-    $email = strtolower(trim($email));
+        $email = strtolower(trim($email));
 
-    $row = $wpdb->get_row(
-        $wpdb->prepare(
-            "SELECT
-                id,
-                password_hash,
-                status
-            FROM {$this->tableName}
-            WHERE email = %s
-            LIMIT 1",
-            $email
-        ),
-        ARRAY_A
-    );
+        $row = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT
+                    id,
+                    password_hash,
+                    status
+                FROM {$this->tableName}
+                WHERE email = %s
+                LIMIT 1",
+                $email
+            ),
+            ARRAY_A
+        );
 
-    if ($row === null) {
-        return null;
+        if ($row === null) {
+            return null;
+        }
+
+        return [
+            'id' => (int) $row['id'],
+            'password_hash' => (string) $row['password_hash'],
+            'status' => (string) $row['status'],
+        ];
     }
-
-    return [
-        'id'            => (int) $row['id'],
-        'password_hash' => (string) $row['password_hash'],
-        'status'        => (string) $row['status'],
-    ];
-}
 
     public function create(
         string $email,
@@ -168,11 +168,11 @@ public function findCredentialsByEmail(string $email): ?array
         $result = $wpdb->insert(
             $this->tableName,
             [
-                'email'         => $email,
+                'email' => $email,
                 'password_hash' => $passwordHash,
-                'status'        => $status,
-                'created_at'    => $now,
-                'updated_at'    => $now,
+                'status' => $status,
+                'created_at' => $now,
+                'updated_at' => $now,
             ],
             [
                 '%s',
@@ -196,6 +196,56 @@ public function findCredentialsByEmail(string $email): ?array
         if ($customer === null) {
             throw new RuntimeException(
                 'El cliente fue creado pero no pudo recuperarse.'
+            );
+        }
+
+        return $customer;
+    }
+
+    public function markEmailAsVerified(
+        int $customerId
+    ): Customer {
+        global $wpdb;
+
+        if ($customerId <= 0) {
+            throw new RuntimeException(
+                'El identificador del cliente no es válido.'
+            );
+        }
+
+        $now = current_time('mysql', true);
+
+        $result = $wpdb->update(
+            $this->tableName,
+            [
+                'status' => CustomerStatus::ACTIVE,
+                'email_verified_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'id' => $customerId,
+            ],
+            [
+                '%s',
+                '%s',
+                '%s',
+            ],
+            [
+                '%d',
+            ]
+        );
+
+        if ($result === false) {
+            throw new RuntimeException(
+                'No se pudo verificar el correo del cliente.'
+            );
+        }
+
+        $customer = $this->findById($customerId);
+
+        if ($customer === null) {
+            throw new RuntimeException(
+                'El cliente verificado no pudo recuperarse.'
             );
         }
 
