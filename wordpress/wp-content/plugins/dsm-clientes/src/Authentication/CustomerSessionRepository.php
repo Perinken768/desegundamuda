@@ -18,7 +18,8 @@ final class CustomerSessionRepository
     {
         global $wpdb;
 
-        $this->tableName = $wpdb->prefix . 'dsm_customer_sessions';
+        $this->tableName =
+            $wpdb->prefix . 'dsm_customer_sessions';
     }
 
     public function create(
@@ -49,6 +50,7 @@ final class CustomerSessionRepository
         }
 
         $createdAt = current_time('mysql', true);
+
         $expiresAt = gmdate(
             'Y-m-d H:i:s',
             time() + $durationSeconds
@@ -57,14 +59,14 @@ final class CustomerSessionRepository
         $result = $wpdb->insert(
             $this->tableName,
             [
-                'customer_id'     => $customerId,
-                'token_hash'      => $tokenHash,
-                'ip_address'      => $ipAddress,
-                'user_agent'      => $userAgent,
-                'created_at'      => $createdAt,
-                'last_activity_at'=> $createdAt,
-                'expires_at'      => $expiresAt,
-                'revoked_at'      => null,
+                'customer_id' => $customerId,
+                'token_hash' => $tokenHash,
+                'ip_address' => $ipAddress,
+                'user_agent' => $userAgent,
+                'created_at' => $createdAt,
+                'last_activity_at' => $createdAt,
+                'expires_at' => $expiresAt,
+                'revoked_at' => null,
             ],
             [
                 '%d',
@@ -97,8 +99,9 @@ final class CustomerSessionRepository
         return $session;
     }
 
-    public function findById(int $id): ?CustomerSession
-    {
+    public function findById(
+        int $id
+    ): ?CustomerSession {
         global $wpdb;
 
         $row = $wpdb->get_row(
@@ -117,8 +120,9 @@ final class CustomerSessionRepository
             : $this->hydrate($row);
     }
 
-    public function findByTokenHash(string $tokenHash): ?CustomerSession
-    {
+    public function findByTokenHash(
+        string $tokenHash
+    ): ?CustomerSession {
         global $wpdb;
 
         $row = $wpdb->get_row(
@@ -137,6 +141,40 @@ final class CustomerSessionRepository
             : $this->hydrate($row);
     }
 
+    /**
+     * @return array<int, CustomerSession>
+     */
+    public function findByCustomerId(
+        int $customerId
+    ): array {
+        global $wpdb;
+
+        if ($customerId <= 0) {
+            return [];
+        }
+
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT *
+                FROM {$this->tableName}
+                WHERE customer_id = %d
+                ORDER BY id DESC",
+                $customerId
+            ),
+            ARRAY_A
+        );
+
+        if (!is_array($rows)) {
+            return [];
+        }
+
+        return array_map(
+            fn (array $row): CustomerSession =>
+                $this->hydrate($row),
+            $rows
+        );
+    }
+
     public function touch(int $sessionId): void
     {
         global $wpdb;
@@ -144,7 +182,8 @@ final class CustomerSessionRepository
         $result = $wpdb->update(
             $this->tableName,
             [
-                'last_activity_at' => current_time('mysql', true),
+                'last_activity_at' =>
+                    current_time('mysql', true),
             ],
             [
                 'id' => $sessionId,
@@ -171,7 +210,8 @@ final class CustomerSessionRepository
         $result = $wpdb->update(
             $this->tableName,
             [
-                'revoked_at' => current_time('mysql', true),
+                'revoked_at' =>
+                    current_time('mysql', true),
             ],
             [
                 'id' => $sessionId,
@@ -191,11 +231,43 @@ final class CustomerSessionRepository
         }
     }
 
+    public function revokeAllForCustomer(
+        int $customerId
+    ): int {
+        global $wpdb;
+
+        if ($customerId <= 0) {
+            throw new RuntimeException(
+                'El identificador del cliente no es válido.'
+            );
+        }
+
+        $result = $wpdb->query(
+            $wpdb->prepare(
+                "UPDATE {$this->tableName}
+                SET revoked_at = %s
+                WHERE customer_id = %d
+                  AND revoked_at IS NULL",
+                current_time('mysql', true),
+                $customerId
+            )
+        );
+
+        if ($result === false) {
+            throw new RuntimeException(
+                'No se pudieron revocar las sesiones del cliente.'
+            );
+        }
+
+        return (int) $result;
+    }
+
     /**
      * @param array<string, mixed> $row
      */
-    private function hydrate(array $row): CustomerSession
-    {
+    private function hydrate(
+        array $row
+    ): CustomerSession {
         return new CustomerSession(
             (int) $row['id'],
             (int) $row['customer_id'],

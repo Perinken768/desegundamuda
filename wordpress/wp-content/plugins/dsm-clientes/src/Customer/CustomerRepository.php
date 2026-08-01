@@ -97,16 +97,15 @@ final class CustomerRepository
     }
 
     /**
-     * Obtiene únicamente los datos necesarios para autenticar.
-     *
      * @return array{
      *     id: int,
      *     password_hash: string,
      *     status: string
      * }|null
      */
-    public function findCredentialsByEmail(string $email): ?array
-    {
+    public function findCredentialsByEmail(
+        string $email
+    ): ?array {
         global $wpdb;
 
         $email = strtolower(trim($email));
@@ -131,7 +130,8 @@ final class CustomerRepository
 
         return [
             'id' => (int) $row['id'],
-            'password_hash' => (string) $row['password_hash'],
+            'password_hash' =>
+                (string) $row['password_hash'],
             'status' => (string) $row['status'],
         ];
     }
@@ -189,17 +189,10 @@ final class CustomerRepository
             );
         }
 
-        $customer = $this->findById(
-            (int) $wpdb->insert_id
+        return $this->requireCustomer(
+            (int) $wpdb->insert_id,
+            'El cliente fue creado pero no pudo recuperarse.'
         );
-
-        if ($customer === null) {
-            throw new RuntimeException(
-                'El cliente fue creado pero no pudo recuperarse.'
-            );
-        }
-
-        return $customer;
     }
 
     public function markEmailAsVerified(
@@ -207,11 +200,7 @@ final class CustomerRepository
     ): Customer {
         global $wpdb;
 
-        if ($customerId <= 0) {
-            throw new RuntimeException(
-                'El identificador del cliente no es válido.'
-            );
-        }
+        $this->assertValidCustomerId($customerId);
 
         $now = current_time('mysql', true);
 
@@ -241,12 +230,129 @@ final class CustomerRepository
             );
         }
 
+        return $this->requireCustomer(
+            $customerId,
+            'El cliente verificado no pudo recuperarse.'
+        );
+    }
+
+    public function updateStatus(
+        int $customerId,
+        string $status
+    ): Customer {
+        global $wpdb;
+
+        $this->assertValidCustomerId($customerId);
+
+        if (!CustomerStatus::isValid($status)) {
+            throw new RuntimeException(
+                'El estado del cliente no es válido.'
+            );
+        }
+
+        if ($this->findById($customerId) === null) {
+            throw new RuntimeException(
+                'No se encontró el cliente.'
+            );
+        }
+
+        $result = $wpdb->update(
+            $this->tableName,
+            [
+                'status' => $status,
+                'updated_at' => current_time('mysql', true),
+            ],
+            [
+                'id' => $customerId,
+            ],
+            [
+                '%s',
+                '%s',
+            ],
+            [
+                '%d',
+            ]
+        );
+
+        if ($result === false) {
+            throw new RuntimeException(
+                'No se pudo actualizar el estado del cliente.'
+            );
+        }
+
+        return $this->requireCustomer(
+            $customerId,
+            'El cliente actualizado no pudo recuperarse.'
+        );
+    }
+
+    public function updatePassword(
+        int $customerId,
+        string $plainPassword
+    ): void {
+        global $wpdb;
+
+        $this->assertValidCustomerId($customerId);
+
+        $plainPassword = trim($plainPassword);
+
+        if (strlen($plainPassword) < 12) {
+            throw new RuntimeException(
+                'La contraseña debe tener al menos 12 caracteres.'
+            );
+        }
+
+        if ($this->findById($customerId) === null) {
+            throw new RuntimeException(
+                'No se encontró el cliente.'
+            );
+        }
+
+        $result = $wpdb->update(
+            $this->tableName,
+            [
+                'password_hash' =>
+                    wp_hash_password($plainPassword),
+                'updated_at' =>
+                    current_time('mysql', true),
+            ],
+            [
+                'id' => $customerId,
+            ],
+            [
+                '%s',
+                '%s',
+            ],
+            [
+                '%d',
+            ]
+        );
+
+        if ($result === false) {
+            throw new RuntimeException(
+                'No se pudo actualizar la contraseña del cliente.'
+            );
+        }
+    }
+
+    private function assertValidCustomerId(
+        int $customerId
+    ): void {
+        if ($customerId <= 0) {
+            throw new RuntimeException(
+                'El identificador del cliente no es válido.'
+            );
+        }
+    }
+
+    private function requireCustomer(
+        int $customerId,
+        string $errorMessage
+    ): Customer {
         $customer = $this->findById($customerId);
 
         if ($customer === null) {
-            throw new RuntimeException(
-                'El cliente verificado no pudo recuperarse.'
-            );
+            throw new RuntimeException($errorMessage);
         }
 
         return $customer;

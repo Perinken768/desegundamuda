@@ -81,33 +81,12 @@ final class SmtpConfigurator
         $mailer->Timeout = 20;
 
         /*
-         * Diagnóstico SMTP únicamente en desarrollo.
-         *
-         * No registra la contraseña, pero sí la conversación
-         * técnica necesaria para localizar fallos de conexión
-         * o autenticación.
+         * La depuración SMTP detallada no debe permanecer activa
+         * durante los envíos normales, porque puede saturar la
+         * respuesta FastCGI y provocar un error 502 en Nginx.
          */
-        if (
-            defined('WP_DEBUG')
-            && WP_DEBUG
-            && defined('WP_ENVIRONMENT_TYPE')
-            && WP_ENVIRONMENT_TYPE === 'development'
-        ) {
-            $mailer->SMTPDebug = 2;
-
-            $mailer->Debugoutput = static function (
-                string $message,
-                int $level
-            ): void {
-                error_log(
-                    sprintf(
-                        '[DSM Mail SMTP][Nivel %d] %s',
-                        $level,
-                        trim($message)
-                    )
-                );
-            };
-        }
+        $mailer->SMTPDebug = 0;
+        $mailer->Debugoutput = 'error_log';
     }
 
     public function filterFromEmail(string $email): string

@@ -13,6 +13,14 @@ if (!defined('ABSPATH')) {
  * @var Customer $customer
  * @var CustomerProfile|null $profile
  */
+
+$verificationStatus = isset($_GET['verification_status'])
+    ? sanitize_key(
+        wp_unslash($_GET['verification_status'])
+    )
+    : '';
+
+$emailVerified = $customer->getEmailVerifiedAt() !== null;
 ?>
 
 <section class="dsm-account">
@@ -40,6 +48,98 @@ if (!defined('ABSPATH')) {
                 ?>
             </p>
         </header>
+
+        <?php if ($verificationStatus === 'resent') : ?>
+            <div class="dsm-alert dsm-alert--success">
+                <?php
+                esc_html_e(
+                    'Hemos enviado un nuevo enlace de verificación a tu correo electrónico.',
+                    'dsm-clientes'
+                );
+                ?>
+            </div>
+
+        <?php elseif ($verificationStatus === 'resend_error') : ?>
+            <div class="dsm-alert dsm-alert--error">
+                <?php
+                esc_html_e(
+                    'No se pudo enviar el correo de verificación. Inténtalo de nuevo más tarde.',
+                    'dsm-clientes'
+                );
+                ?>
+            </div>
+
+        <?php elseif ($verificationStatus === 'already_verified') : ?>
+            <div class="dsm-alert dsm-alert--success">
+                <?php
+                esc_html_e(
+                    'Tu correo electrónico ya está verificado.',
+                    'dsm-clientes'
+                );
+                ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if (!$emailVerified) : ?>
+            <aside class="dsm-alert dsm-alert--warning">
+                <div class="dsm-alert__content">
+                    <div>
+                        <strong>
+                            <?php
+                            esc_html_e(
+                                'Tu correo electrónico está pendiente de verificación.',
+                                'dsm-clientes'
+                            );
+                            ?>
+                        </strong>
+
+                        <p>
+                            <?php
+                            printf(
+                                esc_html__(
+                                    'Revisa la bandeja de entrada de %s y pulsa el enlace que te hemos enviado.',
+                                    'dsm-clientes'
+                                ),
+                                esc_html($customer->getEmail())
+                            );
+                            ?>
+                        </p>
+                    </div>
+
+                    <form
+                        method="post"
+                        action="<?php echo esc_url(
+                            admin_url('admin-post.php')
+                        ); ?>"
+                    >
+                        <input
+                            type="hidden"
+                            name="action"
+                            value="dsm_customer_resend_verification"
+                        >
+
+                        <?php
+                        wp_nonce_field(
+                            'dsm_customer_resend_verification',
+                            'dsm_resend_verification_nonce'
+                        );
+                        ?>
+
+                        <button
+                            class="dsm-button dsm-button--secondary"
+                            type="submit"
+                        >
+                            <?php
+                            esc_html_e(
+                                'Reenviar correo',
+                                'dsm-clientes'
+                            );
+                            ?>
+                        </button>
+                    </form>
+                </div>
+            </aside>
+        <?php endif; ?>
 
         <div class="dsm-account__grid">
 
@@ -100,6 +200,39 @@ if (!defined('ABSPATH')) {
                         <dt>
                             <?php
                             esc_html_e(
+                                'Verificación del correo',
+                                'dsm-clientes'
+                            );
+                            ?>
+                        </dt>
+
+                        <dd>
+                            <?php if ($emailVerified) : ?>
+                                <span class="dsm-status dsm-status--success">
+                                    <?php
+                                    esc_html_e(
+                                        'Verificado',
+                                        'dsm-clientes'
+                                    );
+                                    ?>
+                                </span>
+                            <?php else : ?>
+                                <span class="dsm-status dsm-status--warning">
+                                    <?php
+                                    esc_html_e(
+                                        'Pendiente',
+                                        'dsm-clientes'
+                                    );
+                                    ?>
+                                </span>
+                            <?php endif; ?>
+                        </dd>
+                    </div>
+
+                    <div>
+                        <dt>
+                            <?php
+                            esc_html_e(
                                 'Teléfono',
                                 'dsm-clientes'
                             );
@@ -146,7 +279,7 @@ if (!defined('ABSPATH')) {
                         <dt>
                             <?php
                             esc_html_e(
-                                'Estado',
+                                'Estado de la cuenta',
                                 'dsm-clientes'
                             );
                             ?>

@@ -1,0 +1,217 @@
+/*
+ * DSM Clientes
+ * Estilos para la administración de clientes.
+ */
+
+/* ==========================================================
+   ESTRUCTURA GENERAL
+   ========================================================== */
+
+.dsm-admin-customer-grid {
+    display: grid;
+    grid-template-columns:
+        minmax(0, 2fr)
+        minmax(300px, 1fr);
+    gap: 20px;
+    align-items: start;
+}
+
+.dsm-admin-customer-main,
+.dsm-admin-customer-sidebar {
+    min-width: 0;
+}
+
+/* ==========================================================
+   TARJETAS
+   ========================================================== */
+
+.dsm-admin-card {
+    max-width: none;
+    margin: 0;
+    padding: 24px;
+
+    background: #fff;
+    border: 1px solid #dcdcde;
+    border-radius: 6px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.dsm-admin-card + .dsm-admin-card {
+    margin-top: 20px;
+}
+
+.dsm-admin-card h2 {
+    margin-top: 0;
+    margin-bottom: 18px;
+}
+
+.dsm-admin-card p:last-child {
+    margin-bottom: 0;
+}
+
+/* ==========================================================
+   TABLAS
+   ========================================================== */
+
+.dsm-admin-table-scroll {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.dsm-admin-table-scroll table {
+    width: 100%;
+    min-width: 900px;
+    table-layout: fixed;
+}
+
+.dsm-admin-table-scroll th,
+.dsm-admin-table-scroll td {
+    box-sizing: border-box;
+    vertical-align: top;
+}
+
+.dsm-admin-table-scroll td {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.dsm-admin-session-id {
+    width: 55px;
+}
+
+.dsm-admin-session-ip {
+    width: 130px;
+}
+
+.dsm-admin-session-agent {
+    width: 260px;
+}
+
+.dsm-admin-session-date {
+    width: 135px;
+}
+
+.dsm-admin-session-activity {
+    width: 150px;
+}
+
+.dsm-admin-session-status {
+    width: 100px;
+}
+
+/* ==========================================================
+   FORMULARIOS
+   ========================================================== */
+
+.dsm-admin-field {
+    width: 100%;
+    max-width: 100%;
+}
+
+.dsm-admin-card select,
+.dsm-admin-card input[type="text"],
+.dsm-admin-card input[type="email"],
+.dsm-admin-card input[type="password"] {
+    width: 100%;
+    max-width: 100%;
+}
+
+.dsm-admin-card form {
+    margin: 0;
+}
+
+.dsm-admin-action-form + .dsm-admin-action-form {
+    margin-top: 12px;
+}
+
+/* ==========================================================
+   ESTADOS
+   ========================================================== */
+
+.dsm-admin-status {
+    display: inline-flex;
+    align-items: center;
+
+    padding: 4px 10px;
+
+    border-radius: 999px;
+
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.dsm-admin-status--active {
+    color: #006b1b;
+    background: #edfaef;
+}
+
+.dsm-admin-status--pending {
+    color: #755800;
+    background: #fff8d6;
+}
+
+.dsm-admin-status--suspended {
+    color: #8a4b00;
+    background: #fff0dc;
+}
+
+.dsm-admin-status--blocked,
+.dsm-admin-status--revoked {
+    color: #8a1616;
+    background: #fbeaea;
+}
+
+.dsm-admin-status--expired {
+    color: #50575e;
+    background: #f0f0f1;
+}
+
+/* ==========================================================
+   AVISOS Y AYUDAS
+   ========================================================== */
+
+.dsm-admin-description {
+    color: #646970;
+}
+
+.dsm-admin-muted {
+    color: #646970;
+}
+
+/* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+
+@media screen and (max-width: 1200px) {
+    .dsm-admin-customer-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .dsm-admin-customer-sidebar {
+        display: grid;
+        grid-template-columns:
+            repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+    }
+
+    .dsm-admin-customer-sidebar .dsm-admin-card {
+        margin-top: 0;
+    }
+}
+
+@media screen and (max-width: 782px) {
+    .dsm-admin-card {
+        padding: 18px;
+    }
+
+    .dsm-admin-customer-sidebar {
+        grid-template-columns: 1fr;
+    }
+
+    .dsm-admin-table-scroll table {
+        min-width: 820px;
+    }
+}

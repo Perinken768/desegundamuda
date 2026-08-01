@@ -322,3 +322,65 @@
         width: 100%;
     }
 }
+
+/* ==========================================================
+   ESTADOS Y AVISOS DE CUENTA
+   ========================================================== */
+
+.dsm-alert--warning {
+    color: var(--dsm-color-text);
+    background: var(--dsm-color-secondary);
+    border-color: var(--dsm-color-border);
+}
+
+.dsm-alert__content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--dsm-space-4);
+}
+
+.dsm-alert__content p {
+    margin-top: var(--dsm-space-2);
+    margin-bottom: 0;
+}
+
+.dsm-alert__content form {
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+.dsm-status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: var(--dsm-space-1) var(--dsm-space-3);
+
+    border-radius: 999px;
+
+    font-size: var(--dsm-font-size-xs);
+    font-weight: 800;
+}
+
+.dsm-status--success {
+    color: var(--dsm-color-success);
+    background: var(--dsm-color-success-background);
+}
+
+.dsm-status--warning {
+    color: var(--dsm-color-text);
+    background: var(--dsm-color-secondary);
+    border: 1px solid var(--dsm-color-border);
+}
+
+@media (max-width: 600px) {
+    .dsm-alert__content {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .dsm-alert__content form,
+    .dsm-alert__content .dsm-button {
+        width: 100%;
+    }
+}
