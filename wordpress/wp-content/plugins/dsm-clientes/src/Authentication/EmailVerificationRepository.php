@@ -25,7 +25,7 @@ final class EmailVerificationRepository
     public function create(
         int $customerId,
         string $tokenHash,
-        int $lifetimeSeconds = 86400
+        int $lifetimeSeconds = DAY_IN_SECONDS
     ): int {
         global $wpdb;
 
@@ -36,7 +36,10 @@ final class EmailVerificationRepository
         }
 
         if (
-            preg_match('/^[a-f0-9]{64}$/', $tokenHash) !== 1
+            preg_match(
+                '/^[a-f0-9]{64}$/',
+                $tokenHash
+            ) !== 1
         ) {
             throw new RuntimeException(
                 'El hash de verificación no es válido.'
@@ -48,11 +51,6 @@ final class EmailVerificationRepository
                 'La duración del token no es válida.'
             );
         }
-
-        /*
-         * Invalidamos tokens anteriores que sigan pendientes.
-         */
-        $this->revokePendingForCustomer($customerId);
 
         $createdAt = current_time('mysql', true);
 
@@ -134,22 +132,21 @@ final class EmailVerificationRepository
     {
         global $wpdb;
 
-        $result = $wpdb->update(
-            $this->tableName,
-            [
-                'used_at' => current_time('mysql', true),
-            ],
-            [
-                'id' => $id,
-                'used_at' => null,
-            ],
-            [
-                '%s',
-            ],
-            [
-                '%d',
-                null,
-            ]
+        if ($id <= 0) {
+            throw new RuntimeException(
+                'El identificador del token no es válido.'
+            );
+        }
+
+        $result = $wpdb->query(
+            $wpdb->prepare(
+                "UPDATE {$this->tableName}
+                SET used_at = %s
+                WHERE id = %d
+                  AND used_at IS NULL",
+                current_time('mysql', true),
+                $id
+            )
         );
 
         if ($result === false) {
@@ -159,19 +156,28 @@ final class EmailVerificationRepository
         }
     }
 
-    public function revokePendingForCustomer(
-        int $customerId
+    public function revokeOtherPendingForCustomer(
+        int $customerId,
+        int $excludedTokenId
     ): void {
         global $wpdb;
+
+        if ($customerId <= 0 || $excludedTokenId <= 0) {
+            throw new RuntimeException(
+                'Los identificadores de verificación no son válidos.'
+            );
+        }
 
         $result = $wpdb->query(
             $wpdb->prepare(
                 "UPDATE {$this->tableName}
                 SET used_at = %s
                 WHERE customer_id = %d
+                  AND id <> %d
                   AND used_at IS NULL",
                 current_time('mysql', true),
-                $customerId
+                $customerId,
+                $excludedTokenId
             )
         );
 
@@ -180,5 +186,51 @@ final class EmailVerificationRepository
                 'No se pudieron invalidar los tokens anteriores.'
             );
         }
+    }
+
+    public function deleteById(int $id): void
+    {
+        global $wpdb;
+
+        if ($id <= 0) {
+            return;
+        }
+
+        $result = $wpdb->delete(
+            $this->tableName,
+            [
+                'id' => $id,
+            ],
+            [
+                '%d',
+            ]
+        );
+
+        if ($result === false) {
+            throw new RuntimeException(
+                'No se pudo eliminar el token de verificación.'
+            );
+        }
+    }
+
+    public function deleteExpired(): int
+    {
+        global $wpdb;
+
+        $result = $wpdb->query(
+            $wpdb->prepare(
+                "DELETE FROM {$this->tableName}
+                WHERE expires_at <= %s",
+                current_time('mysql', true)
+            )
+        );
+
+        if ($result === false) {
+            throw new RuntimeException(
+                'No se pudieron eliminar los tokens caducados.'
+            );
+        }
+
+        return $result;
     }
 }

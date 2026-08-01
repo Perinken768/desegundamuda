@@ -16,3 +16,9 @@ if (!defined('ABSPATH')) {
 define('DSM_CORE_VERSION', '0.1.0');
 define('DSM_CORE_PATH', plugin_dir_path(__FILE__));
 define('DSM_CORE_URL', plugin_dir_url(__FILE__));
+
+require_once DSM_CORE_PATH . 'src/Support/Autoloader.php';
+
+use DSM\Core\Support\Autoloader;
+
+Autoloader::register();
