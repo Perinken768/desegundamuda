@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace DSM\Mail\Mail;
 
 use DSM\Core\Contracts\MailerInterface;
+use RuntimeException;
+use WP_Error;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -12,6 +14,16 @@ if (!defined('ABSPATH')) {
 
 final class WordPressMailer implements MailerInterface
 {
+    private ?WP_Error $lastError = null;
+
+    public function __construct()
+    {
+        add_action(
+            'wp_mail_failed',
+            [$this, 'captureError']
+        );
+    }
+
     /**
      * @param string|string[] $to
      * @param string|string[] $headers
@@ -24,12 +36,28 @@ final class WordPressMailer implements MailerInterface
         string|array $headers = [],
         array $attachments = []
     ): bool {
-        return wp_mail(
+        $this->lastError = null;
+
+        $sent = wp_mail(
             $to,
             $subject,
             $message,
             $headers,
             $attachments
         );
+
+        if (!$sent) {
+            $message = $this->lastError?->get_error_message()
+                ?? 'WordPress no pudo completar el envío del correo.';
+
+            throw new RuntimeException($message);
+        }
+
+        return true;
+    }
+
+    public function captureError(WP_Error $error): void
+    {
+        $this->lastError = $error;
     }
 }
