@@ -130,6 +130,15 @@ $statusClass = match ($customerStatus) {
         </div>
 
     <?php elseif (
+        $adminStatus === 'account_reactivated'
+    ) : ?>
+        <div class="notice notice-success is-dismissible">
+            <p>
+                La cuenta se reactivó correctamente.
+            </p>
+        </div>
+
+    <?php elseif (
         $adminStatus === 'action_error'
     ) : ?>
         <div class="notice notice-error is-dismissible">
@@ -544,6 +553,59 @@ $statusClass = match ($customerStatus) {
         </div>
 
         <aside class="dsm-admin-customer-sidebar">
+
+            <?php if (
+                $customerStatus === CustomerStatus::INACTIVE
+            ) : ?>
+                <section class="dsm-admin-card">
+                    <h2>Cuenta inactiva</h2>
+
+                    <p class="dsm-admin-description">
+                        El cliente cerró temporalmente su cuenta.
+                        Puedes reactivarla desde aquí.
+                    </p>
+
+                    <form
+                        method="post"
+                        action="<?php echo esc_url(
+                            admin_url('admin-post.php')
+                        ); ?>"
+                        onsubmit="return confirm(
+                            '¿Reactivar esta cuenta?'
+                        );"
+                    >
+                        <input
+                            type="hidden"
+                            name="action"
+                            value="dsm_customer_admin_reactivate"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="customer_id"
+                            value="<?php echo esc_attr(
+                                (string) $customerId
+                            ); ?>"
+                        >
+
+                        <?php
+                        wp_nonce_field(
+                            'dsm_customer_admin_reactivate',
+                            'dsm_customer_admin_nonce'
+                        );
+                        ?>
+
+                        <?php
+                        submit_button(
+                            'Reactivar cuenta',
+                            'primary',
+                            'submit',
+                            false
+                        );
+                        ?>
+                    </form>
+                </section>
+            <?php endif; ?>
 
             <section class="dsm-admin-card">
                 <h2>Cambiar estado</h2>

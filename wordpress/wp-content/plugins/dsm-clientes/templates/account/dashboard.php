@@ -20,13 +20,20 @@ $verificationStatus = isset($_GET['verification_status'])
     )
     : '';
 
+$accountStatus = isset($_GET['account_status'])
+    ? sanitize_key(
+        wp_unslash($_GET['account_status'])
+    )
+    : '';
+
 $accountError = isset($_GET['account_error'])
     ? sanitize_key(
         wp_unslash($_GET['account_error'])
     )
     : '';
 
-$emailVerified = $customer->getEmailVerifiedAt() !== null;
+$emailVerified =
+    $customer->getEmailVerifiedAt() !== null;
 ?>
 
 <section class="dsm-account">
@@ -49,13 +56,17 @@ $emailVerified = $customer->getEmailVerifiedAt() !== null;
                         'Has iniciado sesión como %s.',
                         'dsm-clientes'
                     ),
-                    esc_html($customer->getEmail())
+                    esc_html(
+                        $customer->getEmail()
+                    )
                 );
                 ?>
             </p>
         </header>
 
-        <?php if ($verificationStatus === 'resent') : ?>
+        <?php if (
+            $verificationStatus === 'resent'
+        ) : ?>
             <div class="dsm-alert dsm-alert--success">
                 <?php
                 esc_html_e(
@@ -65,7 +76,9 @@ $emailVerified = $customer->getEmailVerifiedAt() !== null;
                 ?>
             </div>
 
-        <?php elseif ($verificationStatus === 'resend_error') : ?>
+        <?php elseif (
+            $verificationStatus === 'resend_error'
+        ) : ?>
             <div class="dsm-alert dsm-alert--error">
                 <?php
                 esc_html_e(
@@ -75,7 +88,9 @@ $emailVerified = $customer->getEmailVerifiedAt() !== null;
                 ?>
             </div>
 
-        <?php elseif ($verificationStatus === 'already_verified') : ?>
+        <?php elseif (
+            $verificationStatus === 'already_verified'
+        ) : ?>
             <div class="dsm-alert dsm-alert--success">
                 <?php
                 esc_html_e(
@@ -86,11 +101,39 @@ $emailVerified = $customer->getEmailVerifiedAt() !== null;
             </div>
         <?php endif; ?>
 
-        <?php if ($accountError === 'deactivation_failed') : ?>
+        <?php if (
+            $accountStatus === 'deletion_email_sent'
+        ) : ?>
+            <div class="dsm-alert dsm-alert--success">
+                <?php
+                esc_html_e(
+                    'Te hemos enviado un correo para confirmar la eliminación de tu cuenta.',
+                    'dsm-clientes'
+                );
+                ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if (
+            $accountError === 'deactivation_failed'
+        ) : ?>
             <div class="dsm-alert dsm-alert--error">
                 <?php
                 esc_html_e(
                     'No se pudo cerrar temporalmente la cuenta. Comprueba la contraseña e inténtalo nuevamente.',
+                    'dsm-clientes'
+                );
+                ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if (
+            $accountError === 'deletion_request_failed'
+        ) : ?>
+            <div class="dsm-alert dsm-alert--error">
+                <?php
+                esc_html_e(
+                    'No se pudo solicitar la eliminación. Comprueba la contraseña e inténtalo de nuevo.',
                     'dsm-clientes'
                 );
                 ?>
@@ -117,7 +160,9 @@ $emailVerified = $customer->getEmailVerifiedAt() !== null;
                                     'Revisa la bandeja de entrada de %s y pulsa el enlace que te hemos enviado.',
                                     'dsm-clientes'
                                 ),
-                                esc_html($customer->getEmail())
+                                esc_html(
+                                    $customer->getEmail()
+                                )
                             );
                             ?>
                         </p>
@@ -225,7 +270,12 @@ $emailVerified = $customer->getEmailVerifiedAt() !== null;
 
                         <dd>
                             <?php if ($emailVerified) : ?>
-                                <span class="dsm-status dsm-status--success">
+                                <span
+                                    class="
+                                        dsm-status
+                                        dsm-status--success
+                                    "
+                                >
                                     <?php
                                     esc_html_e(
                                         'Verificado',
@@ -234,7 +284,12 @@ $emailVerified = $customer->getEmailVerifiedAt() !== null;
                                     ?>
                                 </span>
                             <?php else : ?>
-                                <span class="dsm-status dsm-status--warning">
+                                <span
+                                    class="
+                                        dsm-status
+                                        dsm-status--warning
+                                    "
+                                >
                                     <?php
                                     esc_html_e(
                                         'Pendiente',
@@ -388,14 +443,19 @@ $emailVerified = $customer->getEmailVerifiedAt() !== null;
                 <p>
                     <?php
                     esc_html_e(
-                        'Puedes cerrar temporalmente tu cuenta. Tus datos no se eliminarán, pero no podrás iniciar sesión hasta reactivarla.',
+                        'Desde esta sección puedes cerrar temporalmente tu cuenta o solicitar su eliminación definitiva.',
                         'dsm-clientes'
                     );
                     ?>
                 </p>
 
                 <details class="dsm-danger-action">
-                    <summary class="dsm-button dsm-button--danger-outline">
+                    <summary
+                        class="
+                            dsm-button
+                            dsm-button--danger-outline
+                        "
+                    >
                         <?php
                         esc_html_e(
                             'Cerrar temporalmente mi cuenta',
@@ -409,11 +469,20 @@ $emailVerified = $customer->getEmailVerifiedAt() !== null;
                             <strong>
                                 <?php
                                 esc_html_e(
-                                    'Confirma tu contraseña para continuar.',
+                                    'Tus datos no se eliminarán, pero no podrás iniciar sesión hasta reactivar la cuenta.',
                                     'dsm-clientes'
                                 );
                                 ?>
                             </strong>
+                        </p>
+
+                        <p>
+                            <?php
+                            esc_html_e(
+                                'Confirma tu contraseña para continuar.',
+                                'dsm-clientes'
+                            );
+                            ?>
                         </p>
 
                         <form
@@ -463,12 +532,117 @@ $emailVerified = $customer->getEmailVerifiedAt() !== null;
                             </div>
 
                             <button
-                                class="dsm-button dsm-button--danger"
+                                class="
+                                    dsm-button
+                                    dsm-button--danger
+                                "
                                 type="submit"
                             >
                                 <?php
                                 esc_html_e(
                                     'Confirmar cierre temporal',
+                                    'dsm-clientes'
+                                );
+                                ?>
+                            </button>
+                        </form>
+                    </div>
+                </details>
+
+                <hr>
+
+                <details class="dsm-danger-action">
+                    <summary
+                        class="
+                            dsm-button
+                            dsm-button--danger-outline
+                        "
+                    >
+                        <?php
+                        esc_html_e(
+                            'Eliminar definitivamente mi cuenta',
+                            'dsm-clientes'
+                        );
+                        ?>
+                    </summary>
+
+                    <div class="dsm-danger-action__content">
+                        <p>
+                            <strong>
+                                <?php
+                                esc_html_e(
+                                    'Esta acción eliminará definitivamente tu cuenta después de 30 días.',
+                                    'dsm-clientes'
+                                );
+                                ?>
+                            </strong>
+                        </p>
+
+                        <p>
+                            <?php
+                            esc_html_e(
+                                'Recibirás un correo para confirmar la solicitud. Durante el periodo de gracia podrás cancelarla usando el enlace recibido.',
+                                'dsm-clientes'
+                            );
+                            ?>
+                        </p>
+
+                        <form
+                            class="dsm-form"
+                            method="post"
+                            action="<?php echo esc_url(
+                                admin_url('admin-post.php')
+                            ); ?>"
+                            onsubmit="return confirm(
+                                '¿Solicitar la eliminación definitiva de tu cuenta?'
+                            );"
+                        >
+                            <input
+                                type="hidden"
+                                name="action"
+                                value="dsm_customer_request_deletion"
+                            >
+
+                            <?php
+                            wp_nonce_field(
+                                'dsm_customer_request_deletion',
+                                'dsm_deletion_nonce'
+                            );
+                            ?>
+
+                            <div class="dsm-form__field">
+                                <label
+                                    class="dsm-form__label"
+                                    for="dsm-deletion-password"
+                                >
+                                    <?php
+                                    esc_html_e(
+                                        'Contraseña actual',
+                                        'dsm-clientes'
+                                    );
+                                    ?>
+                                </label>
+
+                                <input
+                                    id="dsm-deletion-password"
+                                    class="dsm-form__input"
+                                    name="password"
+                                    type="password"
+                                    autocomplete="current-password"
+                                    required
+                                >
+                            </div>
+
+                            <button
+                                class="
+                                    dsm-button
+                                    dsm-button--danger
+                                "
+                                type="submit"
+                            >
+                                <?php
+                                esc_html_e(
+                                    'Solicitar eliminación definitiva',
                                     'dsm-clientes'
                                 );
                                 ?>

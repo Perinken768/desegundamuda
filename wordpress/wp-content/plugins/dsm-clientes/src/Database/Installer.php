@@ -114,6 +114,10 @@ final class Installer
             5 => DSM_CLIENTES_PATH
                 . 'database/migrations/'
                 . '005-create-customer-deletion-requests.php',
+
+            6 => DSM_CLIENTES_PATH
+                . 'database/migrations/'
+                . '006-create-account-reactivations.php',
         ];
     }
 

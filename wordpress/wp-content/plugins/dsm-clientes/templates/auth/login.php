@@ -42,7 +42,9 @@ $accountStatus = isset($_GET['account_status'])
             </p>
         </header>
 
-        <?php if ($accountStatus === 'deactivated') : ?>
+        <?php if (
+            $accountStatus === 'deactivated'
+        ) : ?>
             <div
                 class="dsm-alert dsm-alert--success"
                 role="status"
@@ -56,6 +58,113 @@ $accountStatus = isset($_GET['account_status'])
             </div>
         <?php endif; ?>
 
+        <?php if (
+            $accountStatus === 'reactivation_sent'
+        ) : ?>
+            <div
+                class="dsm-alert dsm-alert--success"
+                role="status"
+            >
+                <?php
+                esc_html_e(
+                    'Si existe una cuenta inactiva asociada al correo, recibirás un enlace de reactivación.',
+                    'dsm-clientes'
+                );
+                ?>
+            </div>
+
+        <?php elseif (
+            $accountStatus === 'reactivated'
+        ) : ?>
+            <div
+                class="dsm-alert dsm-alert--success"
+                role="status"
+            >
+                <?php
+                esc_html_e(
+                    'Tu cuenta se ha reactivado. Ya puedes iniciar sesión.',
+                    'dsm-clientes'
+                );
+                ?>
+            </div>
+
+        <?php elseif (
+            $accountStatus === 'reactivation_invalid'
+        ) : ?>
+            <div
+                class="dsm-alert dsm-alert--error"
+                role="alert"
+            >
+                <?php
+                esc_html_e(
+                    'El enlace de reactivación no es válido o ha caducado.',
+                    'dsm-clientes'
+                );
+                ?>
+            </div>
+
+        <?php elseif (
+            $accountStatus === 'reactivation_error'
+        ) : ?>
+            <div
+                class="dsm-alert dsm-alert--error"
+                role="alert"
+            >
+                <?php
+                esc_html_e(
+                    'No se pudo solicitar la reactivación. Inténtalo de nuevo más tarde.',
+                    'dsm-clientes'
+                );
+                ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if (
+            $accountStatus === 'deletion_scheduled'
+        ) : ?>
+            <div
+                class="dsm-alert dsm-alert--success"
+                role="status"
+            >
+                <?php
+                esc_html_e(
+                    'La eliminación de tu cuenta ha sido programada. Dispones de 30 días para cancelarla desde el enlace enviado por correo.',
+                    'dsm-clientes'
+                );
+                ?>
+            </div>
+
+        <?php elseif (
+            $accountStatus === 'deletion_cancelled'
+        ) : ?>
+            <div
+                class="dsm-alert dsm-alert--success"
+                role="status"
+            >
+                <?php
+                esc_html_e(
+                    'La eliminación se ha cancelado y tu cuenta vuelve a estar activa.',
+                    'dsm-clientes'
+                );
+                ?>
+            </div>
+
+        <?php elseif (
+            $accountStatus === 'deletion_invalid'
+        ) : ?>
+            <div
+                class="dsm-alert dsm-alert--error"
+                role="alert"
+            >
+                <?php
+                esc_html_e(
+                    'El enlace de eliminación no es válido o la solicitud ya no puede modificarse.',
+                    'dsm-clientes'
+                );
+                ?>
+            </div>
+        <?php endif; ?>
+
         <?php if ($hasError) : ?>
             <div
                 class="dsm-alert dsm-alert--error"
@@ -63,7 +172,7 @@ $accountStatus = isset($_GET['account_status'])
             >
                 <?php
                 esc_html_e(
-                    'El correo electrónico o la contraseña no son correctos.',
+                    'El correo electrónico o la contraseña no son correctos, o la cuenta no está disponible.',
                     'dsm-clientes'
                 );
                 ?>
@@ -137,7 +246,11 @@ $accountStatus = isset($_GET['account_status'])
             </div>
 
             <button
-                class="dsm-button dsm-button--primary dsm-button--block"
+                class="
+                    dsm-button
+                    dsm-button--primary
+                    dsm-button--block
+                "
                 type="submit"
             >
                 <?php
@@ -148,6 +261,88 @@ $accountStatus = isset($_GET['account_status'])
                 ?>
             </button>
         </form>
+
+        <details class="dsm-auth__reactivation">
+            <summary>
+                <?php
+                esc_html_e(
+                    'Reactivar una cuenta cerrada',
+                    'dsm-clientes'
+                );
+                ?>
+            </summary>
+
+            <div class="dsm-danger-action__content">
+                <p>
+                    <?php
+                    esc_html_e(
+                        'Introduce el correo de la cuenta cerrada temporalmente y te enviaremos un enlace de reactivación.',
+                        'dsm-clientes'
+                    );
+                    ?>
+                </p>
+
+                <form
+                    class="dsm-form"
+                    method="post"
+                    action="<?php echo esc_url(
+                        admin_url('admin-post.php')
+                    ); ?>"
+                >
+                    <input
+                        type="hidden"
+                        name="action"
+                        value="dsm_customer_request_reactivation"
+                    >
+
+                    <?php
+                    wp_nonce_field(
+                        'dsm_customer_request_reactivation',
+                        'dsm_reactivation_nonce'
+                    );
+                    ?>
+
+                    <div class="dsm-form__field">
+                        <label
+                            class="dsm-form__label"
+                            for="dsm-reactivation-email"
+                        >
+                            <?php
+                            esc_html_e(
+                                'Correo electrónico',
+                                'dsm-clientes'
+                            );
+                            ?>
+                        </label>
+
+                        <input
+                            id="dsm-reactivation-email"
+                            class="dsm-form__input"
+                            name="email"
+                            type="email"
+                            autocomplete="email"
+                            required
+                        >
+                    </div>
+
+                    <button
+                        class="
+                            dsm-button
+                            dsm-button--secondary
+                            dsm-button--block
+                        "
+                        type="submit"
+                    >
+                        <?php
+                        esc_html_e(
+                            'Enviar enlace de reactivación',
+                            'dsm-clientes'
+                        );
+                        ?>
+                    </button>
+                </form>
+            </div>
+        </details>
 
         <footer class="dsm-auth__footer">
             <p>

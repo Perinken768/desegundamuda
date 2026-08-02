@@ -23,6 +23,11 @@ final class CustomerAdminController
     public function register(): void
     {
         add_action(
+            'admin_post_dsm_customer_admin_reactivate',
+            [$this, 'handleReactivate']
+        );
+
+        add_action(
             'admin_post_dsm_customer_admin_update_status',
             [$this, 'handleUpdateStatus']
         );
@@ -46,6 +51,76 @@ final class CustomerAdminController
             'admin_post_dsm_customer_admin_update_password',
             [$this, 'handleUpdatePassword']
         );
+    }
+
+    public function handleReactivate(): void
+    {
+        $this->assertAdministrator();
+
+        check_admin_referer(
+            'dsm_customer_admin_reactivate',
+            'dsm_customer_admin_nonce'
+        );
+
+        $customerId = $this->getCustomerId();
+
+        try {
+            $repository = new CustomerRepository();
+
+            $customer = $repository->findById(
+                $customerId
+            );
+
+            if ($customer === null) {
+                throw new RuntimeException(
+                    'No se encontró el cliente.'
+                );
+            }
+
+            if (
+                $customer->getStatus()
+                !== CustomerStatus::INACTIVE
+            ) {
+                throw new RuntimeException(
+                    'La cuenta no está inactiva.'
+                );
+            }
+
+            $repository->updateStatus(
+                $customerId,
+                CustomerStatus::ACTIVE
+            );
+
+            do_action(
+                'dsm_customer_account_reactivated',
+                $customerId
+            );
+
+            do_action(
+                'dsm_audit_event',
+                'customer.reactivated',
+                [
+                    'customer_id' => $customerId,
+                    'actor_type' => 'wordpress_user',
+                    'actor_id' => get_current_user_id(),
+                ]
+            );
+
+            $this->redirectToCustomer(
+                $customerId,
+                'account_reactivated'
+            );
+        } catch (Throwable $exception) {
+            $this->logError(
+                'reactivando la cuenta',
+                $exception
+            );
+
+            $this->redirectToCustomer(
+                $customerId,
+                'action_error'
+            );
+        }
     }
 
     public function handleUpdateStatus(): void
@@ -79,15 +154,14 @@ final class CustomerAdminController
                 $status
             );
 
-            /*
-             * Si bloqueamos o suspendemos, cerramos todas las sesiones.
-             */
             if (
                 in_array(
                     $status,
                     [
                         CustomerStatus::BLOCKED,
                         CustomerStatus::SUSPENDED,
+                        CustomerStatus::INACTIVE,
+                        CustomerStatus::DELETION_PENDING,
                     ],
                     true
                 )
@@ -99,6 +173,17 @@ final class CustomerAdminController
                     $customerId
                 );
             }
+
+            do_action(
+                'dsm_audit_event',
+                'customer.status_updated',
+                [
+                    'customer_id' => $customerId,
+                    'status' => $status,
+                    'actor_type' => 'wordpress_user',
+                    'actor_id' => get_current_user_id(),
+                ]
+            );
 
             $this->redirectToCustomer(
                 $customerId,
@@ -275,9 +360,6 @@ final class CustomerAdminController
                 $password
             );
 
-            /*
-             * Tras cambiar la contraseña, cerramos todas las sesiones.
-             */
             $sessionRepository =
                 new CustomerSessionRepository();
 

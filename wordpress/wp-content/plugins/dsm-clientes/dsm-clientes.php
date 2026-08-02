@@ -21,7 +21,7 @@ define(
 
 define(
     'DSM_CLIENTES_DB_VERSION',
-    5
+    6
 );
 
 define(
@@ -41,6 +41,8 @@ use DSM\Clientes\Admin\CustomerAdminController;
 use DSM\Clientes\Admin\CustomerAdminRepository;
 use DSM\Clientes\Admin\CustomersPage;
 use DSM\Clientes\Database\Installer;
+use DSM\Clientes\Frontend\AccountDeletionController;
+use DSM\Clientes\Frontend\AccountReactivationController;
 use DSM\Clientes\Frontend\AccountShortcode;
 use DSM\Clientes\Frontend\AccountStatusController;
 use DSM\Clientes\Frontend\AuthController;
@@ -50,6 +52,7 @@ use DSM\Clientes\Frontend\ProfileController;
 use DSM\Clientes\Frontend\ProfileShortcode;
 use DSM\Clientes\Frontend\RegisterShortcode;
 use DSM\Clientes\Frontend\ResendVerificationController;
+use DSM\Clientes\Scheduling\CustomerDeletionScheduler;
 use DSM\Clientes\Support\Autoloader;
 
 Autoloader::register();
@@ -74,6 +77,8 @@ $customerAdminController->register();
 /*
  * Controladores públicos.
  */
+AccountDeletionController::register();
+AccountReactivationController::register();
 AccountStatusController::register();
 AuthController::register();
 EmailVerificationController::register();
@@ -89,11 +94,26 @@ AccountShortcode::register();
 ProfileShortcode::register();
 
 /*
+ * Eliminaciones programadas.
+ */
+CustomerDeletionScheduler::register();
+
+/*
  * Instalación y migraciones.
  */
 register_activation_hook(
     __FILE__,
     [Installer::class, 'activate']
+);
+
+register_activation_hook(
+    __FILE__,
+    [CustomerDeletionScheduler::class, 'activate']
+);
+
+register_deactivation_hook(
+    __FILE__,
+    [CustomerDeletionScheduler::class, 'deactivate']
 );
 
 add_action(
