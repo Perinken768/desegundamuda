@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use DSM\Clientes\Customer\Customer;
+use DSM\Clientes\Customer\CustomerStatus;
+use DSM\Clientes\Impersonation\CustomerImpersonationCookie;
 use DSM\Clientes\Profile\CustomerProfile;
 
 if (!defined('ABSPATH')) {
@@ -34,6 +36,28 @@ $accountError = isset($_GET['account_error'])
 
 $emailVerified =
     $customer->getEmailVerifiedAt() !== null;
+
+$isImpersonating =
+    CustomerImpersonationCookie::isActive();
+
+$customerStatus = $customer->getStatus();
+
+$statusClass = match ($customerStatus) {
+    CustomerStatus::ACTIVE =>
+        'dsm-status--success',
+
+    CustomerStatus::PENDING,
+    CustomerStatus::INACTIVE,
+    CustomerStatus::SUSPENDED =>
+        'dsm-status--warning',
+
+    CustomerStatus::BLOCKED,
+    CustomerStatus::DELETION_PENDING =>
+        'dsm-status--error',
+
+    default =>
+        'dsm-status--warning',
+};
 ?>
 
 <section class="dsm-account">
@@ -63,6 +87,17 @@ $emailVerified =
                 ?>
             </p>
         </header>
+
+        <?php if ($isImpersonating) : ?>
+            <div class="dsm-alert dsm-alert--warning">
+                <?php
+                esc_html_e(
+                    'Estás usando una sesión administrativa temporal. El cierre de cuenta, la eliminación definitiva y el cierre de sesión normal están bloqueados.',
+                    'dsm-clientes'
+                );
+                ?>
+            </div>
+        <?php endif; ?>
 
         <?php if (
             $verificationStatus === 'resent'
@@ -121,6 +156,19 @@ $emailVerified =
                 <?php
                 esc_html_e(
                     'No se pudo cerrar temporalmente la cuenta. Comprueba la contraseña e inténtalo nuevamente.',
+                    'dsm-clientes'
+                );
+                ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if (
+            $accountError === 'impersonation_restricted'
+        ) : ?>
+            <div class="dsm-alert dsm-alert--error">
+                <?php
+                esc_html_e(
+                    'Esta acción está bloqueada mientras navegas como cliente desde administración.',
                     'dsm-clientes'
                 );
                 ?>
@@ -358,11 +406,21 @@ $emailVerified =
                         </dt>
 
                         <dd>
-                            <?php
-                            echo esc_html(
-                                $customer->getStatus()
-                            );
-                            ?>
+                            <span
+                                class="<?php echo esc_attr(
+                                    'dsm-status '
+                                    . $statusClass
+                                ); ?>"
+                            >
+
+                                <?php
+                                echo esc_html(
+                                    CustomerStatus::label(
+                                        $customerStatus
+                                    )
+                                );
+                                ?>
+                            </span>
                         </dd>
                     </div>
                 </dl>
@@ -393,265 +451,301 @@ $emailVerified =
                         ?>
                     </a>
 
-                    <form
-                        method="post"
-                        action="<?php echo esc_url(
-                            admin_url('admin-post.php')
-                        ); ?>"
-                    >
-                        <input
-                            type="hidden"
-                            name="action"
-                            value="dsm_customer_logout"
+                    <?php if (!$isImpersonating) : ?>
+                        <form
+                            method="post"
+                            action="<?php echo esc_url(
+                                admin_url('admin-post.php')
+                            ); ?>"
                         >
+                            <input
+                                type="hidden"
+                                name="action"
+                                value="dsm_customer_logout"
+                            >
 
-                        <?php
-                        wp_nonce_field(
-                            'dsm_customer_logout',
-                            'dsm_logout_nonce'
-                        );
-                        ?>
+                            <?php
+                            wp_nonce_field(
+                                'dsm_customer_logout',
+                                'dsm_logout_nonce'
+                            );
+                            ?>
 
-                        <button
-                            class="dsm-button dsm-button--primary"
-                            type="submit"
-                        >
+                            <button
+                                class="dsm-button dsm-button--primary"
+                                type="submit"
+                            >
+                                <?php
+                                esc_html_e(
+                                    'Cerrar sesión',
+                                    'dsm-clientes'
+                                );
+                                ?>
+                            </button>
+                        </form>
+                    <?php else : ?>
+                        <p>
                             <?php
                             esc_html_e(
-                                'Cerrar sesión',
+                                'Usa la barra inferior para salir del modo cliente y volver al panel.',
                                 'dsm-clientes'
                             );
                             ?>
-                        </button>
-                    </form>
+                        </p>
+                    <?php endif; ?>
                 </div>
             </article>
 
         </div>
 
-        <section class="dsm-account__danger-zone">
-            <article class="dsm-card dsm-card--danger">
-                <h2 class="dsm-card__title">
-                    <?php
-                    esc_html_e(
-                        'Zona de seguridad',
-                        'dsm-clientes'
-                    );
-                    ?>
-                </h2>
-
-                <p>
-                    <?php
-                    esc_html_e(
-                        'Desde esta sección puedes cerrar temporalmente tu cuenta o solicitar su eliminación definitiva.',
-                        'dsm-clientes'
-                    );
-                    ?>
-                </p>
-
-                <details class="dsm-danger-action">
-                    <summary
-                        class="
-                            dsm-button
-                            dsm-button--danger-outline
-                        "
-                    >
+        <?php if (!$isImpersonating) : ?>
+            <section class="dsm-account__danger-zone">
+                <article class="dsm-card dsm-card--danger">
+                    <h2 class="dsm-card__title">
                         <?php
                         esc_html_e(
-                            'Cerrar temporalmente mi cuenta',
+                            'Zona de seguridad',
                             'dsm-clientes'
                         );
                         ?>
-                    </summary>
+                    </h2>
 
-                    <div class="dsm-danger-action__content">
-                        <p>
-                            <strong>
-                                <?php
-                                esc_html_e(
-                                    'Tus datos no se eliminarán, pero no podrás iniciar sesión hasta reactivar la cuenta.',
-                                    'dsm-clientes'
-                                );
-                                ?>
-                            </strong>
-                        </p>
-
-                        <p>
-                            <?php
-                            esc_html_e(
-                                'Confirma tu contraseña para continuar.',
-                                'dsm-clientes'
-                            );
-                            ?>
-                        </p>
-
-                        <form
-                            class="dsm-form"
-                            method="post"
-                            action="<?php echo esc_url(
-                                admin_url('admin-post.php')
-                            ); ?>"
-                            onsubmit="return confirm(
-                                '¿Seguro que quieres cerrar temporalmente tu cuenta?'
-                            );"
-                        >
-                            <input
-                                type="hidden"
-                                name="action"
-                                value="dsm_customer_deactivate_account"
-                            >
-
-                            <?php
-                            wp_nonce_field(
-                                'dsm_customer_deactivate_account',
-                                'dsm_deactivate_account_nonce'
-                            );
-                            ?>
-
-                            <div class="dsm-form__field">
-                                <label
-                                    class="dsm-form__label"
-                                    for="dsm-deactivate-password"
-                                >
-                                    <?php
-                                    esc_html_e(
-                                        'Contraseña actual',
-                                        'dsm-clientes'
-                                    );
-                                    ?>
-                                </label>
-
-                                <input
-                                    id="dsm-deactivate-password"
-                                    class="dsm-form__input"
-                                    name="password"
-                                    type="password"
-                                    autocomplete="current-password"
-                                    required
-                                >
-                            </div>
-
-                            <button
-                                class="
-                                    dsm-button
-                                    dsm-button--danger
-                                "
-                                type="submit"
-                            >
-                                <?php
-                                esc_html_e(
-                                    'Confirmar cierre temporal',
-                                    'dsm-clientes'
-                                );
-                                ?>
-                            </button>
-                        </form>
-                    </div>
-                </details>
-
-                <hr>
-
-                <details class="dsm-danger-action">
-                    <summary
-                        class="
-                            dsm-button
-                            dsm-button--danger-outline
-                        "
-                    >
+                    <p>
                         <?php
                         esc_html_e(
-                            'Eliminar definitivamente mi cuenta',
+                            'Desde esta sección puedes cerrar temporalmente tu cuenta o solicitar su eliminación definitiva.',
                             'dsm-clientes'
                         );
                         ?>
-                    </summary>
+                    </p>
 
-                    <div class="dsm-danger-action__content">
-                        <p>
-                            <strong>
-                                <?php
-                                esc_html_e(
-                                    'Esta acción eliminará definitivamente tu cuenta después de 30 días.',
-                                    'dsm-clientes'
-                                );
-                                ?>
-                            </strong>
-                        </p>
-
-                        <p>
+                    <details class="dsm-danger-action">
+                        <summary
+                            class="
+                                dsm-button
+                                dsm-button--danger-outline
+                            "
+                        >
                             <?php
                             esc_html_e(
-                                'Recibirás un correo para confirmar la solicitud. Durante el periodo de gracia podrás cancelarla usando el enlace recibido.',
+                                'Cerrar temporalmente mi cuenta',
                                 'dsm-clientes'
                             );
                             ?>
-                        </p>
+                        </summary>
 
-                        <form
-                            class="dsm-form"
-                            method="post"
-                            action="<?php echo esc_url(
-                                admin_url('admin-post.php')
-                            ); ?>"
-                            onsubmit="return confirm(
-                                '¿Solicitar la eliminación definitiva de tu cuenta?'
-                            );"
-                        >
-                            <input
-                                type="hidden"
-                                name="action"
-                                value="dsm_customer_request_deletion"
-                            >
-
-                            <?php
-                            wp_nonce_field(
-                                'dsm_customer_request_deletion',
-                                'dsm_deletion_nonce'
-                            );
-                            ?>
-
-                            <div class="dsm-form__field">
-                                <label
-                                    class="dsm-form__label"
-                                    for="dsm-deletion-password"
-                                >
+                        <div class="dsm-danger-action__content">
+                            <p>
+                                <strong>
                                     <?php
                                     esc_html_e(
-                                        'Contraseña actual',
+                                        'Tus datos no se eliminarán, pero no podrás iniciar sesión hasta reactivar la cuenta.',
                                         'dsm-clientes'
                                     );
                                     ?>
-                                </label>
+                                </strong>
+                            </p>
 
-                                <input
-                                    id="dsm-deletion-password"
-                                    class="dsm-form__input"
-                                    name="password"
-                                    type="password"
-                                    autocomplete="current-password"
-                                    required
-                                >
-                            </div>
-
-                            <button
-                                class="
-                                    dsm-button
-                                    dsm-button--danger
-                                "
-                                type="submit"
-                            >
+                            <p>
                                 <?php
                                 esc_html_e(
-                                    'Solicitar eliminación definitiva',
+                                    'Confirma tu contraseña para continuar.',
                                     'dsm-clientes'
                                 );
                                 ?>
-                            </button>
-                        </form>
-                    </div>
-                </details>
-            </article>
-        </section>
+                            </p>
+
+                            <form
+                                class="dsm-form"
+                                method="post"
+                                action="<?php echo esc_url(
+                                    admin_url('admin-post.php')
+                                ); ?>"
+                                onsubmit="return confirm(
+                                    '¿Seguro que quieres cerrar temporalmente tu cuenta?'
+                                );"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="action"
+                                    value="dsm_customer_deactivate_account"
+                                >
+
+                                <?php
+                                wp_nonce_field(
+                                    'dsm_customer_deactivate_account',
+                                    'dsm_deactivate_account_nonce'
+                                );
+                                ?>
+
+                                <div class="dsm-form__field">
+                                    <label
+                                        class="dsm-form__label"
+                                        for="dsm-deactivate-password"
+                                    >
+                                        <?php
+                                        esc_html_e(
+                                            'Contraseña actual',
+                                            'dsm-clientes'
+                                        );
+                                        ?>
+                                    </label>
+
+                                    <input
+                                        id="dsm-deactivate-password"
+                                        class="dsm-form__input"
+                                        name="password"
+                                        type="password"
+                                        autocomplete="current-password"
+                                        required
+                                    >
+                                </div>
+
+                                <button
+                                    class="
+                                        dsm-button
+                                        dsm-button--danger
+                                    "
+                                    type="submit"
+                                >
+                                    <?php
+                                    esc_html_e(
+                                        'Confirmar cierre temporal',
+                                        'dsm-clientes'
+                                    );
+                                    ?>
+                                </button>
+                            </form>
+                        </div>
+                    </details>
+
+                    <hr>
+
+                    <details class="dsm-danger-action">
+                        <summary
+                            class="
+                                dsm-button
+                                dsm-button--danger-outline
+                            "
+                        >
+                            <?php
+                            esc_html_e(
+                                'Eliminar definitivamente mi cuenta',
+                                'dsm-clientes'
+                            );
+                            ?>
+                        </summary>
+
+                        <div class="dsm-danger-action__content">
+                            <p>
+                                <strong>
+                                    <?php
+                                    esc_html_e(
+                                        'Esta acción eliminará definitivamente tu cuenta después de 30 días.',
+                                        'dsm-clientes'
+                                    );
+                                    ?>
+                                </strong>
+                            </p>
+
+                            <p>
+                                <?php
+                                esc_html_e(
+                                    'Recibirás un correo para confirmar la solicitud. Durante el periodo de gracia podrás cancelarla usando el enlace recibido.',
+                                    'dsm-clientes'
+                                );
+                                ?>
+                            </p>
+
+                            <form
+                                class="dsm-form"
+                                method="post"
+                                action="<?php echo esc_url(
+                                    admin_url('admin-post.php')
+                                ); ?>"
+                                onsubmit="return confirm(
+                                    '¿Solicitar la eliminación definitiva de tu cuenta?'
+                                );"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="action"
+                                    value="dsm_customer_request_deletion"
+                                >
+
+                                <?php
+                                wp_nonce_field(
+                                    'dsm_customer_request_deletion',
+                                    'dsm_deletion_nonce'
+                                );
+                                ?>
+
+                                <div class="dsm-form__field">
+                                    <label
+                                        class="dsm-form__label"
+                                        for="dsm-deletion-password"
+                                    >
+                                        <?php
+                                        esc_html_e(
+                                            'Contraseña actual',
+                                            'dsm-clientes'
+                                        );
+                                        ?>
+                                    </label>
+
+                                    <input
+                                        id="dsm-deletion-password"
+                                        class="dsm-form__input"
+                                        name="password"
+                                        type="password"
+                                        autocomplete="current-password"
+                                        required
+                                    >
+                                </div>
+
+                                <button
+                                    class="
+                                        dsm-button
+                                        dsm-button--danger
+                                    "
+                                    type="submit"
+                                >
+                                    <?php
+                                    esc_html_e(
+                                        'Solicitar eliminación definitiva',
+                                        'dsm-clientes'
+                                    );
+                                    ?>
+                                </button>
+                            </form>
+                        </div>
+                    </details>
+                </article>
+            </section>
+
+        <?php else : ?>
+            <section class="dsm-account__danger-zone">
+                <article class="dsm-card">
+                    <h2 class="dsm-card__title">
+                        <?php
+                        esc_html_e(
+                            'Acciones sensibles bloqueadas',
+                            'dsm-clientes'
+                        );
+                        ?>
+                    </h2>
+
+                    <p>
+                        <?php
+                        esc_html_e(
+                            'No puedes cerrar, eliminar ni modificar credenciales de la cuenta durante una sesión administrativa temporal.',
+                            'dsm-clientes'
+                        );
+                        ?>
+                    </p>
+                </article>
+            </section>
+        <?php endif; ?>
 
     </div>
 </section>

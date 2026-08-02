@@ -9,6 +9,7 @@ use DSM\Clientes\Authentication\AuthenticatedCustomer;
 use DSM\Clientes\Authentication\CustomerCookie;
 use DSM\Clientes\Authentication\CustomerSessionRepository;
 use DSM\Clientes\Customer\CustomerRepository;
+use DSM\Clientes\Impersonation\CustomerImpersonationCookie;
 use Throwable;
 
 if (!defined('ABSPATH')) {
@@ -41,6 +42,10 @@ final class AccountStatusController
             'dsm_customer_deactivate_account',
             'dsm_deactivate_account_nonce'
         );
+
+        if (CustomerImpersonationCookie::isActive()) {
+            self::redirectRestricted();
+        }
 
         $password = isset($_POST['password'])
             ? (string) wp_unslash(
@@ -110,6 +115,19 @@ final class AccountStatusController
 
             exit;
         }
+    }
+
+    private static function redirectRestricted(): never
+    {
+        wp_safe_redirect(
+            add_query_arg(
+                'account_error',
+                'impersonation_restricted',
+                home_url('/mi-cuenta/')
+            )
+        );
+
+        exit;
     }
 
     private function __construct()

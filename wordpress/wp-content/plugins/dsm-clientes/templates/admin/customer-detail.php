@@ -139,6 +139,16 @@ $statusClass = match ($customerStatus) {
         </div>
 
     <?php elseif (
+        $adminStatus === 'impersonation_error'
+    ) : ?>
+        <div class="notice notice-error is-dismissible">
+            <p>
+                No se pudo entrar como este cliente.
+                Comprueba que la cuenta esté disponible.
+            </p>
+        </div>
+
+    <?php elseif (
         $adminStatus === 'action_error'
     ) : ?>
         <div class="notice notice-error is-dismissible">
@@ -553,6 +563,63 @@ $statusClass = match ($customerStatus) {
         </div>
 
         <aside class="dsm-admin-customer-sidebar">
+
+            <?php if (
+                CustomerStatus::canAuthenticate(
+                    $customerStatus
+                )
+            ) : ?>
+                <section class="dsm-admin-card">
+                    <h2>Acceder como cliente</h2>
+
+                    <p class="dsm-admin-description">
+                        Inicia una sesión temporal de 30 minutos
+                        para comprobar exactamente lo que ve este
+                        cliente. Las acciones sensibles quedarán
+                        bloqueadas.
+                    </p>
+
+                    <form
+                        method="post"
+                        action="<?php echo esc_url(
+                            admin_url('admin-post.php')
+                        ); ?>"
+                        onsubmit="return confirm(
+                            '¿Entrar temporalmente como este cliente?'
+                        );"
+                    >
+                        <input
+                            type="hidden"
+                            name="action"
+                            value="dsm_customer_admin_impersonate"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="customer_id"
+                            value="<?php echo esc_attr(
+                                (string) $customerId
+                            ); ?>"
+                        >
+
+                        <?php
+                        wp_nonce_field(
+                            'dsm_customer_admin_impersonate',
+                            'dsm_customer_admin_nonce'
+                        );
+                        ?>
+
+                        <?php
+                        submit_button(
+                            'Entrar como este cliente',
+                            'primary',
+                            'submit',
+                            false
+                        );
+                        ?>
+                    </form>
+                </section>
+            <?php endif; ?>
 
             <?php if (
                 $customerStatus === CustomerStatus::INACTIVE

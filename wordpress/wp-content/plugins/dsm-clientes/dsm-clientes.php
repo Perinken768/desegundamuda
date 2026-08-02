@@ -39,6 +39,7 @@ require_once DSM_CLIENTES_PATH
 
 use DSM\Clientes\Admin\CustomerAdminController;
 use DSM\Clientes\Admin\CustomerAdminRepository;
+use DSM\Clientes\Admin\CustomerImpersonationController;
 use DSM\Clientes\Admin\CustomersPage;
 use DSM\Clientes\Database\Installer;
 use DSM\Clientes\Frontend\AccountDeletionController;
@@ -46,6 +47,7 @@ use DSM\Clientes\Frontend\AccountReactivationController;
 use DSM\Clientes\Frontend\AccountShortcode;
 use DSM\Clientes\Frontend\AccountStatusController;
 use DSM\Clientes\Frontend\AuthController;
+use DSM\Clientes\Frontend\CustomerImpersonationBar;
 use DSM\Clientes\Frontend\EmailVerificationController;
 use DSM\Clientes\Frontend\LoginShortcode;
 use DSM\Clientes\Frontend\ProfileController;
@@ -74,6 +76,11 @@ $customerAdminController =
 
 $customerAdminController->register();
 
+$customerImpersonationController =
+    new CustomerImpersonationController();
+
+$customerImpersonationController->register();
+
 /*
  * Controladores públicos.
  */
@@ -81,6 +88,7 @@ AccountDeletionController::register();
 AccountReactivationController::register();
 AccountStatusController::register();
 AuthController::register();
+CustomerImpersonationBar::register();
 EmailVerificationController::register();
 ProfileController::register();
 ResendVerificationController::register();

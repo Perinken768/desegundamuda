@@ -10,6 +10,7 @@ use DSM\Clientes\Authentication\CustomerCookie;
 use DSM\Clientes\Authentication\CustomerSessionRepository;
 use DSM\Clientes\Customer\CustomerRepository;
 use DSM\Clientes\Deletion\CustomerDeletionRequestRepository;
+use DSM\Clientes\Impersonation\CustomerImpersonationCookie;
 use Throwable;
 
 if (!defined('ABSPATH')) {
@@ -57,6 +58,10 @@ final class AccountDeletionController
             'dsm_customer_request_deletion',
             'dsm_deletion_nonce'
         );
+
+        if (CustomerImpersonationCookie::isActive()) {
+            self::redirectRestricted();
+        }
 
         $password = isset($_POST['password'])
             ? (string) wp_unslash(
@@ -188,6 +193,19 @@ final class AccountDeletionController
             $sessionRepository
                 ?? new CustomerSessionRepository()
         );
+    }
+
+    private static function redirectRestricted(): never
+    {
+        wp_safe_redirect(
+            add_query_arg(
+                'account_error',
+                'impersonation_restricted',
+                home_url('/mi-cuenta/')
+            )
+        );
+
+        exit;
     }
 
     private static function redirectLogin(
