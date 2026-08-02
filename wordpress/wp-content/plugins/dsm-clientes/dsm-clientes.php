@@ -21,7 +21,7 @@ define(
 
 define(
     'DSM_CLIENTES_DB_VERSION',
-    6
+    7
 );
 
 define(
@@ -43,17 +43,22 @@ use DSM\Clientes\Admin\CustomerImpersonationController;
 use DSM\Clientes\Admin\CustomersPage;
 use DSM\Clientes\Database\Installer;
 use DSM\Clientes\Frontend\AccountDeletionController;
+use DSM\Clientes\Frontend\AccountPasswordController;
 use DSM\Clientes\Frontend\AccountReactivationController;
 use DSM\Clientes\Frontend\AccountShortcode;
 use DSM\Clientes\Frontend\AccountStatusController;
 use DSM\Clientes\Frontend\AuthController;
+use DSM\Clientes\Frontend\ChangePasswordShortcode;
 use DSM\Clientes\Frontend\CustomerImpersonationBar;
 use DSM\Clientes\Frontend\EmailVerificationController;
+use DSM\Clientes\Frontend\ForgotPasswordShortcode;
 use DSM\Clientes\Frontend\LoginShortcode;
+use DSM\Clientes\Frontend\PasswordResetController;
 use DSM\Clientes\Frontend\ProfileController;
 use DSM\Clientes\Frontend\ProfileShortcode;
 use DSM\Clientes\Frontend\RegisterShortcode;
 use DSM\Clientes\Frontend\ResendVerificationController;
+use DSM\Clientes\Frontend\ResetPasswordShortcode;
 use DSM\Clientes\Scheduling\CustomerDeletionScheduler;
 use DSM\Clientes\Support\Autoloader;
 
@@ -85,21 +90,26 @@ $customerImpersonationController->register();
  * Controladores públicos.
  */
 AccountDeletionController::register();
+AccountPasswordController::register();
 AccountReactivationController::register();
 AccountStatusController::register();
 AuthController::register();
 CustomerImpersonationBar::register();
 EmailVerificationController::register();
+PasswordResetController::register();
 ProfileController::register();
 ResendVerificationController::register();
 
 /*
  * Shortcodes.
  */
-LoginShortcode::register();
-RegisterShortcode::register();
 AccountShortcode::register();
+ChangePasswordShortcode::register();
+ForgotPasswordShortcode::register();
+LoginShortcode::register();
 ProfileShortcode::register();
+RegisterShortcode::register();
+ResetPasswordShortcode::register();
 
 /*
  * Eliminaciones programadas.

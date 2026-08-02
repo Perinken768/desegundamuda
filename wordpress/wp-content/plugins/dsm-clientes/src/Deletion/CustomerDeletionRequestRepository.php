@@ -321,6 +321,10 @@ final class CustomerDeletionRequestRepository
             $wpdb->prefix
             . 'dsm_customer_account_reactivations';
 
+        $passwordResetsTable =
+            $wpdb->prefix
+            . 'dsm_customer_password_resets';
+
         $now = current_time('mysql', true);
 
         $wpdb->query('START TRANSACTION');
@@ -339,6 +343,11 @@ final class CustomerDeletionRequestRepository
                 ),
                 $wpdb->prepare(
                     "DELETE FROM {$reactivationsTable}
+                    WHERE customer_id = %d",
+                    $customerId
+                ),
+                $wpdb->prepare(
+                    "DELETE FROM {$passwordResetsTable}
                     WHERE customer_id = %d",
                     $customerId
                 ),

@@ -4,89 +4,76 @@ declare(strict_types=1);
 
 namespace DSM\Clientes\Database;
 
+use RuntimeException;
+
 if (!defined('ABSPATH')) {
     exit;
 }
 
 final class Installer
 {
-    private const DB_VERSION_OPTION =
+    private const OPTION_NAME =
         'dsm_clientes_db_version';
 
-    /**
-     * Se ejecuta al activar el plugin.
-     */
     public static function activate(): void
     {
         self::migrate();
     }
 
-    /**
-     * Ejecuta todas las migraciones pendientes.
-     */
     public static function migrate(): void
     {
-        $installedVersion =
-            self::getInstalledVersion();
-
-        $targetVersion =
-            DSM_CLIENTES_DB_VERSION;
-
-        if ($installedVersion >= $targetVersion) {
-            return;
-        }
+        $installedVersion = (int) get_option(
+            self::OPTION_NAME,
+            0
+        );
 
         $migrations = self::getMigrations();
 
-        foreach (
-            $migrations as $version => $migrationFile
-        ) {
+        foreach ($migrations as $version => $migrationFile) {
             if ($version <= $installedVersion) {
                 continue;
             }
 
-            self::runMigration($migrationFile);
+            if (!is_file($migrationFile)) {
+                throw new RuntimeException(
+                    sprintf(
+                        'No se encontró la migración %d: %s',
+                        $version,
+                        $migrationFile
+                    )
+                );
+            }
+
+            $migration = require $migrationFile;
+
+            if (!is_callable($migration)) {
+                throw new RuntimeException(
+                    sprintf(
+                        'La migración %d no es ejecutable.',
+                        $version
+                    )
+                );
+            }
+
+            $migration();
 
             update_option(
-                self::DB_VERSION_OPTION,
+                self::OPTION_NAME,
                 $version,
                 false
             );
 
             $installedVersion = $version;
         }
-    }
 
-    /**
-     * Devuelve la versión de esquema instalada.
-     */
-    private static function getInstalledVersion(): int
-    {
-        $version = get_option(
-            self::DB_VERSION_OPTION,
-            0
-        );
-
-        /*
-         * Compatibilidad con la primera versión del plugin.
-         *
-         * La versión 0.1.0 original creó:
-         * - dsm_customers
-         * - dsm_customer_profiles
-         *
-         * Por tanto, equivale a las migraciones 1 y 2.
-         */
-        if ($version === '0.1.0') {
-            update_option(
-                self::DB_VERSION_OPTION,
-                2,
-                false
+        if (
+            $installedVersion
+            < DSM_CLIENTES_DB_VERSION
+        ) {
+            throw new RuntimeException(
+                'No se completaron todas las migraciones de DSM Clientes.'
             );
-
-            return 2;
         }
-
-        return (int) $version;
     }
 
     /**
@@ -118,38 +105,11 @@ final class Installer
             6 => DSM_CLIENTES_PATH
                 . 'database/migrations/'
                 . '006-create-account-reactivations.php',
+
+            7 => DSM_CLIENTES_PATH
+                . 'database/migrations/'
+                . '007-create-password-resets.php',
         ];
-    }
-
-    /**
-     * Ejecuta una migración individual.
-     */
-    private static function runMigration(
-        string $migrationFile
-    ): void {
-        if (!is_file($migrationFile)) {
-            throw new \RuntimeException(
-                sprintf(
-                    'No se encontró la migración '
-                    . 'DSM Clientes: %s',
-                    $migrationFile
-                )
-            );
-        }
-
-        $migration = require $migrationFile;
-
-        if (!is_callable($migration)) {
-            throw new \RuntimeException(
-                sprintf(
-                    'La migración DSM Clientes '
-                    . 'no es ejecutable: %s',
-                    $migrationFile
-                )
-            );
-        }
-
-        $migration();
     }
 
     private function __construct()

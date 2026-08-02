@@ -165,6 +165,37 @@ $accountStatus = isset($_GET['account_status'])
             </div>
         <?php endif; ?>
 
+        <?php if (
+            $accountStatus === 'password_reset'
+        ) : ?>
+            <div
+                class="dsm-alert dsm-alert--success"
+                role="status"
+            >
+                <?php
+                esc_html_e(
+                    'La contraseña se ha restablecido correctamente. Ya puedes iniciar sesión.',
+                    'dsm-clientes'
+                );
+                ?>
+            </div>
+
+        <?php elseif (
+            $accountStatus === 'password_changed'
+        ) : ?>
+            <div
+                class="dsm-alert dsm-alert--success"
+                role="status"
+            >
+                <?php
+                esc_html_e(
+                    'La contraseña se ha cambiado correctamente. Inicia sesión de nuevo.',
+                    'dsm-clientes'
+                );
+                ?>
+            </div>
+        <?php endif; ?>
+
         <?php if ($hasError) : ?>
             <div
                 class="dsm-alert dsm-alert--error"
@@ -246,11 +277,7 @@ $accountStatus = isset($_GET['account_status'])
             </div>
 
             <button
-                class="
-                    dsm-button
-                    dsm-button--primary
-                    dsm-button--block
-                "
+                class="dsm-button dsm-button--primary dsm-button--block"
                 type="submit"
             >
                 <?php
@@ -261,6 +288,19 @@ $accountStatus = isset($_GET['account_status'])
                 ?>
             </button>
         </form>
+
+        <p class="dsm-auth__password-help">
+            <a href="<?php echo esc_url(
+                home_url('/recuperar-contrasena/')
+            ); ?>">
+                <?php
+                esc_html_e(
+                    '¿Has olvidado tu contraseña?',
+                    'dsm-clientes'
+                );
+                ?>
+            </a>
+        </p>
 
         <details class="dsm-auth__reactivation">
             <summary>
@@ -326,11 +366,7 @@ $accountStatus = isset($_GET['account_status'])
                     </div>
 
                     <button
-                        class="
-                            dsm-button
-                            dsm-button--secondary
-                            dsm-button--block
-                        "
+                        class="dsm-button dsm-button--secondary dsm-button--block"
                         type="submit"
                     >
                         <?php
