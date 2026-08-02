@@ -11,6 +11,12 @@ if (!defined('ABSPATH')) {
  *
  * @var bool $hasError
  */
+
+$accountStatus = isset($_GET['account_status'])
+    ? sanitize_key(
+        wp_unslash($_GET['account_status'])
+    )
+    : '';
 ?>
 
 <section class="dsm-auth">
@@ -35,6 +41,20 @@ if (!defined('ABSPATH')) {
                 ?>
             </p>
         </header>
+
+        <?php if ($accountStatus === 'deactivated') : ?>
+            <div
+                class="dsm-alert dsm-alert--success"
+                role="status"
+            >
+                <?php
+                esc_html_e(
+                    'Tu cuenta se ha cerrado temporalmente y todas las sesiones se han cerrado.',
+                    'dsm-clientes'
+                );
+                ?>
+            </div>
+        <?php endif; ?>
 
         <?php if ($hasError) : ?>
             <div

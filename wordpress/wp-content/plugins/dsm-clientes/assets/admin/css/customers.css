@@ -215,3 +215,67 @@
         min-width: 820px;
     }
 }
+
+/* ==========================================================
+   CONTADORES DEL LISTADO
+   ========================================================== */
+
+.dsm-admin-counter-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+    max-width: 1200px;
+    margin: 20px 0;
+}
+
+.dsm-admin-counter-card {
+    display: grid;
+    gap: 8px;
+    min-height: 74px;
+    padding: 18px 20px;
+
+    background: #fff;
+    border: 1px solid #dcdcde;
+    border-radius: 6px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.dsm-admin-counter-card strong {
+    font-size: 22px;
+    line-height: 1;
+}
+
+.dsm-admin-counter-card span {
+    color: #50575e;
+}
+
+.dsm-admin-column-id {
+    width: 65px;
+}
+
+.dsm-admin-column-small {
+    width: 100px;
+}
+
+/* ==========================================================
+   NUEVOS ESTADOS
+   ========================================================== */
+
+.dsm-admin-status--inactive {
+    color: #3c434a;
+    background: #e9eaeb;
+}
+
+.dsm-admin-status--deletion-pending {
+    color: #8a1616;
+    background: #fbeaea;
+    border: 1px solid #e6b8b8;
+}
+
+@media screen and (max-width: 782px) {
+    .dsm-admin-counter-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+}

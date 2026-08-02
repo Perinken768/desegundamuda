@@ -384,3 +384,63 @@
         width: 100%;
     }
 }
+
+/* ==========================================================
+   ZONA DE SEGURIDAD DE LA CUENTA
+   ========================================================== */
+
+.dsm-account__danger-zone {
+    margin-top: var(--dsm-space-6);
+}
+
+.dsm-card--danger {
+    border-color: color-mix(
+        in srgb,
+        var(--dsm-color-error) 30%,
+        var(--dsm-color-border)
+    );
+}
+
+.dsm-danger-action {
+    margin-top: var(--dsm-space-4);
+}
+
+.dsm-danger-action summary {
+    list-style: none;
+}
+
+.dsm-danger-action summary::-webkit-details-marker {
+    display: none;
+}
+
+.dsm-danger-action__content {
+    margin-top: var(--dsm-space-4);
+    padding-top: var(--dsm-space-4);
+    border-top: 1px solid var(--dsm-color-border);
+}
+
+.dsm-button--danger {
+    color: var(--dsm-color-text-inverse);
+    background: var(--dsm-color-error);
+}
+
+.dsm-button--danger:hover {
+    filter: brightness(0.92);
+}
+
+.dsm-button--danger-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    color: var(--dsm-color-error);
+    background: transparent;
+    border: 1px solid var(--dsm-color-error);
+
+    text-decoration: none;
+}
+
+.dsm-button--danger-outline:hover {
+    color: var(--dsm-color-text-inverse);
+    background: var(--dsm-color-error);
+}

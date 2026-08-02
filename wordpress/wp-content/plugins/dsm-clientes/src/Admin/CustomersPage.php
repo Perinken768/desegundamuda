@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace DSM\Clientes\Admin;
 
 use DSM\Clientes\Authentication\CustomerSessionRepository;
+use DSM\Clientes\Customer\CustomerStatus;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -13,7 +14,6 @@ if (!defined('ABSPATH')) {
 final class CustomersPage
 {
     private const MENU_SLUG = 'dsm-clientes';
-
     private const PER_PAGE = 20;
 
     private string $hookSuffix = '';
@@ -169,13 +169,10 @@ final class CustomersPage
             )
             : '';
 
-        $allowedStatuses = [
-            '',
-            'pending',
-            'active',
-            'suspended',
-            'blocked',
-        ];
+        $allowedStatuses = array_merge(
+            [''],
+            CustomerStatus::all()
+        );
 
         if (
             !in_array(

@@ -10,7 +10,8 @@ if (!defined('ABSPATH')) {
 
 final class Installer
 {
-    private const DB_VERSION_OPTION = 'dsm_clientes_db_version';
+    private const DB_VERSION_OPTION =
+        'dsm_clientes_db_version';
 
     /**
      * Se ejecuta al activar el plugin.
@@ -21,12 +22,15 @@ final class Installer
     }
 
     /**
-     * Ejecuta las migraciones pendientes.
+     * Ejecuta todas las migraciones pendientes.
      */
     public static function migrate(): void
     {
-        $installedVersion = self::getInstalledVersion();
-        $targetVersion    = DSM_CLIENTES_DB_VERSION;
+        $installedVersion =
+            self::getInstalledVersion();
+
+        $targetVersion =
+            DSM_CLIENTES_DB_VERSION;
 
         if ($installedVersion >= $targetVersion) {
             return;
@@ -34,7 +38,9 @@ final class Installer
 
         $migrations = self::getMigrations();
 
-        foreach ($migrations as $version => $migrationFile) {
+        foreach (
+            $migrations as $version => $migrationFile
+        ) {
             if ($version <= $installedVersion) {
                 continue;
             }
@@ -52,20 +58,23 @@ final class Installer
     }
 
     /**
-     * Devuelve la versión de esquema actualmente instalada.
+     * Devuelve la versión de esquema instalada.
      */
     private static function getInstalledVersion(): int
     {
-        $version = get_option(self::DB_VERSION_OPTION, 0);
+        $version = get_option(
+            self::DB_VERSION_OPTION,
+            0
+        );
 
         /*
-         * Compatibilidad con nuestra primera instalación.
+         * Compatibilidad con la primera versión del plugin.
          *
-         * La versión 0.1.0 original ya creó:
+         * La versión 0.1.0 original creó:
          * - dsm_customers
          * - dsm_customer_profiles
          *
-         * Equivale, por tanto, a las migraciones 1 y 2.
+         * Por tanto, equivale a las migraciones 1 y 2.
          */
         if ($version === '0.1.0') {
             update_option(
@@ -81,29 +90,44 @@ final class Installer
     }
 
     /**
-     * Migraciones conocidas por esta versión del plugin.
-     *
      * @return array<int, string>
      */
     private static function getMigrations(): array
     {
         return [
-            1 => DSM_CLIENTES_PATH . 'database/migrations/001-create-customers.php',
-            2 => DSM_CLIENTES_PATH . 'database/migrations/002-create-customer-profiles.php',
-            3 => DSM_CLIENTES_PATH . 'database/migrations/003-create-customer-sessions.php',
-            4 => DSM_CLIENTES_PATH . 'database/migrations/004-create-email-verifications.php',
+            1 => DSM_CLIENTES_PATH
+                . 'database/migrations/'
+                . '001-create-customers.php',
+
+            2 => DSM_CLIENTES_PATH
+                . 'database/migrations/'
+                . '002-create-customer-profiles.php',
+
+            3 => DSM_CLIENTES_PATH
+                . 'database/migrations/'
+                . '003-create-customer-sessions.php',
+
+            4 => DSM_CLIENTES_PATH
+                . 'database/migrations/'
+                . '004-create-email-verifications.php',
+
+            5 => DSM_CLIENTES_PATH
+                . 'database/migrations/'
+                . '005-create-customer-deletion-requests.php',
         ];
     }
 
     /**
      * Ejecuta una migración individual.
      */
-    private static function runMigration(string $migrationFile): void
-    {
+    private static function runMigration(
+        string $migrationFile
+    ): void {
         if (!is_file($migrationFile)) {
             throw new \RuntimeException(
                 sprintf(
-                    'No se encontró la migración DSM Clientes: %s',
+                    'No se encontró la migración '
+                    . 'DSM Clientes: %s',
                     $migrationFile
                 )
             );
@@ -114,12 +138,17 @@ final class Installer
         if (!is_callable($migration)) {
             throw new \RuntimeException(
                 sprintf(
-                    'La migración DSM Clientes no es ejecutable: %s',
+                    'La migración DSM Clientes '
+                    . 'no es ejecutable: %s',
                     $migrationFile
                 )
             );
         }
 
         $migration();
+    }
+
+    private function __construct()
+    {
     }
 }

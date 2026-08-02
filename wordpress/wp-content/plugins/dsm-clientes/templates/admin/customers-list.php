@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use DSM\Clientes\Customer\CustomerStatus;
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -17,6 +19,33 @@ if (!defined('ABSPATH')) {
  */
 
 $baseUrl = admin_url('admin.php?page=dsm-clientes');
+
+/**
+ * @return string
+ */
+$getStatusClass = static function (
+    string $customerStatus
+): string {
+    return match ($customerStatus) {
+        CustomerStatus::ACTIVE =>
+            'dsm-admin-status--active',
+
+        CustomerStatus::INACTIVE =>
+            'dsm-admin-status--inactive',
+
+        CustomerStatus::SUSPENDED =>
+            'dsm-admin-status--suspended',
+
+        CustomerStatus::BLOCKED =>
+            'dsm-admin-status--blocked',
+
+        CustomerStatus::DELETION_PENDING =>
+            'dsm-admin-status--deletion-pending',
+
+        default =>
+            'dsm-admin-status--pending',
+    };
+};
 ?>
 
 <div class="wrap">
@@ -33,48 +62,77 @@ $baseUrl = admin_url('admin.php?page=dsm-clientes');
         ?>
     </p>
 
-    <div
-        style="
-            display:grid;
-            grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-            gap:16px;
-            max-width:950px;
-            margin:20px 0;
-        "
-    >
-        <div class="card">
+    <div class="dsm-admin-counter-grid">
+        <div class="dsm-admin-counter-card">
             <strong>
-                <?php echo esc_html((string) $counters['total']); ?>
+                <?php echo esc_html(
+                    (string) $counters['total']
+                ); ?>
             </strong>
-            <p>Total</p>
+            <span>Total</span>
         </div>
 
-        <div class="card">
+        <div class="dsm-admin-counter-card">
             <strong>
-                <?php echo esc_html((string) $counters['active']); ?>
+                <?php echo esc_html(
+                    (string) $counters['active']
+                ); ?>
             </strong>
-            <p>Activos</p>
+            <span>Activos</span>
         </div>
 
-        <div class="card">
+        <div class="dsm-admin-counter-card">
             <strong>
-                <?php echo esc_html((string) $counters['pending']); ?>
+                <?php echo esc_html(
+                    (string) $counters['pending']
+                ); ?>
             </strong>
-            <p>Pendientes</p>
+            <span>Pendientes</span>
         </div>
 
-        <div class="card">
+        <div class="dsm-admin-counter-card">
             <strong>
-                <?php echo esc_html((string) $counters['verified']); ?>
+                <?php echo esc_html(
+                    (string) $counters['inactive']
+                ); ?>
             </strong>
-            <p>Verificados</p>
+            <span>Inactivos</span>
         </div>
 
-        <div class="card">
+        <div class="dsm-admin-counter-card">
             <strong>
-                <?php echo esc_html((string) $counters['blocked']); ?>
+                <?php echo esc_html(
+                    (string) $counters['suspended']
+                ); ?>
             </strong>
-            <p>Bloqueados</p>
+            <span>Suspendidos</span>
+        </div>
+
+        <div class="dsm-admin-counter-card">
+            <strong>
+                <?php echo esc_html(
+                    (string) $counters['blocked']
+                ); ?>
+            </strong>
+            <span>Bloqueados</span>
+        </div>
+
+        <div class="dsm-admin-counter-card">
+            <strong>
+                <?php echo esc_html(
+                    (string) $counters['deletion_pending']
+                ); ?>
+            </strong>
+            <span>Eliminación pendiente</span>
+        </div>
+
+        <div class="dsm-admin-counter-card">
+            <strong>
+                <?php echo esc_html(
+                    (string) $counters['verified']
+                ); ?>
+            </strong>
+            <span>Verificados</span>
         </div>
     </div>
 
@@ -106,26 +164,25 @@ $baseUrl = admin_url('admin.php?page=dsm-clientes');
                     Todos los estados
                 </option>
 
-                <option
-                    value="pending"
-                    <?php selected($status, 'pending'); ?>
-                >
-                    Pendientes
-                </option>
-
-                <option
-                    value="active"
-                    <?php selected($status, 'active'); ?>
-                >
-                    Activos
-                </option>
-
-                <option
-                    value="blocked"
-                    <?php selected($status, 'blocked'); ?>
-                >
-                    Bloqueados
-                </option>
+                <?php foreach (
+                    CustomerStatus::all() as $availableStatus
+                ) : ?>
+                    <option
+                        value="<?php echo esc_attr(
+                            $availableStatus
+                        ); ?>"
+                        <?php selected(
+                            $status,
+                            $availableStatus
+                        ); ?>
+                    >
+                        <?php echo esc_html(
+                            CustomerStatus::label(
+                                $availableStatus
+                            )
+                        ); ?>
+                    </option>
+                <?php endforeach; ?>
             </select>
 
             <?php
@@ -157,202 +214,231 @@ $baseUrl = admin_url('admin.php?page=dsm-clientes');
         ?>
     </p>
 
-    <table class="wp-list-table widefat fixed striped">
-        <thead>
-            <tr>
-                <th style="width:65px;">ID</th>
-                <th>Cliente</th>
-                <th>Correo</th>
-                <th>Estado</th>
-                <th>Verificación</th>
-                <th>Alta</th>
-                <th>Última actividad</th>
-                <th style="width:100px;">Sesiones</th>
-                <th style="width:100px;">Acciones</th>
-            </tr>
-        </thead>
-
-        <tbody>
-            <?php if ($customers === []) : ?>
+    <div class="dsm-admin-table-scroll">
+        <table class="wp-list-table widefat fixed striped">
+            <thead>
                 <tr>
-                    <td colspan="9">
-                        No se encontraron clientes.
-                    </td>
+                    <th class="dsm-admin-column-id">ID</th>
+                    <th>Cliente</th>
+                    <th>Correo</th>
+                    <th>Estado</th>
+                    <th>Verificación</th>
+                    <th>Alta</th>
+                    <th>Última actividad</th>
+                    <th class="dsm-admin-column-small">
+                        Sesiones
+                    </th>
+                    <th class="dsm-admin-column-small">
+                        Acciones
+                    </th>
                 </tr>
-            <?php else : ?>
-                <?php foreach ($customers as $customer) : ?>
-                    <?php
-                    $customerId = (int) $customer['id'];
+            </thead>
 
-                    $displayName = trim(
-                        (string) (
-                            $customer['display_name']
-                            ?? ''
-                        )
-                    );
-
-                    $customerStatus =
-                        (string) $customer['status'];
-
-                    $verified =
-                        $customer['email_verified_at'] !== null;
-
-                    $lastActivity =
-                        $customer['last_session_activity']
-                        ?? $customer['last_login_at']
-                        ?? null;
-
-                    $detailUrl = add_query_arg(
-                        [
-                            'page' => 'dsm-clientes',
-                            'action' => 'view',
-                            'customer_id' => $customerId,
-                        ],
-                        admin_url('admin.php')
-                    );
-                    ?>
-
+            <tbody>
+                <?php if ($customers === []) : ?>
                     <tr>
-                        <td>
-                            <?php echo esc_html(
-                                (string) $customerId
-                            ); ?>
+                        <td colspan="9">
+                            No se encontraron clientes.
                         </td>
+                    </tr>
+                <?php else : ?>
+                    <?php foreach ($customers as $customer) : ?>
+                        <?php
+                        $customerId = (int) $customer['id'];
 
-                        <td>
-                            <strong>
-                                <a href="<?php echo esc_url($detailUrl); ?>">
-                                    <?php
-                                    echo esc_html(
-                                        $displayName !== ''
-                                            ? $displayName
-                                            : 'Sin nombre'
-                                    );
-                                    ?>
-                                </a>
-                            </strong>
+                        $displayName = trim(
+                            (string) (
+                                $customer['display_name']
+                                ?? ''
+                            )
+                        );
 
-                            <?php if (!empty($customer['phone'])) : ?>
-                                <br>
-                                <small>
-                                    <?php echo esc_html(
-                                        (string) $customer['phone']
-                                    ); ?>
-                                </small>
-                            <?php endif; ?>
-                        </td>
+                        $customerStatus =
+                            (string) $customer['status'];
 
-                        <td>
-                            <a
-                                href="mailto:<?php echo esc_attr(
-                                    (string) $customer['email']
-                                ); ?>"
-                            >
+                        $verified =
+                            $customer['email_verified_at']
+                            !== null;
+
+                        $lastActivity =
+                            $customer['last_session_activity']
+                            ?? $customer['last_login_at']
+                            ?? null;
+
+                        $detailUrl = add_query_arg(
+                            [
+                                'page' => 'dsm-clientes',
+                                'action' => 'view',
+                                'customer_id' => $customerId,
+                            ],
+                            admin_url('admin.php')
+                        );
+                        ?>
+
+                        <tr>
+                            <td>
                                 <?php echo esc_html(
-                                    (string) $customer['email']
+                                    (string) $customerId
                                 ); ?>
-                            </a>
-                        </td>
+                            </td>
 
-                        <td>
-                            <?php if ($customerStatus === 'active') : ?>
-                                <span style="color:#008a20;font-weight:700;">
-                                    Activo
-                                </span>
-                            <?php elseif ($customerStatus === 'blocked') : ?>
-                                <span style="color:#b32d2e;font-weight:700;">
-                                    Bloqueado
-                                </span>
-                            <?php else : ?>
-                                <span style="color:#996800;font-weight:700;">
-                                    Pendiente
-                                </span>
-                            <?php endif; ?>
-                        </td>
+                            <td>
+                                <strong>
+                                    <a href="<?php echo esc_url(
+                                        $detailUrl
+                                    ); ?>">
+                                        <?php
+                                        echo esc_html(
+                                            $displayName !== ''
+                                                ? $displayName
+                                                : 'Sin nombre'
+                                        );
+                                        ?>
+                                    </a>
+                                </strong>
 
-                        <td>
-                            <?php if ($verified) : ?>
-                                <span style="color:#008a20;font-weight:700;">
-                                    Verificado
-                                </span>
+                                <?php if (
+                                    !empty($customer['phone'])
+                                ) : ?>
+                                    <br>
 
-                                <br>
+                                    <small>
+                                        <?php echo esc_html(
+                                            (string) $customer['phone']
+                                        ); ?>
+                                    </small>
+                                <?php endif; ?>
+                            </td>
 
-                                <small>
+                            <td>
+                                <a
+                                    href="mailto:<?php echo esc_attr(
+                                        (string) $customer['email']
+                                    ); ?>"
+                                >
                                     <?php echo esc_html(
-                                        get_date_from_gmt(
-                                            (string) $customer[
-                                                'email_verified_at'
-                                            ],
-                                            'd/m/Y H:i'
+                                        (string) $customer['email']
+                                    ); ?>
+                                </a>
+                            </td>
+
+                            <td>
+                                <span
+                                    class="<?php echo esc_attr(
+                                        'dsm-admin-status '
+                                        . $getStatusClass(
+                                            $customerStatus
+                                        )
+                                    ); ?>"
+                                >
+                                    <?php echo esc_html(
+                                        CustomerStatus::label(
+                                            $customerStatus
                                         )
                                     ); ?>
-                                </small>
-                            <?php else : ?>
-                                <span style="color:#996800;font-weight:700;">
-                                    Pendiente
                                 </span>
-                            <?php endif; ?>
-                        </td>
+                            </td>
 
-                        <td>
-                            <?php echo esc_html(
-                                get_date_from_gmt(
-                                    (string) $customer['created_at'],
-                                    'd/m/Y H:i'
-                                )
-                            ); ?>
-                        </td>
+                            <td>
+                                <?php if ($verified) : ?>
+                                    <span
+                                        class="
+                                            dsm-admin-status
+                                            dsm-admin-status--active
+                                        "
+                                    >
+                                        Verificado
+                                    </span>
 
-                        <td>
-                            <?php if ($lastActivity !== null) : ?>
+                                    <br>
+
+                                    <small>
+                                        <?php echo esc_html(
+                                            get_date_from_gmt(
+                                                (string) $customer[
+                                                    'email_verified_at'
+                                                ],
+                                                'd/m/Y H:i'
+                                            )
+                                        ); ?>
+                                    </small>
+                                <?php else : ?>
+                                    <span
+                                        class="
+                                            dsm-admin-status
+                                            dsm-admin-status--pending
+                                        "
+                                    >
+                                        Pendiente
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+
+                            <td>
                                 <?php echo esc_html(
                                     get_date_from_gmt(
-                                        (string) $lastActivity,
+                                        (string) $customer[
+                                            'created_at'
+                                        ],
                                         'd/m/Y H:i'
                                     )
                                 ); ?>
-                            <?php else : ?>
-                                Nunca
-                            <?php endif; ?>
-                        </td>
+                            </td>
 
-                        <td>
-                            <?php echo esc_html(
-                                (string) (
-                                    $customer['active_sessions']
-                                    ?? 0
-                                )
-                            ); ?>
-                        </td>
+                            <td>
+                                <?php if (
+                                    $lastActivity !== null
+                                ) : ?>
+                                    <?php echo esc_html(
+                                        get_date_from_gmt(
+                                            (string) $lastActivity,
+                                            'd/m/Y H:i'
+                                        )
+                                    ); ?>
+                                <?php else : ?>
+                                    Nunca
+                                <?php endif; ?>
+                            </td>
 
-                        <td>
-                            <a
-                                class="button button-small"
-                                href="<?php echo esc_url($detailUrl); ?>"
-                            >
-                                Ver
-                            </a>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </tbody>
+                            <td>
+                                <?php echo esc_html(
+                                    (string) (
+                                        $customer['active_sessions']
+                                        ?? 0
+                                    )
+                                ); ?>
+                            </td>
 
-        <tfoot>
-            <tr>
-                <th>ID</th>
-                <th>Cliente</th>
-                <th>Correo</th>
-                <th>Estado</th>
-                <th>Verificación</th>
-                <th>Alta</th>
-                <th>Última actividad</th>
-                <th>Sesiones</th>
-                <th>Acciones</th>
-            </tr>
-        </tfoot>
-    </table>
+                            <td>
+                                <a
+                                    class="button button-small"
+                                    href="<?php echo esc_url(
+                                        $detailUrl
+                                    ); ?>"
+                                >
+                                    Ver
+                                </a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+
+            <tfoot>
+                <tr>
+                    <th>ID</th>
+                    <th>Cliente</th>
+                    <th>Correo</th>
+                    <th>Estado</th>
+                    <th>Verificación</th>
+                    <th>Alta</th>
+                    <th>Última actividad</th>
+                    <th>Sesiones</th>
+                    <th>Acciones</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
 
     <?php if ($totalPages > 1) : ?>
         <div class="tablenav">

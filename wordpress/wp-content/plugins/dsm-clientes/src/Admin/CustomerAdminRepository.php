@@ -187,6 +187,7 @@ final class CustomerAdminRepository
             "
             SELECT
                 COUNT(*) AS total,
+
                 SUM(
                     CASE
                         WHEN status = 'pending'
@@ -194,6 +195,7 @@ final class CustomerAdminRepository
                         ELSE 0
                     END
                 ) AS pending,
+
                 SUM(
                     CASE
                         WHEN status = 'active'
@@ -201,6 +203,23 @@ final class CustomerAdminRepository
                         ELSE 0
                     END
                 ) AS active,
+
+                SUM(
+                    CASE
+                        WHEN status = 'inactive'
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS inactive,
+
+                SUM(
+                    CASE
+                        WHEN status = 'suspended'
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS suspended,
+
                 SUM(
                     CASE
                         WHEN status = 'blocked'
@@ -208,6 +227,15 @@ final class CustomerAdminRepository
                         ELSE 0
                     END
                 ) AS blocked,
+
+                SUM(
+                    CASE
+                        WHEN status = 'deletion_pending'
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS deletion_pending,
+
                 SUM(
                     CASE
                         WHEN email_verified_at IS NOT NULL
@@ -215,6 +243,7 @@ final class CustomerAdminRepository
                         ELSE 0
                     END
                 ) AS verified
+
             FROM {$this->customersTable}
             ",
             ARRAY_A
@@ -225,7 +254,10 @@ final class CustomerAdminRepository
                 'total' => 0,
                 'pending' => 0,
                 'active' => 0,
+                'inactive' => 0,
+                'suspended' => 0,
                 'blocked' => 0,
+                'deletion_pending' => 0,
                 'verified' => 0,
             ];
         }
@@ -234,7 +266,11 @@ final class CustomerAdminRepository
             'total' => (int) ($row['total'] ?? 0),
             'pending' => (int) ($row['pending'] ?? 0),
             'active' => (int) ($row['active'] ?? 0),
+            'inactive' => (int) ($row['inactive'] ?? 0),
+            'suspended' => (int) ($row['suspended'] ?? 0),
             'blocked' => (int) ($row['blocked'] ?? 0),
+            'deletion_pending' =>
+                (int) ($row['deletion_pending'] ?? 0),
             'verified' => (int) ($row['verified'] ?? 0),
         ];
     }

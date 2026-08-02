@@ -21,7 +21,7 @@ define(
 
 define(
     'DSM_CLIENTES_DB_VERSION',
-    4
+    5
 );
 
 define(
@@ -42,6 +42,7 @@ use DSM\Clientes\Admin\CustomerAdminRepository;
 use DSM\Clientes\Admin\CustomersPage;
 use DSM\Clientes\Database\Installer;
 use DSM\Clientes\Frontend\AccountShortcode;
+use DSM\Clientes\Frontend\AccountStatusController;
 use DSM\Clientes\Frontend\AuthController;
 use DSM\Clientes\Frontend\EmailVerificationController;
 use DSM\Clientes\Frontend\LoginShortcode;
@@ -73,6 +74,7 @@ $customerAdminController->register();
 /*
  * Controladores públicos.
  */
+AccountStatusController::register();
 AuthController::register();
 EmailVerificationController::register();
 ProfileController::register();

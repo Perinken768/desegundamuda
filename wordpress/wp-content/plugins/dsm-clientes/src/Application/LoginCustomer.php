@@ -17,7 +17,8 @@ if (!defined('ABSPATH')) {
 
 final class LoginCustomer
 {
-    private const SESSION_DURATION = 2592000; // 30 días.
+    private const SESSION_DURATION =
+        2592000; // 30 días.
 
     public function __construct(
         private readonly CustomerRepository $customerRepository,
@@ -42,10 +43,6 @@ final class LoginCustomer
         $credentials = $this->customerRepository
             ->findCredentialsByEmail($email);
 
-        /*
-         * Mismo mensaje si no existe o la contraseña es incorrecta.
-         * Evita revelar qué correos están registrados.
-         */
         if (
             $credentials === null
             || !wp_check_password(
@@ -58,22 +55,16 @@ final class LoginCustomer
             );
         }
 
-        if ($credentials['status'] === CustomerStatus::BLOCKED) {
+        if (
+            !CustomerStatus::canAuthenticate(
+                $credentials['status']
+            )
+        ) {
             throw new RuntimeException(
-                'La cuenta está bloqueada.'
+                'La cuenta no está disponible para iniciar sesión.'
             );
         }
 
-        if ($credentials['status'] === CustomerStatus::SUSPENDED) {
-            throw new RuntimeException(
-                'La cuenta está suspendida.'
-            );
-        }
-
-        /*
-         * Permitimos pending de momento porque todavía no hemos
-         * implementado la verificación de correo.
-         */
         $customer = $this->customerRepository->findById(
             $credentials['id']
         );
@@ -84,7 +75,7 @@ final class LoginCustomer
             );
         }
 
-        $token     = SessionToken::generate();
+        $token = SessionToken::generate();
         $tokenHash = SessionToken::hash($token);
 
         $session = $this->sessionRepository->create(
@@ -102,19 +93,27 @@ final class LoginCustomer
         );
     }
 
-    private function normalizeIpAddress(?string $ipAddress): ?string
-    {
-        if ($ipAddress === null || $ipAddress === '') {
+    private function normalizeIpAddress(
+        ?string $ipAddress
+    ): ?string {
+        if (
+            $ipAddress === null
+            || $ipAddress === ''
+        ) {
             return null;
         }
 
-        return filter_var($ipAddress, FILTER_VALIDATE_IP) !== false
+        return filter_var(
+            $ipAddress,
+            FILTER_VALIDATE_IP
+        ) !== false
             ? $ipAddress
             : null;
     }
 
-    private function normalizeUserAgent(?string $userAgent): ?string
-    {
+    private function normalizeUserAgent(
+        ?string $userAgent
+    ): ?string {
         if ($userAgent === null) {
             return null;
         }
@@ -125,6 +124,10 @@ final class LoginCustomer
             return null;
         }
 
-        return mb_substr($userAgent, 0, 500);
+        return mb_substr(
+            $userAgent,
+            0,
+            500
+        );
     }
 }

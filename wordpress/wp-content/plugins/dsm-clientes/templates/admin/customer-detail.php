@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use DSM\Clientes\Authentication\CustomerSession;
+use DSM\Clientes\Customer\CustomerStatus;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -37,6 +38,26 @@ $displayName = trim(
 
 $customerStatus =
     (string) $customer['status'];
+
+$statusClass = match ($customerStatus) {
+    CustomerStatus::ACTIVE =>
+        'dsm-admin-status--active',
+
+    CustomerStatus::INACTIVE =>
+        'dsm-admin-status--inactive',
+
+    CustomerStatus::SUSPENDED =>
+        'dsm-admin-status--suspended',
+
+    CustomerStatus::BLOCKED =>
+        'dsm-admin-status--blocked',
+
+    CustomerStatus::DELETION_PENDING =>
+        'dsm-admin-status--deletion-pending',
+
+    default =>
+        'dsm-admin-status--pending',
+};
 ?>
 
 <div class="wrap">
@@ -183,52 +204,20 @@ $customerStatus =
                             </th>
 
                             <td>
-                                <?php if (
-                                    $customerStatus === 'active'
-                                ) : ?>
-                                    <span
-                                        class="
-                                            dsm-admin-status
-                                            dsm-admin-status--active
-                                        "
-                                    >
-                                        Activo
-                                    </span>
-
-                                <?php elseif (
-                                    $customerStatus === 'blocked'
-                                ) : ?>
-                                    <span
-                                        class="
-                                            dsm-admin-status
-                                            dsm-admin-status--blocked
-                                        "
-                                    >
-                                        Bloqueado
-                                    </span>
-
-                                <?php elseif (
-                                    $customerStatus === 'suspended'
-                                ) : ?>
-                                    <span
-                                        class="
-                                            dsm-admin-status
-                                            dsm-admin-status--suspended
-                                        "
-                                    >
-                                        Suspendido
-                                    </span>
-
-                                <?php else : ?>
-                                    <span
-                                        class="
-                                            dsm-admin-status
-                                            dsm-admin-status--pending
-                                        "
-                                    >
-                                        Pendiente
-                                    </span>
-                                <?php endif; ?>
+                                <span
+                                    class="<?php echo esc_attr(
+                                        'dsm-admin-status '
+                                        . $statusClass
+                                    ); ?>"
+                                >
+                                    <?php
+                                    echo esc_html(
+                                        CustomerStatus::label(
+                                            $customerStatus
+                                        )
+                                    );
+                                    ?>
+                                </span>
                             </td>
                         </tr>
 
@@ -591,45 +580,28 @@ $customerStatus =
                             class="dsm-admin-field"
                             name="status"
                         >
-                            <option
-                                value="pending"
-                                <?php selected(
-                                    $customerStatus,
-                                    'pending'
-                                ); ?>
-                            >
-                                Pendiente
-                            </option>
-
-                            <option
-                                value="active"
-                                <?php selected(
-                                    $customerStatus,
-                                    'active'
-                                ); ?>
-                            >
-                                Activo
-                            </option>
-
-                            <option
-                                value="suspended"
-                                <?php selected(
-                                    $customerStatus,
-                                    'suspended'
-                                ); ?>
-                            >
-                                Suspendido
-                            </option>
-
-                            <option
-                                value="blocked"
-                                <?php selected(
-                                    $customerStatus,
-                                    'blocked'
-                                ); ?>
-                            >
-                                Bloqueado
-                            </option>
+                            <?php foreach (
+                                CustomerStatus::all()
+                                as $availableStatus
+                            ) : ?>
+                                <option
+                                    value="<?php echo esc_attr(
+                                        $availableStatus
+                                    ); ?>"
+                                    <?php selected(
+                                        $customerStatus,
+                                        $availableStatus
+                                    ); ?>
+                                >
+                                    <?php
+                                    echo esc_html(
+                                        CustomerStatus::label(
+                                            $availableStatus
+                                        )
+                                    );
+                                    ?>
+                                </option>
+                            <?php endforeach; ?>
                         </select>
                     </p>
 
