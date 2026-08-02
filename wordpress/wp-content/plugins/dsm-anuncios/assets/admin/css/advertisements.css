@@ -1,0 +1,224 @@
+/**
+ * Administración de DSM Anuncios.
+ */
+
+.dsm-anuncios-admin {
+    max-width: 1400px;
+}
+
+.dsm-anuncios-admin .wp-list-table {
+    margin-top: 20px;
+}
+
+.dsm-anuncios-admin .wp-list-table th,
+.dsm-anuncios-admin .wp-list-table td {
+    vertical-align: middle;
+}
+
+.dsm-anuncios-admin .wp-list-table td code {
+    display: inline-block;
+    max-width: 100%;
+    padding: 3px 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dsm-admin-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.dsm-admin-actions form {
+    margin: 0;
+}
+
+.dsm-admin-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 72px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+    border: 1px solid transparent;
+    border-radius: 999px;
+}
+
+.dsm-admin-status--success {
+    color: #006b2e;
+    background: #edfaef;
+    border-color: #8ed29c;
+}
+
+.dsm-admin-status--warning {
+    color: #7a4b00;
+    background: #fff8e5;
+    border-color: #dba617;
+}
+
+.dsm-admin-status--danger {
+    color: #8a2424;
+    background: #fcf0f1;
+    border-color: #dba0a4;
+}
+
+.dsm-admin-status--muted {
+    color: #50575e;
+    background: #f0f0f1;
+    border-color: #c3c4c7;
+}
+
+.dsm-anuncios-admin .form-table {
+    max-width: 1000px;
+    margin-top: 20px;
+    padding: 10px 25px 20px;
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+}
+
+.dsm-anuncios-admin .form-table th {
+    width: 220px;
+}
+
+.dsm-anuncios-admin .form-table textarea {
+    resize: vertical;
+}
+
+.dsm-anuncios-admin .form-table select {
+    min-width: 280px;
+    max-width: 100%;
+}
+
+.dsm-anuncios-admin .form-table input[type="number"] {
+    width: 100px;
+}
+
+.dsm-anuncios-admin .form-table .description {
+    max-width: 700px;
+}
+
+.dsm-anuncios-admin .notice.inline {
+    margin: 20px 0;
+}
+
+@media screen and (max-width: 782px) {
+    .dsm-anuncios-admin .form-table {
+        padding: 10px 15px 20px;
+    }
+
+    .dsm-anuncios-admin .form-table th {
+        width: auto;
+    }
+
+    .dsm-anuncios-admin .form-table select,
+    .dsm-anuncios-admin .form-table .regular-text {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .dsm-admin-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .dsm-admin-actions .button,
+    .dsm-admin-actions form,
+    .dsm-admin-actions form .button {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/**
+ * Tablas administrativas adaptables.
+ */
+
+.dsm-admin-table-scroll {
+    width: 100%;
+    margin-top: 20px;
+    overflow-x: auto;
+    background: #fff;
+    border: 1px solid #c3c4c7;
+}
+
+.dsm-admin-table-scroll .wp-list-table {
+    margin-top: 0;
+    border: 0;
+}
+
+.dsm-categories-table {
+    width: 100%;
+    min-width: 1100px;
+    table-layout: auto;
+}
+
+.dsm-categories-table th,
+.dsm-categories-table td {
+    vertical-align: middle;
+    word-break: normal;
+    overflow-wrap: normal;
+}
+
+.dsm-categories-table th:nth-child(1),
+.dsm-categories-table td:nth-child(1) {
+    width: 60px;
+    white-space: nowrap;
+}
+
+.dsm-categories-table th:nth-child(2),
+.dsm-categories-table td:nth-child(2) {
+    min-width: 210px;
+}
+
+.dsm-categories-table th:nth-child(3),
+.dsm-categories-table td:nth-child(3) {
+    min-width: 170px;
+}
+
+.dsm-categories-table th:nth-child(4),
+.dsm-categories-table td:nth-child(4) {
+    min-width: 160px;
+}
+
+.dsm-categories-table th:nth-child(5),
+.dsm-categories-table td:nth-child(5),
+.dsm-categories-table th:nth-child(6),
+.dsm-categories-table td:nth-child(6),
+.dsm-categories-table th:nth-child(7),
+.dsm-categories-table td:nth-child(7) {
+    min-width: 120px;
+    white-space: nowrap;
+}
+
+.dsm-categories-table th:nth-child(8),
+.dsm-categories-table td:nth-child(8) {
+    width: 80px;
+    white-space: nowrap;
+}
+
+.dsm-categories-table th:nth-child(9),
+.dsm-categories-table td:nth-child(9) {
+    min-width: 190px;
+    white-space: nowrap;
+}
+
+.dsm-categories-table td code {
+    white-space: nowrap;
+}
+
+@media screen and (max-width: 782px) {
+    .dsm-admin-table-scroll {
+        border-right: 0;
+        border-left: 0;
+    }
+
+    .dsm-categories-table {
+        min-width: 1050px;
+    }
+}
