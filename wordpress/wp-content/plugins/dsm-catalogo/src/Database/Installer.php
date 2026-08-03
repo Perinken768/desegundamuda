@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace DSM\Anuncios\Database;
+namespace DSM\Catalogo\Database;
 
 use RuntimeException;
 
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 final class Installer
 {
     private const OPTION_NAME =
-        'dsm_anuncios_db_version';
+        'dsm_catalogo_db_version';
 
     public static function activate(): void
     {
@@ -22,14 +22,12 @@ final class Installer
 
     public static function migrate(): void
     {
-        $installedVersion =
-            (int) get_option(
-                self::OPTION_NAME,
-                0
-            );
+        $installedVersion = (int) get_option(
+            self::OPTION_NAME,
+            0
+        );
 
-        $migrations =
-            self::getMigrations();
+        $migrations = self::getMigrations();
 
         foreach (
             $migrations
@@ -49,8 +47,7 @@ final class Installer
                 );
             }
 
-            $migration =
-                require $migrationFile;
+            $migration = require $migrationFile;
 
             if (!is_callable($migration)) {
                 throw new RuntimeException(
@@ -69,16 +66,15 @@ final class Installer
                 false
             );
 
-            $installedVersion =
-                $version;
+            $installedVersion = $version;
         }
 
         if (
             $installedVersion
-            < DSM_ANUNCIOS_DB_VERSION
+            < DSM_CATALOGO_DB_VERSION
         ) {
             throw new RuntimeException(
-                'No se completaron todas las migraciones de DSM Anuncios.'
+                'No se completaron todas las migraciones de DSM Catálogo.'
             );
         }
     }
@@ -89,35 +85,29 @@ final class Installer
     private static function getMigrations(): array
     {
         return [
-            1 =>
-                DSM_ANUNCIOS_PATH
+            1 => DSM_CATALOGO_PATH
                 . 'database/migrations/'
-                . '001-create-advertisements.php',
+                . '001-create-products.php',
 
-            2 =>
-                DSM_ANUNCIOS_PATH
+            2 => DSM_CATALOGO_PATH
                 . 'database/migrations/'
-                . '002-create-advertisement-images.php',
+                . '002-create-product-variants.php',
 
-            3 =>
-                DSM_ANUNCIOS_PATH
+            3 => DSM_CATALOGO_PATH
                 . 'database/migrations/'
-                . '003-create-categories.php',
+                . '003-create-stock-movements.php',
 
-            4 =>
-                DSM_ANUNCIOS_PATH
+            4 => DSM_CATALOGO_PATH
                 . 'database/migrations/'
-                . '004-create-advertisement-status-history.php',
+                . '004-create-product-reservations.php',
 
-            5 =>
-                DSM_ANUNCIOS_PATH
+            5 => DSM_CATALOGO_PATH
                 . 'database/migrations/'
-                . '005-add-brand-and-purchase-date.php',
+                . '005-create-brands.php',
 
-            6 =>
-                DSM_ANUNCIOS_PATH
+            6 => DSM_CATALOGO_PATH
                 . 'database/migrations/'
-                . '006-add-closure-reason.php',
+                . '006-add-expired-at-to-reservations.php',
         ];
     }
 
