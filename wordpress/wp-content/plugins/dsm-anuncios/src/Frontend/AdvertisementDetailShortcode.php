@@ -20,6 +20,11 @@ if (!defined('ABSPATH')) {
  * [dsm_advertisement_detail slug="mi-anuncio"]
  * [dsm_advertisement_detail id="25"]
  *
+ * Parámetros adicionales:
+ *
+ * [dsm_advertisement_detail show_related="0"]
+ * [dsm_advertisement_detail related_limit="4"]
+ *
  * Normalmente el slug será proporcionado por AdvertisementController
  * mediante la variable de consulta:
  *
@@ -32,11 +37,17 @@ final class AdvertisementDetailShortcode
 
     private AdvertisementSearchRepository $repository;
 
+    private RelatedAdvertisementRepository $relatedRepository;
+
     public function __construct(
-        AdvertisementSearchRepository $repository
+        AdvertisementSearchRepository $repository,
+        RelatedAdvertisementRepository $relatedRepository
     ) {
         $this->repository =
             $repository;
+
+        $this->relatedRepository =
+            $relatedRepository;
     }
 
     /**
@@ -58,9 +69,12 @@ final class AdvertisementDetailShortcode
     /**
      * Registra los recursos de la ficha.
      *
-     * Utilizamos los mismos archivos públicos del marketplace.
-     * El CSS y JS incorporarán posteriormente los estilos
-     * específicos de la galería.
+     * Se utilizan los mismos archivos públicos que en
+     * el marketplace:
+     *
+     * - estilos del listado y la ficha;
+     * - filtros públicos;
+     * - comportamiento de la galería.
      */
     public function registerAssets(): void
     {
@@ -143,6 +157,13 @@ final class AdvertisementDetailShortcode
 
                     'show_actions' =>
                         '1',
+
+                    'show_related' =>
+                        '1',
+
+                    'related_limit' =>
+                        RelatedAdvertisementRepository::
+                            DEFAULT_LIMIT,
                 ],
                 $attributes,
                 self::SHORTCODE
@@ -178,6 +199,31 @@ final class AdvertisementDetailShortcode
                 ]
             );
 
+        $showRelated =
+            $this->toBoolean(
+                $attributes[
+                    'show_related'
+                ]
+            );
+
+        $relatedLimit =
+            min(
+                RelatedAdvertisementRepository::
+                    MAX_LIMIT,
+                max(
+                    1,
+                    absint(
+                        (string) (
+                            $attributes[
+                                'related_limit'
+                            ]
+                            ?? RelatedAdvertisementRepository::
+                                DEFAULT_LIMIT
+                        )
+                    )
+                )
+            );
+
         $currentCustomer =
             $this->resolveCurrentCustomerContext();
 
@@ -192,6 +238,24 @@ final class AdvertisementDetailShortcode
                 ]
                 ?? 0
             );
+
+        /*
+         * Los anuncios relacionados se obtienen únicamente
+         * cuando el shortcode tiene habilitada esta sección.
+         *
+         * La plantilla siempre recibe un array, lo que evita
+         * comprobaciones ambiguas o variables no definidas.
+         *
+         * @var array<int, array<string, mixed>>
+         */
+        $relatedAdvertisements =
+            $showRelated
+                ? $this->relatedRepository
+                    ->findRelated(
+                        $advertisement,
+                        $relatedLimit
+                    )
+                : [];
 
         $template =
             DSM_ANUNCIOS_PATH

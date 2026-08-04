@@ -46,8 +46,11 @@ use DSM\Anuncios\Category\CategoryRepository;
 use DSM\Anuncios\Database\Installer;
 use DSM\Anuncios\Frontend\AdvertisementController;
 use DSM\Anuncios\Frontend\AdvertisementDetailShortcode;
+use DSM\Anuncios\Frontend\AdvertisementFormIntegration;
+use DSM\Anuncios\Frontend\AdvertisementFormShortcode;
 use DSM\Anuncios\Frontend\AdvertisementListShortcode;
 use DSM\Anuncios\Frontend\AdvertisementSearchRepository;
+use DSM\Anuncios\Frontend\RelatedAdvertisementRepository;
 use DSM\Anuncios\Support\Autoloader;
 
 Autoloader::register();
@@ -98,6 +101,20 @@ $advertisementAdminController->register();
 $categoryRepository =
     new CategoryRepository();
 
+/*
+ * Datos auxiliares del formulario público:
+ *
+ * - categorías;
+ * - islas;
+ * - municipios.
+ */
+$advertisementFormIntegration =
+    new AdvertisementFormIntegration(
+        $categoryRepository
+    );
+
+$advertisementFormIntegration->register();
+
 $categoriesPage =
     new CategoriesPage(
         $categoryRepository
@@ -113,8 +130,8 @@ $categoryAdminController =
 $categoryAdminController->register();
 
 /*
- * Repositorio compartido por el marketplace público
- * y las fichas individuales.
+ * Repositorio compartido por el marketplace público,
+ * las fichas individuales y los anuncios relacionados.
  */
 $advertisementSearchRepository =
     new AdvertisementSearchRepository();
@@ -140,12 +157,27 @@ $advertisementListShortcode->register();
  *
  * [dsm_advertisement_detail]
  */
-$advertisementDetailShortcode =
-    new AdvertisementDetailShortcode(
+$relatedAdvertisementRepository =
+    new RelatedAdvertisementRepository(
         $advertisementSearchRepository
     );
 
+$advertisementDetailShortcode =
+    new AdvertisementDetailShortcode(
+        $advertisementSearchRepository,
+        $relatedAdvertisementRepository
+    );
+
 $advertisementDetailShortcode->register();
+
+/*
+ * Formulario público de creación y edición.
+ *
+ * Shortcode:
+ *
+ * [dsm_advertisement_form]
+ */
+AdvertisementFormShortcode::register();
 
 /*
  * URLs públicas de anuncios:

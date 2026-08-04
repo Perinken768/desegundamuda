@@ -935,6 +935,21 @@ final class AdvertisementSearchRepository
 
                     'rating_count' =>
                         0,
+
+                    'allows_phone_calls' =>
+                        false,
+
+                    'allows_whatsapp' =>
+                        false,
+
+                    'has_valid_contact' =>
+                        false,
+
+                    'phone_call_url' =>
+                        '',
+
+                    'whatsapp_url' =>
+                        '',
                 ],
                 $advertisementId
             );
@@ -1090,6 +1105,47 @@ final class AdvertisementSearchRepository
                                         'rating_count'
                                     ]
                                     ?? 0
+                                )
+                            ),
+
+                        'allows_phone_calls' =>
+                            !empty(
+                                $sellerData[
+                                    'allows_phone_calls'
+                                ]
+                            ),
+
+                        'allows_whatsapp' =>
+                            !empty(
+                                $sellerData[
+                                    'allows_whatsapp'
+                                ]
+                            ),
+
+                        'has_valid_contact' =>
+                            !empty(
+                                $sellerData[
+                                    'has_valid_contact'
+                                ]
+                            ),
+
+                        'phone_call_url' =>
+                            esc_url_raw(
+                                (string) (
+                                    $sellerData[
+                                        'phone_call_url'
+                                    ]
+                                    ?? ''
+                                )
+                            ),
+
+                        'whatsapp_url' =>
+                            esc_url_raw(
+                                (string) (
+                                    $sellerData[
+                                        'whatsapp_url'
+                                    ]
+                                    ?? ''
                                 )
                             ),
                     ],
@@ -1296,8 +1352,8 @@ final class AdvertisementSearchRepository
     /**
      * Construye las condiciones de la consulta pública.
      *
-     * @param array<string, mixed>           $filters
-     * @param array<int, int|float|string>   $parameters
+     * @param array<string, mixed>         $filters
+     * @param array<int, int|float|string> $parameters
      */
     private function buildWhereSql(
         array $filters,

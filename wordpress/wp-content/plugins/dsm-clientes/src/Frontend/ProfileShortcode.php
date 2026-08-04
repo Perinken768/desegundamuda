@@ -14,52 +14,118 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+/**
+ * Muestra el formulario público de edición del perfil.
+ */
 final class ProfileShortcode
 {
-    public const SHORTCODE = 'dsm_customer_profile';
+    public const SHORTCODE =
+        'dsm_customer_profile';
 
     public static function register(): void
     {
         add_shortcode(
             self::SHORTCODE,
-            [self::class, 'render']
+            [
+                self::class,
+                'render',
+            ]
         );
     }
 
     public static function render(): string
     {
-        $auth = new AuthenticatedCustomer(
-            new CustomerSessionRepository(),
-            new CustomerRepository()
-        );
+        $authenticatedCustomer =
+            new AuthenticatedCustomer(
+                new CustomerSessionRepository(),
+                new CustomerRepository()
+            );
 
-        $customer = $auth->resolve();
+        $customer =
+            $authenticatedCustomer->resolve();
 
         if ($customer === null) {
             wp_safe_redirect(
-                home_url('/iniciar-sesion/')
+                home_url(
+                    '/iniciar-sesion/'
+                )
             );
 
             exit;
         }
 
-        $profile = (
-            new CustomerProfileRepository()
-        )->findByCustomerId(
-            $customer->getId()
-        );
+        $profileRepository =
+            new CustomerProfileRepository();
+
+        $profile =
+            $profileRepository
+                ->findByCustomerId(
+                    $customer->getId()
+                );
 
         if ($profile === null) {
-            return '';
+            return sprintf(
+                '<div class="dsm-account-notice dsm-account-notice--error">%s</div>',
+                esc_html__(
+                    'No se pudo recuperar tu perfil.',
+                    'dsm-clientes'
+                )
+            );
         }
+
+        $updated =
+            isset(
+                $_GET['profile_updated']
+            )
+            && sanitize_key(
+                wp_unslash(
+                    (string) $_GET[
+                        'profile_updated'
+                    ]
+                )
+            ) === '1';
+
+        $hasError =
+            isset(
+                $_GET['profile_error']
+            );
 
         return TemplateRenderer::render(
             'account/profile-form',
             [
-                'customer' => $customer,
-                'profile' => $profile,
-                'updated' => isset($_GET['profile_updated']),
-                'hasError' => isset($_GET['profile_error']),
+                'customer' =>
+                    $customer,
+
+                'profile' =>
+                    $profile,
+
+                'updated' =>
+                    $updated,
+
+                'hasError' =>
+                    $hasError,
+
+                /*
+                 * Indica si el cliente ya dispone de:
+                 *
+                 * - teléfono válido;
+                 * - al menos un método autorizado.
+                 */
+                'hasValidContactMethod' =>
+                    $profile
+                        ->hasValidContactMethod(),
+
+                'allowsPhoneCalls' =>
+                    $profile
+                        ->allowsPhoneCalls(),
+
+                'allowsWhatsapp' =>
+                    $profile
+                        ->allowsWhatsapp(),
+
+                'normalizedPhone' =>
+                    $profile->getPhone()
+                    ?? '',
             ]
         );
     }

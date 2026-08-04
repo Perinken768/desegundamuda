@@ -12,6 +12,16 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+/**
+ * Actualiza los datos públicos y de contacto del cliente.
+ *
+ * Para el MVP:
+ *
+ * - phone es el único número de contacto;
+ * - allow_phone_calls habilita llamadas;
+ * - allow_whatsapp habilita WhatsApp;
+ * - whatsapp_phone queda reservado y no se utiliza.
+ */
 final class UpdateCustomerProfile
 {
     public function __construct(
@@ -23,10 +33,20 @@ final class UpdateCustomerProfile
         int $customerId,
         string $displayName,
         ?string $phone,
-        ?string $whatsappPhone,
+        bool $allowPhoneCalls,
+        bool $allowWhatsapp,
         ?string $bio
     ): CustomerProfile {
-        $displayName = trim($displayName);
+        if ($customerId <= 0) {
+            throw new RuntimeException(
+                'El identificador del cliente no es válido.'
+            );
+        }
+
+        $displayName =
+            sanitize_text_field(
+                trim($displayName)
+            );
 
         if ($displayName === '') {
             throw new RuntimeException(
@@ -34,55 +54,95 @@ final class UpdateCustomerProfile
             );
         }
 
-        if (mb_strlen($displayName) > 150) {
+        if (
+            mb_strlen(
+                $displayName
+            ) > 150
+        ) {
             throw new RuntimeException(
                 'El nombre visible es demasiado largo.'
             );
         }
 
-        $phone = $this->validatePhone(
-            $phone,
-            'El número de teléfono no es válido.'
-        );
+        $phone =
+            $this->normalizeNullablePhone(
+                $phone
+            );
 
-        $whatsappPhone = $this->validatePhone(
-            $whatsappPhone,
-            'El número de WhatsApp no es válido.'
-        );
+        $bio =
+            $this->normalizeNullableBio(
+                $bio
+            );
 
-        $bio = $bio !== null
-            ? trim($bio)
-            : null;
-
-        if ($bio !== null && mb_strlen($bio) > 2000) {
+        if (
+            $bio !== null
+            && mb_strlen($bio) > 2000
+        ) {
             throw new RuntimeException(
                 'La biografía es demasiado larga.'
             );
+        }
+
+        /*
+         * Si se activa algún método de contacto,
+         * debe existir un teléfono.
+         */
+        if (
+            (
+                $allowPhoneCalls
+                || $allowWhatsapp
+            )
+            && $phone === null
+        ) {
+            throw new RuntimeException(
+                'Debes indicar un número de teléfono para activar llamadas o WhatsApp.'
+            );
+        }
+
+        /*
+         * Si no hay teléfono, no puede quedar ningún
+         * método de contacto activo.
+         */
+        if ($phone === null) {
+            $allowPhoneCalls =
+                false;
+
+            $allowWhatsapp =
+                false;
         }
 
         return $this->profileRepository->update(
             $customerId,
             $displayName,
             $phone,
-            $whatsappPhone,
+            $allowPhoneCalls,
+            $allowWhatsapp,
             $bio
         );
     }
 
-    private function validatePhone(
-        ?string $phone,
-        string $errorMessage
+    private function normalizeNullablePhone(
+        ?string $phone
     ): ?string {
         if ($phone === null) {
             return null;
         }
 
-        $phone = trim($phone);
+        $phone =
+            sanitize_text_field(
+                trim($phone)
+            );
 
         if ($phone === '') {
             return null;
         }
 
+        /*
+         * La normalización definitiva y la validación E.164
+         * se realizan en CustomerProfileRepository.
+         *
+         * Aquí solo se bloquean caracteres claramente inválidos.
+         */
         if (
             preg_match(
                 '/^[0-9+\s().-]{6,30}$/',
@@ -90,10 +150,27 @@ final class UpdateCustomerProfile
             ) !== 1
         ) {
             throw new RuntimeException(
-                $errorMessage
+                'El número de teléfono no es válido.'
             );
         }
 
         return $phone;
+    }
+
+    private function normalizeNullableBio(
+        ?string $bio
+    ): ?string {
+        if ($bio === null) {
+            return null;
+        }
+
+        $bio =
+            sanitize_textarea_field(
+                trim($bio)
+            );
+
+        return $bio === ''
+            ? null
+            : $bio;
     }
 }
