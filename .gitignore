@@ -53,3 +53,11 @@ public/
 
 # Excepciones: ninguna por ahora.
 # El código propio se mantiene en wordpress/wp-content/
+
+# Documentación generada automáticamente
+documentacion-plugins/
+CodigoProyecto.md
+EstructuraProyecto.txt
+Proyecto_DeSegundaMuda.md
+nginx.conf.txt
+phpinfo.txt

@@ -59,10 +59,20 @@ use DSM\Clientes\Frontend\ProfileShortcode;
 use DSM\Clientes\Frontend\RegisterShortcode;
 use DSM\Clientes\Frontend\ResendVerificationController;
 use DSM\Clientes\Frontend\ResetPasswordShortcode;
+use DSM\Clientes\Integration\CustomerContextIntegration;
 use DSM\Clientes\Scheduling\CustomerDeletionScheduler;
 use DSM\Clientes\Support\Autoloader;
 
 Autoloader::register();
+
+/*
+ * Integraciones públicas.
+ *
+ * Expone el cliente autenticado a otros módulos DSM
+ * sin obligarlos a conocer las clases internas de
+ * autenticación, sesión, clientes o perfiles.
+ */
+CustomerContextIntegration::register();
 
 /*
  * Administración.
@@ -70,9 +80,10 @@ Autoloader::register();
 $customerAdminRepository =
     new CustomerAdminRepository();
 
-$customersPage = new CustomersPage(
-    $customerAdminRepository
-);
+$customersPage =
+    new CustomersPage(
+        $customerAdminRepository
+    );
 
 $customersPage->register();
 
@@ -121,20 +132,32 @@ CustomerDeletionScheduler::register();
  */
 register_activation_hook(
     __FILE__,
-    [Installer::class, 'activate']
+    [
+        Installer::class,
+        'activate',
+    ]
 );
 
 register_activation_hook(
     __FILE__,
-    [CustomerDeletionScheduler::class, 'activate']
+    [
+        CustomerDeletionScheduler::class,
+        'activate',
+    ]
 );
 
 register_deactivation_hook(
     __FILE__,
-    [CustomerDeletionScheduler::class, 'deactivate']
+    [
+        CustomerDeletionScheduler::class,
+        'deactivate',
+    ]
 );
 
 add_action(
     'plugins_loaded',
-    [Installer::class, 'migrate']
+    [
+        Installer::class,
+        'migrate',
+    ]
 );
