@@ -20,7 +20,9 @@ if (!defined('ABSPATH')) {
  * - allow_whatsapp indica si acepta contacto mediante WhatsApp;
  * - whatsapp_phone se conserva en la base de datos, pero queda
  *   reservado para futuras integraciones y no se modifica desde
- *   el formulario actual.
+ *   el formulario actual;
+ * - area_id representa cualquier división territorial gestionada
+ *   por DSM Ubicaciones.
  */
 final class CustomerProfileRepository
 {
@@ -57,7 +59,7 @@ final class CustomerProfileRepository
                     allow_whatsapp,
                     avatar_attachment_id,
                     bio,
-                    island_id,
+                    area_id,
                     municipality_id,
                     created_at,
                     updated_at
@@ -105,7 +107,7 @@ final class CustomerProfileRepository
                     allow_whatsapp,
                     avatar_attachment_id,
                     bio,
-                    island_id,
+                    area_id,
                     municipality_id,
                     created_at,
                     updated_at
@@ -202,6 +204,12 @@ final class CustomerProfileRepository
                     'allow_whatsapp' =>
                         0,
 
+                    'area_id' =>
+                        null,
+
+                    'municipality_id' =>
+                        null,
+
                     'created_at' =>
                         $now,
 
@@ -214,6 +222,8 @@ final class CustomerProfileRepository
                     '%s',
                     '%d',
                     '%s',
+                    '%d',
+                    '%d',
                     '%d',
                     '%s',
                     '%s',
@@ -307,10 +317,6 @@ final class CustomerProfileRepository
             );
         }
 
-        /*
-         * No se permite activar llamadas o WhatsApp sin
-         * proporcionar un número válido.
-         */
         if (
             (
                 $allowPhoneCalls
@@ -323,11 +329,6 @@ final class CustomerProfileRepository
             );
         }
 
-        /*
-         * Si no existe número, se desactivan ambos métodos.
-         *
-         * Esto evita estados incoherentes en la base de datos.
-         */
         if ($phone === null) {
             $allowPhoneCalls =
                 false;
@@ -417,11 +418,11 @@ final class CustomerProfileRepository
      * Actualiza la ubicación del perfil.
      *
      * Se mantiene como operación independiente para no mezclar
-     * la gestión del contacto con la de islas y municipios.
+     * la gestión del contacto con la de áreas y municipios.
      */
     public function updateLocation(
         int $customerId,
-        ?int $islandId,
+        ?int $areaId,
         ?int $municipalityId
     ): CustomerProfile {
         global $wpdb;
@@ -432,10 +433,10 @@ final class CustomerProfileRepository
             );
         }
 
-        $islandId =
-            $islandId !== null
-            && $islandId > 0
-                ? $islandId
+        $areaId =
+            $areaId !== null
+            && $areaId > 0
+                ? $areaId
                 : null;
 
         $municipalityId =
@@ -446,10 +447,10 @@ final class CustomerProfileRepository
 
         if (
             $municipalityId !== null
-            && $islandId === null
+            && $areaId === null
         ) {
             throw new RuntimeException(
-                'No se puede seleccionar un municipio sin indicar una isla.'
+                'No se puede seleccionar un municipio sin indicar un área.'
             );
         }
 
@@ -467,8 +468,8 @@ final class CustomerProfileRepository
             $wpdb->update(
                 $this->tableName,
                 [
-                    'island_id' =>
-                        $islandId,
+                    'area_id' =>
+                        $areaId,
 
                     'municipality_id' =>
                         $municipalityId,
@@ -616,10 +617,6 @@ final class CustomerProfileRepository
             return null;
         }
 
-        /*
-         * Un número internacional debe contener entre
-         * 8 y 15 cifras según el estándar E.164.
-         */
         $digits =
             preg_replace(
                 '/\D/',
@@ -645,10 +642,6 @@ final class CustomerProfileRepository
             );
         }
 
-        /*
-         * Para números españoles se comprueba que, tras +34,
-         * existan exactamente nueve cifras.
-         */
         if (
             str_starts_with(
                 $normalized,
@@ -743,9 +736,9 @@ final class CustomerProfileRepository
                 ? (string) $row['bio']
                 : null,
 
-            isset($row['island_id'])
-            && $row['island_id'] !== null
-                ? (int) $row['island_id']
+            isset($row['area_id'])
+            && $row['area_id'] !== null
+                ? (int) $row['area_id']
                 : null,
 
             isset(

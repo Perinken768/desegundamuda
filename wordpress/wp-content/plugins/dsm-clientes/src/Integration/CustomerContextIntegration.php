@@ -22,7 +22,8 @@ if (!defined('ABSPATH')) {
  * - contexto del cliente autenticado;
  * - información pública del vendedor de un anuncio;
  * - preferencias de llamada y WhatsApp;
- * - URLs de contacto autorizadas.
+ * - URLs de contacto autorizadas;
+ * - ubicación territorial neutral mediante area_id.
  *
  * Los plugins consumidores no necesitan conocer las clases
  * internas de autenticación, clientes o perfiles.
@@ -107,6 +108,9 @@ final class CustomerContextIntegration
                         $customer->getId()
                     );
 
+            $areaId =
+                $profile?->getAreaId();
+
             return [
                 'id' =>
                     $customer->getId(),
@@ -121,8 +125,8 @@ final class CustomerContextIntegration
                     $profile?->getDisplayName()
                     ?? '',
 
-                'island_id' =>
-                    $profile?->getIslandId(),
+                'area_id' =>
+                    $areaId,
 
                 'municipality_id' =>
                     $profile?->getMunicipalityId(),
@@ -147,7 +151,8 @@ final class CustomerContextIntegration
             ];
         } catch (Throwable $exception) {
             error_log(
-                '[DSM Clientes] No se pudo construir el contexto del cliente: '
+                '[DSM Clientes] No se pudo construir '
+                . 'el contexto del cliente: '
                 . $exception->getMessage()
             );
 
@@ -227,16 +232,18 @@ final class CustomerContextIntegration
             }
 
             $phoneCallUrl =
-                $profile->getPhoneCallUri()
+                $profile->getPhoneCallUrl()
                 ?? '';
 
-            $whatsappNumber =
-                $profile->getWhatsappNumber();
-
             $whatsappUrl =
-                '';
+                $profile->getWhatsappUrl()
+                ?? '';
 
-            if ($whatsappNumber !== null) {
+            /*
+             * Añade al enlace de WhatsApp un mensaje
+             * personalizado con el título del anuncio.
+             */
+            if ($whatsappUrl !== '') {
                 $advertisementTitle =
                     self::resolveAdvertisementTitle(
                         $advertisementId
@@ -253,10 +260,7 @@ final class CustomerContextIntegration
                             'text' =>
                                 $message,
                         ],
-                        'https://wa.me/'
-                        . rawurlencode(
-                            $whatsappNumber
-                        )
+                        $whatsappUrl
                     );
             }
 
@@ -367,7 +371,8 @@ final class CustomerContextIntegration
         } catch (Throwable $exception) {
             error_log(
                 sprintf(
-                    '[DSM Clientes] No se pudo construir el vendedor público del anuncio %d: %s',
+                    '[DSM Clientes] No se pudo construir '
+                    . 'el vendedor público del anuncio %d: %s',
                     $advertisementId,
                     $exception->getMessage()
                 )

@@ -17,12 +17,12 @@ if (!defined('ABSPATH')) {
  *
  * [dsm_advertisements]
  *
- * Prioridad del filtro inicial de isla:
+ * Prioridad del filtro territorial inicial:
  *
- * 1. Isla indicada explícitamente en la URL.
- * 2. Isla guardada en una cookie de navegación.
- * 3. Isla del perfil del cliente DSM autenticado.
- * 4. Sin filtro de isla.
+ * 1. Área indicada explícitamente en la URL.
+ * 2. Área guardada en una cookie de navegación.
+ * 3. Área del perfil del cliente DSM autenticado.
+ * 4. Sin filtro territorial.
  *
  * DSM Anuncios no conoce las clases internas de DSM Clientes.
  * Obtiene el cliente mediante el filtro:
@@ -34,10 +34,10 @@ final class AdvertisementListShortcode
     public const SHORTCODE =
         'dsm_advertisements';
 
-    private const ISLAND_COOKIE =
-        'dsm_marketplace_island';
+    private const AREA_COOKIE =
+        'dsm_marketplace_area';
 
-    private const ISLAND_COOKIE_DURATION =
+    private const AREA_COOKIE_DURATION =
         30 * DAY_IN_SECONDS;
 
     public function __construct(
@@ -52,12 +52,18 @@ final class AdvertisementListShortcode
     {
         add_shortcode(
             self::SHORTCODE,
-            [$this, 'render']
+            [
+                $this,
+                'render',
+            ]
         );
 
         add_action(
             'wp_enqueue_scripts',
-            [$this, 'registerAssets']
+            [
+                $this,
+                'registerAssets',
+            ]
         );
     }
 
@@ -144,7 +150,7 @@ final class AdvertisementListShortcode
             $this->resolveCurrentCustomerContext();
 
         $filters =
-            $this->resolveInitialIsland(
+            $this->resolveInitialArea(
                 $filters,
                 $currentCustomer
             );
@@ -174,16 +180,20 @@ final class AdvertisementListShortcode
             $this->repository
                 ->findCategories();
 
+        $areaId =
+            max(
+                0,
+                (int) (
+                    $filters['area_id']
+                    ?? 0
+                )
+            );
+
         $brands =
             $this->repository
                 ->findBrands(
-                    (int) (
-                        $filters['island_id']
-                        ?? 0
-                    ) > 0
-                        ? (int) $filters[
-                            'island_id'
-                        ]
+                    $areaId > 0
+                        ? $areaId
                         : null
                 );
 
@@ -251,9 +261,9 @@ final class AdvertisementListShortcode
                     'dsm_search'
                 ),
 
-            'island_id' =>
+            'area_id' =>
                 $this->getIntegerQueryValue(
-                    'dsm_island'
+                    'dsm_area'
                 ),
 
             'municipality_id' =>
@@ -303,40 +313,62 @@ final class AdvertisementListShortcode
     }
 
     /**
-     * Resuelve la isla inicial.
+     * Resuelve el área territorial inicial.
+     *
+     * La prioridad es:
+     *
+     * 1. Parámetro dsm_area de la URL.
+     * 2. Cookie territorial del marketplace.
+     * 3. Área guardada en el perfil del cliente.
+     * 4. Ningún área seleccionada.
      *
      * @param array<string, mixed>      $filters
      * @param array<string, mixed>|null $currentCustomer
      *
      * @return array<string, mixed>
      */
-    private function resolveInitialIsland(
+    private function resolveInitialArea(
         array $filters,
         ?array $currentCustomer
     ): array {
-        if (array_key_exists('dsm_island', $_GET)) {
-            $islandId =
+        /*
+         * Una selección explícita en la URL siempre tiene
+         * prioridad, incluso cuando su valor es cero.
+         *
+         * area_id = 0 elimina la preferencia guardada.
+         */
+        if (array_key_exists('dsm_area', $_GET)) {
+            $areaId =
                 max(
                     0,
                     (int) (
-                        $filters['island_id']
+                        $filters['area_id']
                         ?? 0
                     )
                 );
 
-            $this->persistIslandPreference(
-                $islandId
+            $this->persistAreaPreference(
+                $areaId
             );
+
+            /*
+             * Si el área se elimina, también se descarta
+             * cualquier municipio recibido sin área.
+             */
+            if ($areaId <= 0) {
+                $filters['municipality_id'] =
+                    0;
+            }
 
             return $filters;
         }
 
-        $rememberedIslandId =
-            $this->getRememberedIslandId();
+        $rememberedAreaId =
+            $this->getRememberedAreaId();
 
-        if ($rememberedIslandId > 0) {
-            $filters['island_id'] =
-                $rememberedIslandId;
+        if ($rememberedAreaId > 0) {
+            $filters['area_id'] =
+                $rememberedAreaId;
 
             return $filters;
         }
@@ -344,14 +376,37 @@ final class AdvertisementListShortcode
         if (
             $currentCustomer !== null
             && (int) (
-                $currentCustomer['island_id']
+                $currentCustomer['area_id']
                 ?? 0
             ) > 0
         ) {
-            $filters['island_id'] =
+            $filters['area_id'] =
                 (int) $currentCustomer[
-                    'island_id'
+                    'area_id'
                 ];
+
+            /*
+             * Solo utilizamos automáticamente el municipio
+             * del perfil cuando tampoco se recibió uno
+             * explícitamente desde la URL.
+             */
+            if (
+                !array_key_exists(
+                    'dsm_municipality',
+                    $_GET
+                )
+                && (int) (
+                    $currentCustomer[
+                        'municipality_id'
+                    ]
+                    ?? 0
+                ) > 0
+            ) {
+                $filters['municipality_id'] =
+                    (int) $currentCustomer[
+                        'municipality_id'
+                    ];
+            }
         }
 
         return $filters;
@@ -367,8 +422,8 @@ final class AdvertisementListShortcode
      *     'email'                => 'cliente@correo.com',
      *     'status'               => 'active',
      *     'display_name'         => 'Cliente',
-     *     'island_id'            => 1,
-     *     'municipality_id'      => 5,
+     *     'area_id'              => 4,
+     *     'municipality_id'      => 26,
      *     'avatar_attachment_id' => 20,
      * ]
      *
@@ -428,13 +483,13 @@ final class AdvertisementListShortcode
                         )
                     ),
 
-                'island_id' =>
-                    isset($context['island_id'])
-                    && $context['island_id'] !== null
+                'area_id' =>
+                    isset($context['area_id'])
+                    && $context['area_id'] !== null
                         ? max(
                             0,
                             (int) $context[
-                                'island_id'
+                                'area_id'
                             ]
                         )
                         : null,
@@ -475,7 +530,8 @@ final class AdvertisementListShortcode
             ];
         } catch (Throwable $exception) {
             error_log(
-                '[DSM Anuncios] No se pudo resolver el contexto del cliente: '
+                '[DSM Anuncios] No se pudo resolver '
+                . 'el contexto del cliente: '
                 . $exception->getMessage()
             );
 
@@ -612,26 +668,32 @@ final class AdvertisementListShortcode
         );
     }
 
-    private function persistIslandPreference(
-        int $islandId
+    /**
+     * Guarda o elimina la preferencia territorial.
+     */
+    private function persistAreaPreference(
+        int $areaId
     ): void {
         if (headers_sent()) {
             return;
         }
 
-        if ($islandId <= 0) {
+        if ($areaId <= 0) {
             setcookie(
-                self::ISLAND_COOKIE,
+                self::AREA_COOKIE,
                 '',
                 [
                     'expires' =>
-                        time() - HOUR_IN_SECONDS,
+                        time()
+                        - HOUR_IN_SECONDS,
 
                     'path' =>
-                        COOKIEPATH ?: '/',
+                        COOKIEPATH
+                        ?: '/',
 
                     'domain' =>
-                        COOKIE_DOMAIN ?: '',
+                        COOKIE_DOMAIN
+                        ?: '',
 
                     'secure' =>
                         is_ssl(),
@@ -646,7 +708,7 @@ final class AdvertisementListShortcode
 
             unset(
                 $_COOKIE[
-                    self::ISLAND_COOKIE
+                    self::AREA_COOKIE
                 ]
             );
 
@@ -654,18 +716,20 @@ final class AdvertisementListShortcode
         }
 
         setcookie(
-            self::ISLAND_COOKIE,
-            (string) $islandId,
+            self::AREA_COOKIE,
+            (string) $areaId,
             [
                 'expires' =>
                     time()
-                    + self::ISLAND_COOKIE_DURATION,
+                    + self::AREA_COOKIE_DURATION,
 
                 'path' =>
-                    COOKIEPATH ?: '/',
+                    COOKIEPATH
+                    ?: '/',
 
                 'domain' =>
-                    COOKIE_DOMAIN ?: '',
+                    COOKIE_DOMAIN
+                    ?: '',
 
                 'secure' =>
                     is_ssl(),
@@ -679,15 +743,18 @@ final class AdvertisementListShortcode
         );
 
         $_COOKIE[
-            self::ISLAND_COOKIE
-        ] = (string) $islandId;
+            self::AREA_COOKIE
+        ] = (string) $areaId;
     }
 
-    private function getRememberedIslandId(): int
+    /**
+     * Recupera el área guardada en la cookie territorial.
+     */
+    private function getRememberedAreaId(): int
     {
         $value =
             $_COOKIE[
-                self::ISLAND_COOKIE
+                self::AREA_COOKIE
             ]
             ?? null;
 
@@ -700,7 +767,9 @@ final class AdvertisementListShortcode
 
         return max(
             0,
-            absint($value)
+            absint(
+                $value
+            )
         );
     }
 }

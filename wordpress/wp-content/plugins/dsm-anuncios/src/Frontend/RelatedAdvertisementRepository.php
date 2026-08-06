@@ -13,10 +13,11 @@ if (!defined('ABSPATH')) {
  *
  * Prioridad:
  *
- * 1. Misma categoría y misma isla.
+ * 1. Misma categoría y misma área.
  * 2. Misma categoría.
- * 3. Misma isla.
- * 4. Anuncios públicos recientes.
+ * 3. Misma área.
+ * 4. Otros anuncios del mismo vendedor.
+ * 5. Anuncios públicos recientes.
  *
  * El anuncio actual siempre queda excluido.
  */
@@ -73,11 +74,11 @@ final class RelatedAdvertisementRepository
                 )
             );
 
-        $islandId =
+        $areaId =
             max(
                 0,
                 (int) (
-                    $advertisement['island_id']
+                    $advertisement['area_id']
                     ?? 0
                 )
             );
@@ -94,11 +95,11 @@ final class RelatedAdvertisementRepository
         $related = [];
 
         /*
-         * 1. Misma categoría y misma isla.
+         * 1. Misma categoría y misma área.
          */
         if (
             $categoryId > 0
-            && $islandId > 0
+            && $areaId > 0
         ) {
             $related =
                 $this->appendSearchResults(
@@ -107,8 +108,8 @@ final class RelatedAdvertisementRepository
                         'category_id' =>
                             $categoryId,
 
-                        'island_id' =>
-                            $islandId,
+                        'area_id' =>
+                            $areaId,
 
                         'orderby' =>
                             'published_at',
@@ -122,7 +123,7 @@ final class RelatedAdvertisementRepository
         }
 
         /*
-         * 2. Misma categoría, sin limitar isla.
+         * 2. Misma categoría, sin limitar el área.
          */
         if (
             count($related) < $limit
@@ -147,18 +148,18 @@ final class RelatedAdvertisementRepository
         }
 
         /*
-         * 3. Misma isla.
+         * 3. Misma área.
          */
         if (
             count($related) < $limit
-            && $islandId > 0
+            && $areaId > 0
         ) {
             $related =
                 $this->appendSearchResults(
                     $related,
                     [
-                        'island_id' =>
-                            $islandId,
+                        'area_id' =>
+                            $areaId,
 
                         'orderby' =>
                             'published_at',
@@ -219,7 +220,9 @@ final class RelatedAdvertisementRepository
         }
 
         return array_slice(
-            array_values($related),
+            array_values(
+                $related
+            ),
             0,
             $limit
         );
@@ -263,11 +266,12 @@ final class RelatedAdvertisementRepository
             );
 
         $result =
-            $this->repository->search(
-                $filters,
-                1,
-                $queryLimit
-            );
+            $this->repository
+                ->search(
+                    $filters,
+                    1,
+                    $queryLimit
+                );
 
         $items =
             $result['items']
@@ -298,9 +302,13 @@ final class RelatedAdvertisementRepository
 
             if (
                 $itemId <= 0
-                || $itemId ===
-                    $excludedAdvertisementId
-                || isset($knownIds[$itemId])
+                || $itemId
+                    === $excludedAdvertisementId
+                || isset(
+                    $knownIds[
+                        $itemId
+                    ]
+                )
             ) {
                 continue;
             }

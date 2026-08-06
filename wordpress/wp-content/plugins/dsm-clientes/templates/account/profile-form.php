@@ -18,6 +18,12 @@ if (!defined('ABSPATH')) {
  * @var bool $allowsPhoneCalls
  * @var bool $allowsWhatsapp
  * @var string $normalizedPhone
+ * @var array<int, array<string, mixed>> $countries
+ * @var array<int, array<string, mixed>> $areas
+ * @var array<int, array<string, mixed>> $municipalities
+ * @var int|null $selectedAreaId
+ * @var int|null $selectedMunicipalityId
+ * @var bool $locationsAvailable
  */
 
 $phoneValue =
@@ -42,6 +48,159 @@ $contactIsValid =
     isset($hasValidContactMethod)
         ? $hasValidContactMethod
         : $profile->hasValidContactMethod();
+
+$countries =
+    isset($countries)
+    && is_array($countries)
+        ? $countries
+        : [];
+
+$areas =
+    isset($areas)
+    && is_array($areas)
+        ? $areas
+        : [];
+
+$municipalities =
+    isset($municipalities)
+    && is_array($municipalities)
+        ? $municipalities
+        : [];
+
+$locationsAvailable =
+    isset($locationsAvailable)
+        ? (bool) $locationsAvailable
+        : (
+            $countries !== []
+            && $areas !== []
+        );
+
+$selectedAreaId =
+    isset($selectedAreaId)
+    && $selectedAreaId !== null
+        ? max(
+            0,
+            (int) $selectedAreaId
+        )
+        : 0;
+
+$selectedMunicipalityId =
+    isset($selectedMunicipalityId)
+    && $selectedMunicipalityId !== null
+        ? max(
+            0,
+            (int) $selectedMunicipalityId
+        )
+        : 0;
+
+/*
+ * Determina el país correspondiente al área seleccionada.
+ */
+$selectedCountryId =
+    0;
+
+foreach ($areas as $area) {
+    if (!is_array($area)) {
+        continue;
+    }
+
+    if (
+        (int) (
+            $area['id']
+            ?? 0
+        ) !== $selectedAreaId
+    ) {
+        continue;
+    }
+
+    $selectedCountryId =
+        max(
+            0,
+            (int) (
+                $area['country_id']
+                ?? 0
+            )
+        );
+
+    break;
+}
+
+/*
+ * Si todavía no existe selección, utiliza el primer país activo.
+ */
+if (
+    $selectedCountryId <= 0
+    && isset($countries[0])
+    && is_array($countries[0])
+) {
+    $selectedCountryId =
+        max(
+            0,
+            (int) (
+                $countries[0]['id']
+                ?? 0
+            )
+        );
+}
+
+/*
+ * Las regiones organizativas, como Canarias, no se ofrecen
+ * como ubicación final del perfil. Se muestran las áreas
+ * concretas: islas, provincias, comarcas, etc.
+ */
+$selectableAreas = [];
+
+foreach ($areas as $area) {
+    if (!is_array($area)) {
+        continue;
+    }
+
+    $areaId =
+        max(
+            0,
+            (int) (
+                $area['id']
+                ?? 0
+            )
+        );
+
+    $countryId =
+        max(
+            0,
+            (int) (
+                $area['country_id']
+                ?? 0
+            )
+        );
+
+    $areaName =
+        trim(
+            (string) (
+                $area['name']
+                ?? ''
+            )
+        );
+
+    $areaType =
+        sanitize_key(
+            (string) (
+                $area['area_type']
+                ?? 'other'
+            )
+        );
+
+    if (
+        $areaId <= 0
+        || $countryId <= 0
+        || $areaName === ''
+        || $areaType === 'region'
+    ) {
+        continue;
+    }
+
+    $selectableAreas[] =
+        $area;
+}
 
 ?>
 
@@ -119,6 +278,7 @@ $contactIsValid =
                 action="<?php echo esc_url(
                     admin_url('admin-post.php')
                 ); ?>"
+                data-dsm-profile-form
             >
                 <input
                     type="hidden"
@@ -168,6 +328,336 @@ $contactIsValid =
                         ?>
                     </p>
                 </div>
+
+                <fieldset class="dsm-form__fieldset">
+                    <legend class="dsm-form__legend">
+                        <?php
+                        esc_html_e(
+                            'Ubicación',
+                            'dsm-clientes'
+                        );
+                        ?>
+                    </legend>
+
+                    <p class="dsm-form__help">
+                        <?php
+                        esc_html_e(
+                            'La ubicación se utilizará para personalizar el marketplace y facilitar las búsquedas cercanas.',
+                            'dsm-clientes'
+                        );
+                        ?>
+                    </p>
+
+                    <?php if (!$locationsAvailable) : ?>
+                        <div class="dsm-alert dsm-alert--warning">
+                            <?php
+                            esc_html_e(
+                                'El catálogo de ubicaciones no está disponible en este momento.',
+                                'dsm-clientes'
+                            );
+                            ?>
+                        </div>
+                    <?php else : ?>
+                        <div class="dsm-form__field">
+                            <label
+                                class="dsm-form__label"
+                                for="dsm-profile-country"
+                            >
+                                <?php
+                                esc_html_e(
+                                    'País',
+                                    'dsm-clientes'
+                                );
+                                ?>
+                            </label>
+
+                            <select
+                                class="dsm-form__input"
+                                id="dsm-profile-country"
+                                data-dsm-profile-country
+                            >
+                                <?php foreach (
+                                    $countries
+                                    as $country
+                                ) : ?>
+                                    <?php
+                                    if (!is_array($country)) {
+                                        continue;
+                                    }
+
+                                    $countryId =
+                                        max(
+                                            0,
+                                            (int) (
+                                                $country['id']
+                                                ?? 0
+                                            )
+                                        );
+
+                                    $countryName =
+                                        trim(
+                                            (string) (
+                                                $country['name']
+                                                ?? ''
+                                            )
+                                        );
+
+                                    if (
+                                        $countryId <= 0
+                                        || $countryName === ''
+                                    ) {
+                                        continue;
+                                    }
+
+                                    $isoCode =
+                                        trim(
+                                            (string) (
+                                                $country['iso_code']
+                                                ?? ''
+                                            )
+                                        );
+
+                                    $countryLabel =
+                                        $countryName;
+
+                                    if ($isoCode !== '') {
+                                        $countryLabel .=
+                                            ' ('
+                                            . strtoupper($isoCode)
+                                            . ')';
+                                    }
+                                    ?>
+
+                                    <option
+                                        value="<?php echo esc_attr(
+                                            (string) $countryId
+                                        ); ?>"
+                                        <?php selected(
+                                            $selectedCountryId,
+                                            $countryId
+                                        ); ?>
+                                    >
+                                        <?php echo esc_html(
+                                            $countryLabel
+                                        ); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="dsm-form__field">
+                            <label
+                                class="dsm-form__label"
+                                for="dsm-profile-area"
+                            >
+                                <?php
+                                esc_html_e(
+                                    'Área',
+                                    'dsm-clientes'
+                                );
+                                ?>
+                            </label>
+
+                            <select
+                                class="dsm-form__input"
+                                id="dsm-profile-area"
+                                name="area_id"
+                                data-dsm-profile-area
+                            >
+                                <option value="0">
+                                    <?php
+                                    esc_html_e(
+                                        'Selecciona un área',
+                                        'dsm-clientes'
+                                    );
+                                    ?>
+                                </option>
+
+                                <?php foreach (
+                                    $selectableAreas
+                                    as $area
+                                ) : ?>
+                                    <?php
+                                    $areaId =
+                                        max(
+                                            0,
+                                            (int) (
+                                                $area['id']
+                                                ?? 0
+                                            )
+                                        );
+
+                                    $countryId =
+                                        max(
+                                            0,
+                                            (int) (
+                                                $area['country_id']
+                                                ?? 0
+                                            )
+                                        );
+
+                                    $areaName =
+                                        trim(
+                                            (string) (
+                                                $area['name']
+                                                ?? ''
+                                            )
+                                        );
+
+                                    $areaTypeLabel =
+                                        trim(
+                                            (string) (
+                                                $area[
+                                                    'area_type_label'
+                                                ]
+                                                ?? ''
+                                            )
+                                        );
+
+                                    $areaLabel =
+                                        $areaName;
+
+                                    if ($areaTypeLabel !== '') {
+                                        $areaLabel .=
+                                            ' — '
+                                            . $areaTypeLabel;
+                                    }
+                                    ?>
+
+                                    <option
+                                        value="<?php echo esc_attr(
+                                            (string) $areaId
+                                        ); ?>"
+                                        data-country-id="<?php echo esc_attr(
+                                            (string) $countryId
+                                        ); ?>"
+                                        <?php selected(
+                                            $selectedAreaId,
+                                            $areaId
+                                        ); ?>
+                                    >
+                                        <?php echo esc_html(
+                                            $areaLabel
+                                        ); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+
+                            <p class="dsm-form__help">
+                                <?php
+                                esc_html_e(
+                                    'En Canarias, el área corresponde a la isla. En otras zonas podrá representar una provincia, comarca u otra división territorial.',
+                                    'dsm-clientes'
+                                );
+                                ?>
+                            </p>
+                        </div>
+
+                        <div class="dsm-form__field">
+                            <label
+                                class="dsm-form__label"
+                                for="dsm-profile-municipality"
+                            >
+                                <?php
+                                esc_html_e(
+                                    'Municipio',
+                                    'dsm-clientes'
+                                );
+                                ?>
+                            </label>
+
+                            <select
+                                class="dsm-form__input"
+                                id="dsm-profile-municipality"
+                                name="municipality_id"
+                                data-dsm-profile-municipality
+                            >
+                                <option value="0">
+                                    <?php
+                                    esc_html_e(
+                                        'Selecciona un municipio',
+                                        'dsm-clientes'
+                                    );
+                                    ?>
+                                </option>
+
+                                <?php foreach (
+                                    $municipalities
+                                    as $municipality
+                                ) : ?>
+                                    <?php
+                                    if (!is_array($municipality)) {
+                                        continue;
+                                    }
+
+                                    $municipalityId =
+                                        max(
+                                            0,
+                                            (int) (
+                                                $municipality['id']
+                                                ?? 0
+                                            )
+                                        );
+
+                                    $municipalityAreaId =
+                                        max(
+                                            0,
+                                            (int) (
+                                                $municipality['area_id']
+                                                ?? 0
+                                            )
+                                        );
+
+                                    $municipalityName =
+                                        trim(
+                                            (string) (
+                                                $municipality['name']
+                                                ?? ''
+                                            )
+                                        );
+
+                                    if (
+                                        $municipalityId <= 0
+                                        || $municipalityAreaId <= 0
+                                        || $municipalityName === ''
+                                    ) {
+                                        continue;
+                                    }
+                                    ?>
+
+                                    <option
+                                        value="<?php echo esc_attr(
+                                            (string) $municipalityId
+                                        ); ?>"
+                                        data-area-id="<?php echo esc_attr(
+                                            (string) $municipalityAreaId
+                                        ); ?>"
+                                        <?php selected(
+                                            $selectedMunicipalityId,
+                                            $municipalityId
+                                        ); ?>
+                                    >
+                                        <?php echo esc_html(
+                                            $municipalityName
+                                        ); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+
+                            <p
+                                class="dsm-form__help"
+                                data-dsm-profile-municipality-help
+                            >
+                                <?php
+                                esc_html_e(
+                                    'Primero selecciona un área para ver sus municipios.',
+                                    'dsm-clientes'
+                                );
+                                ?>
+                            </p>
+                        </div>
+                    <?php endif; ?>
+                </fieldset>
 
                 <fieldset class="dsm-form__fieldset">
                     <legend class="dsm-form__legend">
@@ -231,11 +721,9 @@ $contactIsValid =
                                 type="checkbox"
                                 name="allow_phone_calls"
                                 value="1"
-                                <?php
-                                checked(
+                                <?php checked(
                                     $phoneCallsEnabled
-                                );
-                                ?>
+                                ); ?>
                             >
 
                             <span>
@@ -255,11 +743,9 @@ $contactIsValid =
                                 type="checkbox"
                                 name="allow_whatsapp"
                                 value="1"
-                                <?php
-                                checked(
+                                <?php checked(
                                     $whatsappEnabled
-                                );
-                                ?>
+                                ); ?>
                             >
 
                             <span>
@@ -333,3 +819,203 @@ $contactIsValid =
 
     </div>
 </section>
+
+<script>
+(function () {
+    'use strict';
+
+    function initializeProfileLocations() {
+        const form =
+            document.querySelector(
+                '[data-dsm-profile-form]'
+            );
+
+        if (!(form instanceof HTMLFormElement)) {
+            return;
+        }
+
+        const countrySelect =
+            form.querySelector(
+                '[data-dsm-profile-country]'
+            );
+
+        const areaSelect =
+            form.querySelector(
+                '[data-dsm-profile-area]'
+            );
+
+        const municipalitySelect =
+            form.querySelector(
+                '[data-dsm-profile-municipality]'
+            );
+
+        if (
+            !(countrySelect instanceof HTMLSelectElement)
+            || !(areaSelect instanceof HTMLSelectElement)
+            || !(municipalitySelect instanceof HTMLSelectElement)
+        ) {
+            return;
+        }
+
+        const areaOptions =
+            Array.from(
+                areaSelect.options
+            ).map(
+                function (option) {
+                    return {
+                        value:
+                            option.value,
+
+                        label:
+                            option.textContent
+                            || '',
+
+                        countryId:
+                            option.getAttribute(
+                                'data-country-id'
+                            )
+                            || '',
+
+                        isPlaceholder:
+                            option.value === '0',
+                    };
+                }
+            );
+
+        const municipalityOptions =
+            Array.from(
+                municipalitySelect.options
+            ).map(
+                function (option) {
+                    return {
+                        value:
+                            option.value,
+
+                        label:
+                            option.textContent
+                            || '',
+
+                        areaId:
+                            option.getAttribute(
+                                'data-area-id'
+                            )
+                            || '',
+
+                        isPlaceholder:
+                            option.value === '0',
+                    };
+                }
+            );
+
+        function rebuildSelect(
+            select,
+            options,
+            filterKey,
+            filterValue,
+            previousValue
+        ) {
+            select.innerHTML = '';
+
+            options.forEach(
+                function (optionData) {
+                    if (
+                        !optionData.isPlaceholder
+                        && optionData[filterKey]
+                            !== filterValue
+                    ) {
+                        return;
+                    }
+
+                    const option =
+                        document.createElement(
+                            'option'
+                        );
+
+                    option.value =
+                        optionData.value;
+
+                    option.textContent =
+                        optionData.label;
+
+                    select.appendChild(
+                        option
+                    );
+                }
+            );
+
+            const valueExists =
+                Array.from(
+                    select.options
+                ).some(
+                    function (option) {
+                        return option.value
+                            === previousValue;
+                    }
+                );
+
+            select.value =
+                valueExists
+                    ? previousValue
+                    : '0';
+        }
+
+        function rebuildMunicipalities() {
+            const previousMunicipality =
+                municipalitySelect.value;
+
+            const selectedArea =
+                areaSelect.value;
+
+            rebuildSelect(
+                municipalitySelect,
+                municipalityOptions,
+                'areaId',
+                selectedArea,
+                previousMunicipality
+            );
+
+            municipalitySelect.disabled =
+                selectedArea === '0'
+                || municipalitySelect.options.length <= 1;
+        }
+
+        function rebuildAreas() {
+            const previousArea =
+                areaSelect.value;
+
+            rebuildSelect(
+                areaSelect,
+                areaOptions,
+                'countryId',
+                countrySelect.value,
+                previousArea
+            );
+
+            rebuildMunicipalities();
+        }
+
+        countrySelect.addEventListener(
+            'change',
+            rebuildAreas
+        );
+
+        areaSelect.addEventListener(
+            'change',
+            rebuildMunicipalities
+        );
+
+        rebuildAreas();
+    }
+
+    if (
+        document.readyState === 'loading'
+    ) {
+        document.addEventListener(
+            'DOMContentLoaded',
+            initializeProfileLocations
+        );
+    } else {
+        initializeProfileLocations();
+    }
+})();
+</script>

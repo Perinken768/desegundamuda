@@ -57,12 +57,18 @@ final class AdvertisementDetailShortcode
     {
         add_shortcode(
             self::SHORTCODE,
-            [$this, 'render']
+            [
+                $this,
+                'render',
+            ]
         );
 
         add_action(
             'wp_enqueue_scripts',
-            [$this, 'registerAssets']
+            [
+                $this,
+                'registerAssets',
+            ]
         );
     }
 
@@ -373,6 +379,18 @@ final class AdvertisementDetailShortcode
      * DSM Anuncios no conoce el sistema interno de sesiones
      * ni las clases propias de DSM Clientes.
      *
+     * Formato esperado:
+     *
+     * [
+     *     'id'                   => 1,
+     *     'email'                => 'cliente@correo.com',
+     *     'status'               => 'active',
+     *     'display_name'         => 'Cliente',
+     *     'area_id'              => 4,
+     *     'municipality_id'      => 26,
+     *     'avatar_attachment_id' => 20,
+     * ]
+     *
      * @return array<string, mixed>|null
      */
     private function resolveCurrentCustomerContext(): ?array
@@ -430,17 +448,17 @@ final class AdvertisementDetailShortcode
                     )
                 ),
 
-            'island_id' =>
+            'area_id' =>
                 isset(
-                    $context['island_id']
+                    $context['area_id']
                 )
                 && $context[
-                    'island_id'
+                    'area_id'
                 ] !== null
                     ? max(
                         0,
                         (int) $context[
-                            'island_id'
+                            'area_id'
                         ]
                     )
                     : null,

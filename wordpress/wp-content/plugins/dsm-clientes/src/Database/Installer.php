@@ -23,9 +23,12 @@ final class Installer
     public static function migrate(): void
     {
         $installedVersion =
-            (int) get_option(
-                self::OPTION_NAME,
-                0
+            max(
+                0,
+                (int) get_option(
+                    self::OPTION_NAME,
+                    0
+                )
             );
 
         $migrations =
@@ -129,6 +132,11 @@ final class Installer
                 DSM_CLIENTES_PATH
                 . 'database/migrations/'
                 . '008-add-contact-preferences.php',
+
+            9 =>
+                DSM_CLIENTES_PATH
+                . 'database/migrations/'
+                . '009-rename-island-to-area.php',
         ];
     }
 

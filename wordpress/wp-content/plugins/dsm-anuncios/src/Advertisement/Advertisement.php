@@ -18,7 +18,7 @@ final class Advertisement
         private readonly int $customerId,
         private readonly ?int $storeId,
         private readonly int $categoryId,
-        private readonly ?int $islandId,
+        private readonly ?int $areaId,
         private readonly ?int $municipalityId,
         private readonly string $title,
         private readonly string $slug,
@@ -121,8 +121,8 @@ final class Advertisement
                 ?? 0
             ),
 
-            islandId: self::nullableInt(
-                $data['island_id']
+            areaId: self::nullableInt(
+                $data['area_id']
                 ?? null
             ),
 
@@ -230,9 +230,9 @@ final class Advertisement
         return $this->categoryId;
     }
 
-    public function getIslandId(): ?int
+    public function getAreadId(): ?int
     {
-        return $this->islandId;
+        return $this->areaId;
     }
 
     public function getMunicipalityId(): ?int

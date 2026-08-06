@@ -14,6 +14,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+/**
+ * Caso de uso para crear anuncios particulares.
+ *
+ * La ubicación utiliza area_id como campo territorial neutral.
+ */
 final class CreateAdvertisement
 {
     public function __construct(
@@ -35,23 +40,45 @@ final class CreateAdvertisement
             );
         }
 
-        $categoryId = isset($data['category_id'])
-            ? (int) $data['category_id']
-            : 0;
+        $categoryId =
+            isset($data['category_id'])
+                ? (int) $data['category_id']
+                : 0;
 
-        $title = isset($data['title'])
-            ? trim((string) $data['title'])
-            : '';
+        $areaId =
+            $this->nullablePositiveInt(
+                $data['area_id']
+                ?? null
+            );
 
-        $description = isset($data['description'])
-            ? trim((string) $data['description'])
-            : '';
+        $municipalityId =
+            $this->nullablePositiveInt(
+                $data['municipality_id']
+                ?? null
+            );
 
-        $conditionCode = isset($data['condition_code'])
-            ? sanitize_key(
-                (string) $data['condition_code']
-            )
-            : '';
+        $title =
+            isset($data['title'])
+                ? trim(
+                    (string) $data['title']
+                )
+                : '';
+
+        $description =
+            isset($data['description'])
+                ? trim(
+                    (string) $data['description']
+                )
+                : '';
+
+        $conditionCode =
+            isset($data['condition_code'])
+                ? sanitize_key(
+                    (string) $data[
+                        'condition_code'
+                    ]
+                )
+                : '';
 
         if ($categoryId <= 0) {
             throw new RuntimeException(
@@ -59,8 +86,11 @@ final class CreateAdvertisement
             );
         }
 
-        $category = $this->categoryRepository
-            ->findById($categoryId);
+        $category =
+            $this->categoryRepository
+                ->findById(
+                    $categoryId
+                );
 
         if ($category === null) {
             throw new RuntimeException(
@@ -74,7 +104,10 @@ final class CreateAdvertisement
             );
         }
 
-        if (!$category->canBeUsedInMarketplace()) {
+        if (
+            !$category
+                ->canBeUsedInMarketplace()
+        ) {
             throw new RuntimeException(
                 'La categoría seleccionada no admite anuncios de clientes.'
             );
@@ -86,7 +119,11 @@ final class CreateAdvertisement
             );
         }
 
-        if (mb_strlen($title) > 180) {
+        if (
+            mb_strlen(
+                $title
+            ) > 180
+        ) {
             throw new RuntimeException(
                 'El título no puede superar los 180 caracteres.'
             );
@@ -104,60 +141,69 @@ final class CreateAdvertisement
             );
         }
 
-        $advertisementId =
-            $this->advertisementRepository->create(
-                [
-                    'customer_id' =>
-                        $customerId,
-
-                    'store_id' =>
-                        null,
-
-                    'category_id' =>
-                        $categoryId,
-
-                    'island_id' =>
-                        $data['island_id']
-                        ?? null,
-
-                    'municipality_id' =>
-                        $data['municipality_id']
-                        ?? null,
-
-                    'title' =>
-                        $title,
-
-                    'description' =>
-                        $description,
-
-                    'brand' =>
-                        $data['brand']
-                        ?? null,
-
-                    'price' =>
-                        $data['price']
-                        ?? 0,
-
-                    'original_price' =>
-                        $data['original_price']
-                        ?? null,
-
-                    'purchase_date' =>
-                        $data['purchase_date']
-                        ?? null,
-
-                    'condition_code' =>
-                        $conditionCode,
-
-                    'status' =>
-                        AdvertisementStatus::DRAFT,
-                ]
+        if (
+            $municipalityId !== null
+            && $areaId === null
+        ) {
+            throw new RuntimeException(
+                'No se puede seleccionar un municipio sin indicar un área.'
             );
+        }
+
+        $advertisementId =
+            $this->advertisementRepository
+                ->create(
+                    [
+                        'customer_id' =>
+                            $customerId,
+
+                        'store_id' =>
+                            null,
+
+                        'category_id' =>
+                            $categoryId,
+
+                        'area_id' =>
+                            $areaId,
+
+                        'municipality_id' =>
+                            $municipalityId,
+
+                        'title' =>
+                            $title,
+
+                        'description' =>
+                            $description,
+
+                        'brand' =>
+                            $data['brand']
+                            ?? null,
+
+                        'price' =>
+                            $data['price']
+                            ?? 0,
+
+                        'original_price' =>
+                            $data['original_price']
+                            ?? null,
+
+                        'purchase_date' =>
+                            $data['purchase_date']
+                            ?? null,
+
+                        'condition_code' =>
+                            $conditionCode,
+
+                        'status' =>
+                            AdvertisementStatus::DRAFT,
+                    ]
+                );
 
         $advertisement =
-            $this->advertisementRepository->findById(
-                $advertisementId
-            );
+            $this->advertisementRepository
+                ->findById(
+                    $advertisementId
+                );
 
         if ($advertisement === null) {
             throw new RuntimeException(
@@ -166,5 +212,23 @@ final class CreateAdvertisement
         }
 
         return $advertisement;
+    }
+
+    private function nullablePositiveInt(
+        mixed $value
+    ): ?int {
+        if (
+            $value === null
+            || $value === ''
+        ) {
+            return null;
+        }
+
+        $integer =
+            (int) $value;
+
+        return $integer > 0
+            ? $integer
+            : null;
     }
 }

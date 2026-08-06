@@ -18,8 +18,15 @@ if (!defined('ABSPATH')) {
  * Responsabilidades:
  *
  * - categorías activas permitidas en el marketplace;
- * - islas aportadas por la integración existente;
- * - municipios aportados por la integración existente.
+ * - países activos;
+ * - áreas territoriales activas;
+ * - municipios activos.
+ *
+ * La ubicación utiliza exclusivamente:
+ *
+ * - country_id;
+ * - area_id;
+ * - municipality_id.
  */
 final class AdvertisementFormIntegration
 {
@@ -155,30 +162,45 @@ final class AdvertisementFormIntegration
     }
 
     /**
-     * Devuelve conjuntamente islas y municipios.
+     * Devuelve conjuntamente países, áreas y municipios.
      *
      * Formato:
      *
      * [
-     *     'islands' => [
+     *     'countries' => [
      *         [
-     *             'id'   => 1,
+     *             'id' => 1,
+     *             'name' => 'España',
+     *             'iso_code' => 'ES',
+     *         ],
+     *     ],
+     *
+     *     'areas' => [
+     *         [
+     *             'id' => 4,
+     *             'country_id' => 1,
+     *             'parent_id' => 1,
      *             'name' => 'Gran Canaria',
+     *             'area_type' => 'island',
      *         ],
      *     ],
      *
      *     'municipalities' => [
      *         [
-     *             'id'        => 1,
-     *             'island_id' => 1,
-     *             'name'      => 'Las Palmas de Gran Canaria',
+     *             'id' => 26,
+     *             'area_id' => 4,
+     *             'name' => 'Telde',
      *         ],
      *     ],
      * ]
      *
      * @param mixed $currentLocations
      *
-     * @return array<string, array<int, array<string, mixed>>>
+     * @return array{
+     *     countries: array<int, array<string, mixed>>,
+     *     areas: array<int, array<string, mixed>>,
+     *     municipalities: array<int, array<string, mixed>>
+     * }
      */
     public function provideLocations(
         mixed $currentLocations
@@ -191,132 +213,54 @@ final class AdvertisementFormIntegration
         }
 
         try {
-            $islands =
+            $countries =
                 apply_filters(
-                    'dsm_marketplace_islands',
+                    'dsm_location_countries',
                     []
                 );
 
-            if (!is_array($islands)) {
-                $islands = [];
-            }
+            $areas =
+                apply_filters(
+                    'dsm_location_areas',
+                    [],
+                    null,
+                    null
+                );
 
-            $normalizedIslands = [];
-
-            foreach ($islands as $island) {
-                if (!is_array($island)) {
-                    continue;
-                }
-
-                $islandId =
-                    max(
-                        0,
-                        (int) (
-                            $island['id']
-                            ?? 0
-                        )
-                    );
-
-                $islandName =
-                    sanitize_text_field(
-                        (string) (
-                            $island['name']
-                            ?? ''
-                        )
-                    );
-
-                if (
-                    $islandId <= 0
-                    || $islandName === ''
-                ) {
-                    continue;
-                }
-
-                $normalizedIslands[] = [
-                    'id' =>
-                        $islandId,
-
-                    'name' =>
-                        $islandName,
-                ];
-            }
-
-            /*
-             * Se solicitan todos los municipios pasando 0.
-             *
-             * La integración que gestione ubicaciones deberá
-             * interpretar 0 como "sin filtrar por isla".
-             */
             $municipalities =
                 apply_filters(
-                    'dsm_marketplace_municipalities',
+                    'dsm_location_municipalities',
                     [],
-                    0
+                    null
                 );
+
+            if (!is_array($countries)) {
+                $countries = [];
+            }
+
+            if (!is_array($areas)) {
+                $areas = [];
+            }
 
             if (!is_array($municipalities)) {
                 $municipalities = [];
             }
 
-            $normalizedMunicipalities = [];
-
-            foreach ($municipalities as $municipality) {
-                if (!is_array($municipality)) {
-                    continue;
-                }
-
-                $municipalityId =
-                    max(
-                        0,
-                        (int) (
-                            $municipality['id']
-                            ?? 0
-                        )
-                    );
-
-                $islandId =
-                    max(
-                        0,
-                        (int) (
-                            $municipality['island_id']
-                            ?? 0
-                        )
-                    );
-
-                $municipalityName =
-                    sanitize_text_field(
-                        (string) (
-                            $municipality['name']
-                            ?? ''
-                        )
-                    );
-
-                if (
-                    $municipalityId <= 0
-                    || $islandId <= 0
-                    || $municipalityName === ''
-                ) {
-                    continue;
-                }
-
-                $normalizedMunicipalities[] = [
-                    'id' =>
-                        $municipalityId,
-
-                    'island_id' =>
-                        $islandId,
-
-                    'name' =>
-                        $municipalityName,
-                ];
-            }
-
             return [
-                'islands' =>
-                    $normalizedIslands,
+                'countries' =>
+                    $this->normalizeCountries(
+                        $countries
+                    ),
+
+                'areas' =>
+                    $this->normalizeAreas(
+                        $areas
+                    ),
 
                 'municipalities' =>
-                    $normalizedMunicipalities,
+                    $this->normalizeMunicipalities(
+                        $municipalities
+                    ),
             ];
         } catch (Throwable $exception) {
             error_log(
@@ -326,12 +270,486 @@ final class AdvertisementFormIntegration
             );
 
             return [
-                'islands' =>
+                'countries' =>
+                    [],
+
+                'areas' =>
                     [],
 
                 'municipalities' =>
                     [],
             ];
         }
+    }
+
+    /**
+     * @param array<int, mixed> $countries
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeCountries(
+        array $countries
+    ): array {
+        $normalized = [];
+
+        foreach ($countries as $country) {
+            if (!is_array($country)) {
+                continue;
+            }
+
+            $countryId =
+                max(
+                    0,
+                    (int) (
+                        $country['id']
+                        ?? 0
+                    )
+                );
+
+            $countryName =
+                sanitize_text_field(
+                    (string) (
+                        $country['name']
+                        ?? ''
+                    )
+                );
+
+            if (
+                $countryId <= 0
+                || $countryName === ''
+            ) {
+                continue;
+            }
+
+            $normalized[] = [
+                'id' =>
+                    $countryId,
+
+                'name' =>
+                    $countryName,
+
+                'slug' =>
+                    sanitize_title(
+                        (string) (
+                            $country['slug']
+                            ?? ''
+                        )
+                    ),
+
+                'iso_code' =>
+                    strtoupper(
+                        sanitize_text_field(
+                            (string) (
+                                $country['iso_code']
+                                ?? ''
+                            )
+                        )
+                    ),
+
+                'phone_prefix' =>
+                    isset($country['phone_prefix'])
+                    && $country['phone_prefix'] !== null
+                        ? sanitize_text_field(
+                            (string) $country[
+                                'phone_prefix'
+                            ]
+                        )
+                        : null,
+
+                'sort_order' =>
+                    max(
+                        0,
+                        (int) (
+                            $country['sort_order']
+                            ?? 0
+                        )
+                    ),
+            ];
+        }
+
+        usort(
+            $normalized,
+            [
+                $this,
+                'compareRows',
+            ]
+        );
+
+        return $normalized;
+    }
+
+    /**
+     * @param array<int, mixed> $areas
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeAreas(
+        array $areas
+    ): array {
+        $normalized = [];
+
+        foreach ($areas as $area) {
+            if (!is_array($area)) {
+                continue;
+            }
+
+            $areaId =
+                max(
+                    0,
+                    (int) (
+                        $area['id']
+                        ?? 0
+                    )
+                );
+
+            $countryId =
+                max(
+                    0,
+                    (int) (
+                        $area['country_id']
+                        ?? 0
+                    )
+                );
+
+            $areaName =
+                sanitize_text_field(
+                    (string) (
+                        $area['name']
+                        ?? ''
+                    )
+                );
+
+            if (
+                $areaId <= 0
+                || $countryId <= 0
+                || $areaName === ''
+            ) {
+                continue;
+            }
+
+            $parentId =
+                isset($area['parent_id'])
+                && $area['parent_id'] !== null
+                    ? max(
+                        0,
+                        (int) $area[
+                            'parent_id'
+                        ]
+                    )
+                    : null;
+
+            if ($parentId === 0) {
+                $parentId = null;
+            }
+
+            $normalized[] = [
+                'id' =>
+                    $areaId,
+
+                'country_id' =>
+                    $countryId,
+
+                'parent_id' =>
+                    $parentId,
+
+                'name' =>
+                    $areaName,
+
+                'slug' =>
+                    sanitize_title(
+                        (string) (
+                            $area['slug']
+                            ?? ''
+                        )
+                    ),
+
+                'area_type' =>
+                    sanitize_key(
+                        (string) (
+                            $area['area_type']
+                            ?? 'other'
+                        )
+                    ),
+
+                'area_type_label' =>
+                    sanitize_text_field(
+                        (string) (
+                            $area['area_type_label']
+                            ?? ''
+                        )
+                    ),
+
+                'code' =>
+                    isset($area['code'])
+                    && $area['code'] !== null
+                        ? sanitize_text_field(
+                            (string) $area['code']
+                        )
+                        : null,
+
+                'sort_order' =>
+                    max(
+                        0,
+                        (int) (
+                            $area['sort_order']
+                            ?? 0
+                        )
+                    ),
+            ];
+        }
+
+        usort(
+            $normalized,
+            static function (
+                array $left,
+                array $right
+            ): int {
+                $countryComparison =
+                    ((int) (
+                        $left['country_id']
+                        ?? 0
+                    ))
+                    <=>
+                    ((int) (
+                        $right['country_id']
+                        ?? 0
+                    ));
+
+                if ($countryComparison !== 0) {
+                    return $countryComparison;
+                }
+
+                $parentComparison =
+                    ((int) (
+                        $left['parent_id']
+                        ?? 0
+                    ))
+                    <=>
+                    ((int) (
+                        $right['parent_id']
+                        ?? 0
+                    ));
+
+                if ($parentComparison !== 0) {
+                    return $parentComparison;
+                }
+
+                $sortComparison =
+                    ((int) (
+                        $left['sort_order']
+                        ?? 0
+                    ))
+                    <=>
+                    ((int) (
+                        $right['sort_order']
+                        ?? 0
+                    ));
+
+                if ($sortComparison !== 0) {
+                    return $sortComparison;
+                }
+
+                return strcasecmp(
+                    (string) (
+                        $left['name']
+                        ?? ''
+                    ),
+                    (string) (
+                        $right['name']
+                        ?? ''
+                    )
+                );
+            }
+        );
+
+        return $normalized;
+    }
+
+    /**
+     * @param array<int, mixed> $municipalities
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeMunicipalities(
+        array $municipalities
+    ): array {
+        $normalized = [];
+
+        foreach (
+            $municipalities
+            as $municipality
+        ) {
+            if (!is_array($municipality)) {
+                continue;
+            }
+
+            $municipalityId =
+                max(
+                    0,
+                    (int) (
+                        $municipality['id']
+                        ?? 0
+                    )
+                );
+
+            $areaId =
+                max(
+                    0,
+                    (int) (
+                        $municipality['area_id']
+                        ?? 0
+                    )
+                );
+
+            $municipalityName =
+                sanitize_text_field(
+                    (string) (
+                        $municipality['name']
+                        ?? ''
+                    )
+                );
+
+            if (
+                $municipalityId <= 0
+                || $areaId <= 0
+                || $municipalityName === ''
+            ) {
+                continue;
+            }
+
+            $normalized[] = [
+                'id' =>
+                    $municipalityId,
+
+                'area_id' =>
+                    $areaId,
+
+                'name' =>
+                    $municipalityName,
+
+                'slug' =>
+                    sanitize_title(
+                        (string) (
+                            $municipality['slug']
+                            ?? ''
+                        )
+                    ),
+
+                'code' =>
+                    isset($municipality['code'])
+                    && $municipality['code'] !== null
+                        ? sanitize_text_field(
+                            (string) $municipality[
+                                'code'
+                            ]
+                        )
+                        : null,
+
+                'postal_code' =>
+                    isset($municipality['postal_code'])
+                    && $municipality['postal_code'] !== null
+                        ? sanitize_text_field(
+                            (string) $municipality[
+                                'postal_code'
+                            ]
+                        )
+                        : null,
+
+                'sort_order' =>
+                    max(
+                        0,
+                        (int) (
+                            $municipality['sort_order']
+                            ?? 0
+                        )
+                    ),
+            ];
+        }
+
+        usort(
+            $normalized,
+            static function (
+                array $left,
+                array $right
+            ): int {
+                $areaComparison =
+                    ((int) (
+                        $left['area_id']
+                        ?? 0
+                    ))
+                    <=>
+                    ((int) (
+                        $right['area_id']
+                        ?? 0
+                    ));
+
+                if ($areaComparison !== 0) {
+                    return $areaComparison;
+                }
+
+                $sortComparison =
+                    ((int) (
+                        $left['sort_order']
+                        ?? 0
+                    ))
+                    <=>
+                    ((int) (
+                        $right['sort_order']
+                        ?? 0
+                    ));
+
+                if ($sortComparison !== 0) {
+                    return $sortComparison;
+                }
+
+                return strcasecmp(
+                    (string) (
+                        $left['name']
+                        ?? ''
+                    ),
+                    (string) (
+                        $right['name']
+                        ?? ''
+                    )
+                );
+            }
+        );
+
+        return $normalized;
+    }
+
+    /**
+     * @param array<string, mixed> $left
+     * @param array<string, mixed> $right
+     */
+    private function compareRows(
+        array $left,
+        array $right
+    ): int {
+        $sortComparison =
+            ((int) (
+                $left['sort_order']
+                ?? 0
+            ))
+            <=>
+            ((int) (
+                $right['sort_order']
+                ?? 0
+            ));
+
+        if ($sortComparison !== 0) {
+            return $sortComparison;
+        }
+
+        return strcasecmp(
+            (string) (
+                $left['name']
+                ?? ''
+            ),
+            (string) (
+                $right['name']
+                ?? ''
+            )
+        );
     }
 }

@@ -142,7 +142,7 @@ final class AdvertisementAdminRepository
                 advertisements.customer_id,
                 advertisements.store_id,
                 advertisements.category_id,
-                advertisements.island_id,
+                advertisements.area_id,
                 advertisements.municipality_id,
                 advertisements.title,
                 advertisements.slug,
@@ -315,7 +315,7 @@ final class AdvertisementAdminRepository
                     advertisements.customer_id,
                     advertisements.store_id,
                     advertisements.category_id,
-                    advertisements.island_id,
+                    advertisements.area_id,
                     advertisements.municipality_id,
                     advertisements.title,
                     advertisements.slug,
@@ -360,8 +360,8 @@ final class AdvertisementAdminRepository
                     profiles.avatar_attachment_id
                         AS customer_avatar_attachment_id,
 
-                    profiles.island_id
-                        AS customer_island_id,
+                    profiles.area_id
+                        AS customer_area_id,
 
                     profiles.municipality_id
                         AS customer_municipality_id
@@ -1125,11 +1125,11 @@ final class AdvertisementAdminRepository
 
         $nullableIntegerFields = [
             'store_id',
-            'island_id',
+            'area_id',
             'municipality_id',
             'cover_attachment_id',
             'customer_avatar_attachment_id',
-            'customer_island_id',
+            'customer_area_id',
             'customer_municipality_id',
         ];
 

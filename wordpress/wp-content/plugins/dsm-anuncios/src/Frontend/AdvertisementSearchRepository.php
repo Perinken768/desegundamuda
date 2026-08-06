@@ -81,7 +81,7 @@ final class AdvertisementSearchRepository
      * - advertisement_id
      * - slug
      * - search
-     * - island_id
+     * - area_id
      * - municipality_id
      * - category_id
      * - customer_id
@@ -163,7 +163,7 @@ final class AdvertisementSearchRepository
                 advertisements.customer_id,
                 advertisements.store_id,
                 advertisements.category_id,
-                advertisements.island_id,
+                advertisements.area_id,
                 advertisements.municipality_id,
                 advertisements.title,
                 advertisements.slug,
@@ -693,24 +693,24 @@ final class AdvertisementSearchRepository
      * @return array<int, string>
      */
     public function findBrands(
-        ?int $islandId = null
+        ?int $areaId = null
     ): array {
         $parameters = [
             AdvertisementStatus::ACTIVE,
             AdvertisementStatus::RESERVED,
         ];
 
-        $whereIsland = '';
+        $whereArea = '';
 
         if (
-            $islandId !== null
-            && $islandId > 0
+            $areaId !== null
+            && $areaId > 0
         ) {
-            $whereIsland =
-                'AND island_id = %d';
+            $whereArea =
+                'AND area_id = %d';
 
             $parameters[] =
-                $islandId;
+                $areaId;
         }
 
         $sql = "
@@ -719,7 +719,7 @@ final class AdvertisementSearchRepository
             WHERE status IN (%s, %s)
               AND brand IS NOT NULL
               AND brand <> ''
-              {$whereIsland}
+              {$whereArea}
             ORDER BY brand ASC
         ";
 
@@ -869,11 +869,11 @@ final class AdvertisementSearchRepository
 
         $locationData =
             apply_filters(
-                'dsm_advertisement_location_data',
+                'dsm_location_data',
                 [
-                    'island_id' =>
+                    'area_id' =>
                         $advertisement[
-                            'island_id'
+                            'area_id'
                         ]
                         ?? null,
 
@@ -883,7 +883,7 @@ final class AdvertisementSearchRepository
                         ]
                         ?? null,
 
-                    'island_name' =>
+                    'area_name' =>
                         '',
 
                     'municipality_name' =>
@@ -976,17 +976,17 @@ final class AdvertisementSearchRepository
 
                 'location' =>
                     [
-                        'island_id' =>
+                        'area_id' =>
                             isset(
                                 $locationData[
-                                    'island_id'
+                                    'area_id'
                                 ]
                             )
                             && $locationData[
-                                'island_id'
+                                'area_id'
                             ] !== null
                                 ? (int) $locationData[
-                                    'island_id'
+                                    'area_id'
                                 ]
                                 : null,
 
@@ -1004,11 +1004,11 @@ final class AdvertisementSearchRepository
                                 ]
                                 : null,
 
-                        'island_name' =>
+                        'area_name' =>
                             sanitize_text_field(
                                 (string) (
                                     $locationData[
-                                        'island_name'
+                                        'area_name'
                                     ]
                                     ?? ''
                                 )
@@ -1270,11 +1270,11 @@ final class AdvertisementSearchRepository
                     )
                 ),
 
-            'island_id' =>
+            'area_id' =>
                 max(
                     0,
                     (int) (
-                        $filters['island_id']
+                        $filters['area_id']
                         ?? 0
                     )
                 ),
@@ -1391,12 +1391,12 @@ final class AdvertisementSearchRepository
                 $filters['slug'];
         }
 
-        if ($filters['island_id'] > 0) {
+        if ($filters['area_id'] > 0) {
             $conditions[] =
-                'advertisements.island_id = %d';
+                'advertisements.area_id = %d';
 
             $parameters[] =
-                $filters['island_id'];
+                $filters['area_id'];
         }
 
         if (
@@ -1735,10 +1735,10 @@ final class AdvertisementSearchRepository
                         ?? 0
                     ),
 
-                'island_id' =>
-                    isset($row['island_id'])
-                    && $row['island_id'] !== null
-                        ? (int) $row['island_id']
+                'area_id' =>
+                    isset($row['area_id'])
+                    && $row['area_id'] !== null
+                        ? (int) $row['area_id']
                         : null,
 
                 'municipality_id' =>

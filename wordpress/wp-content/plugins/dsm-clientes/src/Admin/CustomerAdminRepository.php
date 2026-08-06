@@ -83,7 +83,7 @@ final class CustomerAdminRepository
                 p.display_name,
                 p.phone,
                 p.whatsapp_phone,
-                p.island_id,
+                p.area_id,
                 p.municipality_id,
                 (
                     SELECT MAX(s.last_activity_at)
@@ -302,7 +302,7 @@ final class CustomerAdminRepository
                     p.whatsapp_phone,
                     p.avatar_attachment_id,
                     p.bio,
-                    p.island_id,
+                    p.area_id,
                     p.municipality_id
                 FROM {$this->customersTable} c
                 LEFT JOIN {$this->profilesTable} p

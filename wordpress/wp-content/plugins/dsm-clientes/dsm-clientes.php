@@ -21,7 +21,7 @@ define(
 
 define(
     'DSM_CLIENTES_DB_VERSION',
-    8
+    9
 );
 
 define(

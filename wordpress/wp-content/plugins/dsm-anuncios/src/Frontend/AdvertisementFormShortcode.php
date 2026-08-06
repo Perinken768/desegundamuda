@@ -431,13 +431,13 @@ final class AdvertisementFormShortcode
                     ]
                 ),
 
-            'island_id' =>
-                isset($context['island_id'])
-                && $context['island_id'] !== null
+            'area_id' =>
+                isset($context['area_id'])
+                && $context['area_id'] !== null
                     ? max(
                         0,
                         (int) $context[
-                            'island_id'
+                            'area_id'
                         ]
                     )
                     : null,

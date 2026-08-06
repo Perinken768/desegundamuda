@@ -1,0 +1,277 @@
+/**
+ * DSM Ubicaciones
+ * Administración de países, áreas y municipios.
+ */
+
+.dsm-locations-admin {
+    --dsm-locations-border: #dcdcde;
+    --dsm-locations-surface: #ffffff;
+    --dsm-locations-background: #f6f7f7;
+    --dsm-locations-text: #1d2327;
+    --dsm-locations-muted: #646970;
+    --dsm-locations-primary: #2271b1;
+    --dsm-locations-success: #008a20;
+    --dsm-locations-success-soft: #edfaef;
+    --dsm-locations-danger: #b32d2e;
+    --dsm-locations-danger-soft: #fcf0f1;
+    --dsm-locations-radius: 8px;
+    --dsm-locations-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.dsm-locations-admin > .description {
+    margin-top: 8px;
+    max-width: 900px;
+    color: var(--dsm-locations-muted);
+}
+
+.dsm-locations-admin .nav-tab-wrapper {
+    margin-top: 24px;
+}
+
+.dsm-locations-section {
+    margin-top: 24px;
+}
+
+.dsm-locations-section__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 16px;
+}
+
+.dsm-locations-section__header h2 {
+    margin-top: 0;
+    margin-bottom: 6px;
+}
+
+.dsm-locations-section__header p {
+    margin: 0;
+    color: var(--dsm-locations-muted);
+}
+
+.dsm-locations-count {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 4px 10px;
+    border: 1px solid var(--dsm-locations-border);
+    border-radius: 999px;
+    background: var(--dsm-locations-surface);
+    color: var(--dsm-locations-muted);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.dsm-locations-card {
+    margin-bottom: 22px;
+    padding: 20px;
+    border: 1px solid var(--dsm-locations-border);
+    border-radius: var(--dsm-locations-radius);
+    background: var(--dsm-locations-surface);
+    box-shadow: var(--dsm-locations-shadow);
+}
+
+.dsm-locations-card h3 {
+    margin-top: 0;
+    margin-bottom: 18px;
+}
+
+.dsm-locations-create-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.dsm-locations-form-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(180px, 1fr)
+        );
+    align-items: end;
+    gap: 16px;
+}
+
+.dsm-locations-form-grid > label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.dsm-locations-form-grid > label > span {
+    color: var(--dsm-locations-text);
+    font-weight: 600;
+}
+
+.dsm-locations-admin input[type="text"],
+.dsm-locations-admin input[type="number"],
+.dsm-locations-admin input[type="search"],
+.dsm-locations-admin select {
+    width: 100%;
+    min-width: 0;
+}
+
+.dsm-locations-admin input[type="text"],
+.dsm-locations-admin input[type="number"],
+.dsm-locations-admin input[type="search"],
+.dsm-locations-admin select {
+    min-height: 34px;
+}
+
+.dsm-locations-checkbox {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center;
+    gap: 8px !important;
+}
+
+.dsm-locations-checkbox input[type="checkbox"] {
+    margin: 0;
+}
+
+.dsm-locations-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+}
+
+.dsm-locations-toolbar label {
+    width: min(100%, 360px);
+}
+
+.dsm-locations-table-wrapper {
+    overflow-x: auto;
+    border: 1px solid var(--dsm-locations-border);
+    border-radius: var(--dsm-locations-radius);
+    background: var(--dsm-locations-surface);
+    box-shadow: var(--dsm-locations-shadow);
+}
+
+.dsm-locations-table {
+    border: 0;
+    border-collapse: collapse;
+}
+
+.dsm-locations-table th {
+    vertical-align: middle;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.dsm-locations-table td {
+    vertical-align: middle;
+}
+
+.dsm-locations-table input[type="text"],
+.dsm-locations-table input[type="number"],
+.dsm-locations-table select {
+    width: 100%;
+    min-width: 110px;
+}
+
+.dsm-locations-table td code {
+    display: block;
+    margin-top: 5px;
+    color: var(--dsm-locations-muted);
+    font-size: 11px;
+    overflow-wrap: anywhere;
+}
+
+.dsm-locations-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.dsm-locations-row-actions .button {
+    margin: 0;
+}
+
+.dsm-status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.dsm-status--active {
+    background: var(--dsm-locations-success-soft);
+    color: var(--dsm-locations-success);
+}
+
+.dsm-status--inactive {
+    background: var(--dsm-locations-danger-soft);
+    color: var(--dsm-locations-danger);
+}
+
+.dsm-locations-table tr[hidden] {
+    display: none;
+}
+
+.dsm-locations-admin .notice.inline {
+    margin: 0;
+}
+
+.dsm-locations-admin .submit {
+    margin: 0;
+    padding: 0;
+}
+
+.dsm-locations-admin .button[disabled] {
+    cursor: wait;
+    opacity: 0.65;
+}
+
+@media (max-width: 1100px) {
+    .dsm-locations-table {
+        min-width: 980px;
+    }
+}
+
+@media (max-width: 782px) {
+    .dsm-locations-section__header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .dsm-locations-count {
+        align-self: flex-start;
+    }
+
+    .dsm-locations-card {
+        padding: 16px;
+    }
+
+    .dsm-locations-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dsm-locations-toolbar {
+        justify-content: stretch;
+    }
+
+    .dsm-locations-toolbar label {
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dsm-locations-admin *,
+    .dsm-locations-admin *::before,
+    .dsm-locations-admin *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}

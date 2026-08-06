@@ -13,6 +13,13 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+/**
+ * Caso de uso para actualizar anuncios particulares.
+ *
+ * La ubicación utiliza area_id como campo territorial neutral.
+ *
+ * antiguo de entrada, pero siempre se envía area_id al repositorio.
+ */
 final class UpdateAdvertisement
 {
     public function __construct(
@@ -42,9 +49,10 @@ final class UpdateAdvertisement
         }
 
         $advertisement =
-            $this->advertisementRepository->findById(
-                $advertisementId
-            );
+            $this->advertisementRepository
+                ->findById(
+                    $advertisementId
+                );
 
         if ($advertisement === null) {
             throw new RuntimeException(
@@ -53,32 +61,39 @@ final class UpdateAdvertisement
         }
 
         if (
-            !$advertisement->belongsToCustomer(
-                $customerId
-            )
+            !$advertisement
+                ->belongsToCustomer(
+                    $customerId
+                )
         ) {
             throw new RuntimeException(
                 'No tienes permisos para editar este anuncio.'
             );
         }
 
-        if (!$advertisement->isEditableByCustomer()) {
+        if (
+            !$advertisement
+                ->isEditableByCustomer()
+        ) {
             throw new RuntimeException(
                 'El anuncio no se puede editar en su estado actual.'
             );
         }
 
-        $categoryId = array_key_exists(
-            'category_id',
-            $data
-        )
-            ? (int) $data['category_id']
-            : $advertisement->getCategoryId();
+        $categoryId =
+            array_key_exists(
+                'category_id',
+                $data
+            )
+                ? (int) $data['category_id']
+                : $advertisement
+                    ->getCategoryId();
 
         $category =
-            $this->categoryRepository->findById(
-                $categoryId
-            );
+            $this->categoryRepository
+                ->findById(
+                    $categoryId
+                );
 
         if ($category === null) {
             throw new RuntimeException(
@@ -92,18 +107,25 @@ final class UpdateAdvertisement
             );
         }
 
-        if (!$category->canBeUsedInMarketplace()) {
+        if (
+            !$category
+                ->canBeUsedInMarketplace()
+        ) {
             throw new RuntimeException(
                 'La categoría seleccionada no admite anuncios de clientes.'
             );
         }
 
-        $title = array_key_exists(
-            'title',
-            $data
-        )
-            ? trim((string) $data['title'])
-            : $advertisement->getTitle();
+        $title =
+            array_key_exists(
+                'title',
+                $data
+            )
+                ? trim(
+                    (string) $data['title']
+                )
+                : $advertisement
+                    ->getTitle();
 
         if ($title === '') {
             throw new RuntimeException(
@@ -111,18 +133,28 @@ final class UpdateAdvertisement
             );
         }
 
-        if (mb_strlen($title) > 180) {
+        if (
+            mb_strlen(
+                $title
+            ) > 180
+        ) {
             throw new RuntimeException(
                 'El título no puede superar los 180 caracteres.'
             );
         }
 
-        $description = array_key_exists(
-            'description',
-            $data
-        )
-            ? trim((string) $data['description'])
-            : $advertisement->getDescription();
+        $description =
+            array_key_exists(
+                'description',
+                $data
+            )
+                ? trim(
+                    (string) $data[
+                        'description'
+                    ]
+                )
+                : $advertisement
+                    ->getDescription();
 
         if ($description === '') {
             throw new RuntimeException(
@@ -130,14 +162,18 @@ final class UpdateAdvertisement
             );
         }
 
-        $conditionCode = array_key_exists(
-            'condition_code',
-            $data
-        )
-            ? sanitize_key(
-                (string) $data['condition_code']
+        $conditionCode =
+            array_key_exists(
+                'condition_code',
+                $data
             )
-            : $advertisement->getConditionCode();
+                ? sanitize_key(
+                    (string) $data[
+                        'condition_code'
+                    ]
+                )
+                : $advertisement
+                    ->getConditionCode();
 
         if ($conditionCode === '') {
             throw new RuntimeException(
@@ -145,81 +181,110 @@ final class UpdateAdvertisement
             );
         }
 
-        $this->advertisementRepository->updateDetails(
-            $advertisementId,
-            [
-                'category_id' =>
-                    $categoryId,
+        $hasAreaValue =
+            array_key_exists(
+                'area_id',
+                $data
+            );
 
-                'island_id' =>
-                    array_key_exists(
-                        'island_id',
-                        $data
-                    )
-                        ? $data['island_id']
-                        : $advertisement->getIslandId(),
+        $areaId =
+            $hasAreaValue
+                ? self::nullablePositiveInt(
+                    $data['area_id']
+                )
+                : $advertisement
+                    ->getAreaId();
 
-                'municipality_id' =>
-                    array_key_exists(
-                        'municipality_id',
-                        $data
-                    )
-                        ? $data['municipality_id']
-                        : $advertisement
-                            ->getMunicipalityId(),
+        $municipalityId =
+            array_key_exists(
+                'municipality_id',
+                $data
+            )
+                ? self::nullablePositiveInt(
+                    $data['municipality_id']
+                )
+                : $advertisement
+                    ->getMunicipalityId();
 
-                'title' =>
-                    $title,
+        if (
+            $municipalityId !== null
+            && $areaId === null
+        ) {
+            throw new RuntimeException(
+                'No se puede seleccionar un municipio sin indicar un área.'
+            );
+        }
 
-                'description' =>
-                    $description,
+        $this->advertisementRepository
+            ->updateDetails(
+                $advertisementId,
+                [
+                    'category_id' =>
+                        $categoryId,
 
-                'brand' =>
-                    array_key_exists(
-                        'brand',
-                        $data
-                    )
-                        ? $data['brand']
-                        : $advertisement->getBrand(),
+                    'area_id' =>
+                        $areaId,
 
-                'price' =>
-                    array_key_exists(
-                        'price',
-                        $data
-                    )
-                        ? $data['price']
-                        : $advertisement->getPrice(),
+                    'municipality_id' =>
+                        $municipalityId,
 
-                'original_price' =>
-                    array_key_exists(
-                        'original_price',
-                        $data
-                    )
-                        ? $data['original_price']
-                        : $advertisement
-                            ->getOriginalPrice(),
+                    'title' =>
+                        $title,
 
-                'purchase_date' =>
-                    array_key_exists(
-                        'purchase_date',
-                        $data
-                    )
-                        ? $data['purchase_date']
-                        : (
-                            $advertisement
+                    'description' =>
+                        $description,
+
+                    'brand' =>
+                        array_key_exists(
+                            'brand',
+                            $data
+                        )
+                            ? $data['brand']
+                            : $advertisement
+                                ->getBrand(),
+
+                    'price' =>
+                        array_key_exists(
+                            'price',
+                            $data
+                        )
+                            ? $data['price']
+                            : $advertisement
+                                ->getPrice(),
+
+                    'original_price' =>
+                        array_key_exists(
+                            'original_price',
+                            $data
+                        )
+                            ? $data[
+                                'original_price'
+                            ]
+                            : $advertisement
+                                ->getOriginalPrice(),
+
+                    'purchase_date' =>
+                        array_key_exists(
+                            'purchase_date',
+                            $data
+                        )
+                            ? $data[
+                                'purchase_date'
+                            ]
+                            : $advertisement
                                 ->getPurchaseDate()
-                                ?->format('Y-m-d')
-                        ),
+                                ?->format('Y-m-d'),
 
-                'condition_code' =>
-                    $conditionCode,
-            ]
-        );
+                    'condition_code' =>
+                        $conditionCode,
+                ]
+            );
 
         $updatedAdvertisement =
-            $this->advertisementRepository->findById(
-                $advertisementId
-            );
+            $this->advertisementRepository
+                ->findById(
+                    $advertisementId
+                );
 
         if ($updatedAdvertisement === null) {
             throw new RuntimeException(
@@ -228,5 +293,23 @@ final class UpdateAdvertisement
         }
 
         return $updatedAdvertisement;
+    }
+
+    private static function nullablePositiveInt(
+        mixed $value
+    ): ?int {
+        if (
+            $value === null
+            || $value === ''
+        ) {
+            return null;
+        }
+
+        $integer =
+            (int) $value;
+
+        return $integer > 0
+            ? $integer
+            : null;
     }
 }
