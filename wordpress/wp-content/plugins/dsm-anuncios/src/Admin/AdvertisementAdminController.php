@@ -4,34 +4,33 @@ declare(strict_types=1);
 
 namespace DSM\Anuncios\Admin;
 
-use DSM\Anuncios\Advertisement\AdvertisementStatus;
+use DSM\Anuncios\Advertisement\AdvertisementRepository;
+use DSM\Anuncios\Application\PublishAdvertisement;
+use DSM\Anuncios\Application\RejectAdvertisement;
+use DSM\Anuncios\Moderation\AdvertisementModerationService;
+use DSM\Anuncios\Moderation\AdvertisementStatusHistoryRepository;
 use RuntimeException;
 use Throwable;
-use wpdb;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
 /**
- * Controlador administrativo de anuncios.
+ * Controlador HTTP para la moderación administrativa.
  *
- * Gestiona las transiciones realizadas desde WordPress:
+ * Sus responsabilidades se limitan a:
  *
- * - pending  → active
- * - pending  → rejected
- * - active   → reserved
- * - reserved → active
- * - active   → closed
- * - reserved → closed
+ * - comprobar permisos;
+ * - validar el nonce;
+ * - leer y sanear la petición;
+ * - ejecutar el caso de uso correspondiente;
+ * - registrar la auditoría;
+ * - guardar errores temporales;
+ * - redirigir al detalle del anuncio.
  *
- * Reglas comerciales:
- *
- * - Solo los anuncios activos consumen límite.
- * - El límite predeterminado es 10.
- * - DSM Suscripciones podrá modificar ese límite mediante filtros.
- * - Un valor -1 significa anuncios activos ilimitados.
- * - El cierre administrativo utiliza closure_reason = moderated.
+ * Las reglas de negocio, las transiciones, las transacciones
+ * y el historial pertenecen a AdvertisementModerationService.
  */
 final class AdvertisementAdminController
 {
@@ -53,46 +52,67 @@ final class AdvertisementAdminController
     public const NONCE_FIELD =
         'dsm_advertisement_admin_nonce';
 
+    /*
+     * Se mantienen estas constantes públicas para no romper
+     * plantillas o integraciones que ya las utilicen.
+     */
     public const CLOSURE_REASON_SOLD =
-        'sold';
+        AdvertisementModerationService::
+            CLOSURE_REASON_SOLD;
 
     public const CLOSURE_REASON_WITHDRAWN =
-        'withdrawn';
+        AdvertisementModerationService::
+            CLOSURE_REASON_WITHDRAWN;
 
     public const CLOSURE_REASON_MODERATED =
-        'moderated';
+        AdvertisementModerationService::
+            CLOSURE_REASON_MODERATED;
 
     public const CLOSURE_REASON_EXPIRED =
-        'expired';
+        AdvertisementModerationService::
+            CLOSURE_REASON_EXPIRED;
 
     private const CAPABILITY =
         'manage_options';
 
-    private const DEFAULT_ACTIVE_LIMIT =
-        10;
-
     private const ERROR_TRANSIENT_PREFIX =
         'dsm_advertisement_admin_error_';
 
-    private wpdb $database;
+    private AdvertisementModerationService $moderationService;
 
-    private string $advertisementsTable;
+    private PublishAdvertisement $publishAdvertisement;
 
-    private string $statusHistoryTable;
+    private RejectAdvertisement $rejectAdvertisement;
 
+    /**
+     * Se conserva un constructor sin argumentos porque el
+     * bootstrap actual del plugin instancia directamente:
+     *
+     * new AdvertisementAdminController()
+     */
     public function __construct()
     {
-        global $wpdb;
+        $advertisementRepository =
+            new AdvertisementRepository();
 
-        $this->database = $wpdb;
+        $historyRepository =
+            new AdvertisementStatusHistoryRepository();
 
-        $this->advertisementsTable =
-            $wpdb->prefix
-            . 'dsm_ads';
+        $this->moderationService =
+            new AdvertisementModerationService(
+                $advertisementRepository,
+                $historyRepository
+            );
 
-        $this->statusHistoryTable =
-            $wpdb->prefix
-            . 'dsm_ad_status_history';
+        $this->publishAdvertisement =
+            new PublishAdvertisement(
+                $this->moderationService
+            );
+
+        $this->rejectAdvertisement =
+            new RejectAdvertisement(
+                $this->moderationService
+            );
     }
 
     /**
@@ -103,36 +123,51 @@ final class AdvertisementAdminController
         add_action(
             'admin_post_'
             . self::ACTION_PUBLISH,
-            [$this, 'handlePublish']
+            [
+                $this,
+                'handlePublish',
+            ]
         );
 
         add_action(
             'admin_post_'
             . self::ACTION_REJECT,
-            [$this, 'handleReject']
+            [
+                $this,
+                'handleReject',
+            ]
         );
 
         add_action(
             'admin_post_'
             . self::ACTION_RESERVE,
-            [$this, 'handleReserve']
+            [
+                $this,
+                'handleReserve',
+            ]
         );
 
         add_action(
             'admin_post_'
             . self::ACTION_RELEASE,
-            [$this, 'handleRelease']
+            [
+                $this,
+                'handleRelease',
+            ]
         );
 
         add_action(
             'admin_post_'
             . self::ACTION_CLOSE,
-            [$this, 'handleClose']
+            [
+                $this,
+                'handleClose',
+            ]
         );
     }
 
     /**
-     * Publica un anuncio pendiente.
+     * Aprueba y publica un anuncio pendiente.
      */
     public function handlePublish(): void
     {
@@ -141,52 +176,36 @@ final class AdvertisementAdminController
                 self::ACTION_PUBLISH
             );
 
+        $userId =
+            get_current_user_id();
+
         try {
-            $this->changeStatus(
-                advertisementId:
-                    $advertisementId,
-
-                expectedStatuses:
-                    [
-                        AdvertisementStatus::PENDING,
-                    ],
-
-                newStatus:
-                    AdvertisementStatus::ACTIVE,
-
-                notes:
-                    'Anuncio aprobado y publicado desde administración.',
-
-                additionalFields:
-                    [
-                        'rejection_reason' =>
-                            null,
-
-                        'published_at' =>
-                            $this->now(),
-
-                        'reserved_at' =>
-                            null,
-
-                        'closed_at' =>
-                            null,
-
-                        'closure_reason' =>
-                            null,
-                    ]
-            );
+            $advertisement =
+                $this->publishAdvertisement
+                    ->execute(
+                        $advertisementId,
+                        $userId,
+                        'Anuncio aprobado y publicado '
+                        . 'desde administración.'
+                    );
 
             $this->clearLastError();
 
-            do_action(
-                'dsm_advertisement_published',
-                $advertisementId,
-                get_current_user_id()
-            );
-
             $this->emitAuditEvent(
                 'advertisement.published',
-                $advertisementId
+                $advertisementId,
+                [
+                    'customer_id' =>
+                        $advertisement
+                            ->getCustomerId(),
+
+                    'previous_status' =>
+                        'pending',
+
+                    'new_status' =>
+                        $advertisement
+                            ->getStatus(),
+                ]
             );
 
             $status =
@@ -218,93 +237,37 @@ final class AdvertisementAdminController
                 self::ACTION_REJECT
             );
 
+        $userId =
+            get_current_user_id();
+
         $reason =
-            isset($_POST['rejection_reason'])
-                ? trim(
-                    sanitize_textarea_field(
-                        wp_unslash(
-                            (string) $_POST[
-                                'rejection_reason'
-                            ]
-                        )
-                    )
-                )
-                : '';
+            $this->getRejectionReason();
 
         try {
-            if ($reason === '') {
-                throw new RuntimeException(
-                    'Debes indicar el motivo del rechazo.'
-                );
-            }
-
-            if (
-                function_exists('mb_strlen')
-                && mb_strlen($reason) > 2000
-            ) {
-                throw new RuntimeException(
-                    'El motivo del rechazo no puede superar los 2000 caracteres.'
-                );
-            }
-
-            if (
-                !function_exists('mb_strlen')
-                && strlen($reason) > 2000
-            ) {
-                throw new RuntimeException(
-                    'El motivo del rechazo no puede superar los 2000 caracteres.'
-                );
-            }
-
-            $this->changeStatus(
-                advertisementId:
-                    $advertisementId,
-
-                expectedStatuses:
-                    [
-                        AdvertisementStatus::PENDING,
-                    ],
-
-                newStatus:
-                    AdvertisementStatus::REJECTED,
-
-                notes:
-                    $reason,
-
-                additionalFields:
-                    [
-                        'rejection_reason' =>
-                            $reason,
-
-                        'published_at' =>
-                            null,
-
-                        'reserved_at' =>
-                            null,
-
-                        'closed_at' =>
-                            null,
-
-                        'closure_reason' =>
-                            null,
-                    ]
-            );
+            $advertisement =
+                $this->rejectAdvertisement
+                    ->execute(
+                        $advertisementId,
+                        $userId,
+                        $reason
+                    );
 
             $this->clearLastError();
-
-            do_action(
-                'dsm_advertisement_rejected',
-                $advertisementId,
-                $reason,
-                get_current_user_id()
-            );
 
             $this->emitAuditEvent(
                 'advertisement.rejected',
                 $advertisementId,
                 [
+                    'customer_id' =>
+                        $advertisement
+                            ->getCustomerId(),
+
                     'reason' =>
                         $reason,
+
+                    'new_status' =>
+                        $advertisement
+                            ->getStatus(),
                 ]
             );
 
@@ -328,10 +291,8 @@ final class AdvertisementAdminController
     }
 
     /**
-     * Marca un anuncio activo como reservado.
-     *
-     * Al pasar a reserved deja de consumir el límite de activos,
-     * según la regla comercial definida.
+     * Marca un anuncio activo como reservado desde
+     * administración.
      */
     public function handleReserve(): void
     {
@@ -340,46 +301,33 @@ final class AdvertisementAdminController
                 self::ACTION_RESERVE
             );
 
+        $userId =
+            get_current_user_id();
+
         try {
-            $this->changeStatus(
-                advertisementId:
-                    $advertisementId,
-
-                expectedStatuses:
-                    [
-                        AdvertisementStatus::ACTIVE,
-                    ],
-
-                newStatus:
-                    AdvertisementStatus::RESERVED,
-
-                notes:
-                    'Anuncio marcado como reservado desde administración.',
-
-                additionalFields:
-                    [
-                        'reserved_at' =>
-                            $this->now(),
-
-                        'closed_at' =>
-                            null,
-
-                        'closure_reason' =>
-                            null,
-                    ]
-            );
+            $advertisement =
+                $this->moderationService
+                    ->reserveByUser(
+                        $advertisementId,
+                        $userId,
+                        'Anuncio marcado como reservado '
+                        . 'desde administración.'
+                    );
 
             $this->clearLastError();
 
-            do_action(
-                'dsm_advertisement_reserved',
-                $advertisementId,
-                get_current_user_id()
-            );
-
             $this->emitAuditEvent(
                 'advertisement.reserved',
-                $advertisementId
+                $advertisementId,
+                [
+                    'customer_id' =>
+                        $advertisement
+                            ->getCustomerId(),
+
+                    'new_status' =>
+                        $advertisement
+                            ->getStatus(),
+                ]
             );
 
             $status =
@@ -402,10 +350,7 @@ final class AdvertisementAdminController
     }
 
     /**
-     * Libera un anuncio reservado.
-     *
-     * Como vuelve a estado active, debe comprobar el límite
-     * configurable de anuncios activos del cliente.
+     * Libera una reserva desde administración.
      */
     public function handleRelease(): void
     {
@@ -414,46 +359,32 @@ final class AdvertisementAdminController
                 self::ACTION_RELEASE
             );
 
+        $userId =
+            get_current_user_id();
+
         try {
-            $this->changeStatus(
-                advertisementId:
-                    $advertisementId,
-
-                expectedStatuses:
-                    [
-                        AdvertisementStatus::RESERVED,
-                    ],
-
-                newStatus:
-                    AdvertisementStatus::ACTIVE,
-
-                notes:
-                    'Reserva liberada desde administración.',
-
-                additionalFields:
-                    [
-                        'reserved_at' =>
-                            null,
-
-                        'closed_at' =>
-                            null,
-
-                        'closure_reason' =>
-                            null,
-                    ]
-            );
+            $advertisement =
+                $this->moderationService
+                    ->releaseReservationByUser(
+                        $advertisementId,
+                        $userId,
+                        'Reserva liberada desde administración.'
+                    );
 
             $this->clearLastError();
 
-            do_action(
-                'dsm_advertisement_reservation_released',
-                $advertisementId,
-                get_current_user_id()
-            );
-
             $this->emitAuditEvent(
                 'advertisement.reservation_released',
-                $advertisementId
+                $advertisementId,
+                [
+                    'customer_id' =>
+                        $advertisement
+                            ->getCustomerId(),
+
+                    'new_status' =>
+                        $advertisement
+                            ->getStatus(),
+                ]
             );
 
             $status =
@@ -478,14 +409,8 @@ final class AdvertisementAdminController
     /**
      * Cierra un anuncio desde administración.
      *
-     * Este cierre no equivale a una venta.
-     *
-     * Por tanto:
-     *
-     * closure_reason = moderated
-     *
-     * DSM Promocionar no deberá devolver tiempo promocional
-     * por este motivo.
+     * El motivo moderated permite que DSM Promocionar
+     * distinga este cierre de una venta real.
      */
     public function handleClose(): void
     {
@@ -494,63 +419,42 @@ final class AdvertisementAdminController
                 self::ACTION_CLOSE
             );
 
+        $userId =
+            get_current_user_id();
+
         try {
-            $result =
-                $this->changeStatus(
-                    advertisementId:
+            $advertisement =
+                $this->moderationService
+                    ->closeByUser(
                         $advertisementId,
-
-                    expectedStatuses:
-                        [
-                            AdvertisementStatus::ACTIVE,
-                            AdvertisementStatus::RESERVED,
-                        ],
-
-                    newStatus:
-                        AdvertisementStatus::CLOSED,
-
-                    notes:
-                        'Anuncio cerrado desde administración.',
-
-                    additionalFields:
-                        [
-                            'closed_at' =>
-                                $this->now(),
-
-                            'reserved_at' =>
-                                null,
-
-                            'closure_reason' =>
-                                self::CLOSURE_REASON_MODERATED,
-                        ]
-                );
+                        $userId,
+                        self::CLOSURE_REASON_MODERATED,
+                        'Anuncio cerrado desde administración.'
+                    );
 
             $this->clearLastError();
-
-            do_action(
-                'dsm_advertisement_closed',
-                $advertisementId,
-                (int) $result['customer_id'],
-                self::CLOSURE_REASON_MODERATED,
-                (string) $result['closed_at']
-            );
-
-            do_action(
-                'dsm_advertisement_moderated_closed',
-                $advertisementId,
-                (int) $result['customer_id'],
-                get_current_user_id()
-            );
 
             $this->emitAuditEvent(
                 'advertisement.closed',
                 $advertisementId,
                 [
+                    'customer_id' =>
+                        $advertisement
+                            ->getCustomerId(),
+
                     'closure_reason' =>
                         self::CLOSURE_REASON_MODERATED,
 
-                    'customer_id' =>
-                        (int) $result['customer_id'],
+                    'closed_at' =>
+                        $advertisement
+                            ->getClosedAt()
+                            ?->format(
+                                'Y-m-d H:i:s'
+                            ),
+
+                    'new_status' =>
+                        $advertisement
+                            ->getStatus(),
                 ]
             );
 
@@ -596,687 +500,68 @@ final class AdvertisementAdminController
     }
 
     /**
-     * Cambia el estado de un anuncio dentro de una transacción.
-     *
-     * @param array<int, string> $expectedStatuses
-     * @param array<string, mixed> $additionalFields
-     *
-     * @return array{
-     *     advertisement_id:int,
-     *     customer_id:int,
-     *     previous_status:string,
-     *     new_status:string,
-     *     closed_at:?string
-     * }
+     * Obtiene y sanea el motivo de rechazo.
      */
-    private function changeStatus(
-        int $advertisementId,
-        array $expectedStatuses,
-        string $newStatus,
-        ?string $notes = null,
-        array $additionalFields = []
-    ): array {
-        if ($advertisementId <= 0) {
-            throw new RuntimeException(
-                'El identificador del anuncio no es válido.'
-            );
-        }
-
-        if (
-            !AdvertisementStatus::isValid(
-                $newStatus
-            )
-        ) {
-            throw new RuntimeException(
-                'El nuevo estado del anuncio no es válido.'
-            );
-        }
-
-        foreach (
-            $expectedStatuses
-            as $expectedStatus
-        ) {
-            if (
-                !AdvertisementStatus::isValid(
-                    $expectedStatus
-                )
-            ) {
-                throw new RuntimeException(
-                    'Uno de los estados de origen no es válido.'
-                );
-            }
-        }
-
-        $started =
-            $this->database->query(
-                'START TRANSACTION'
-            );
-
-        if ($started === false) {
-            throw new RuntimeException(
-                'No se pudo iniciar la transacción.'
-            );
-        }
-
-        try {
-            $advertisement =
-                $this->lockAdvertisement(
-                    $advertisementId
-                );
-
-            if ($advertisement === null) {
-                throw new RuntimeException(
-                    'No se encontró el anuncio.'
-                );
-            }
-
-            $previousStatus =
-                sanitize_key(
-                    (string) (
-                        $advertisement['status']
-                        ?? ''
-                    )
-                );
-
-            if (
-                !in_array(
-                    $previousStatus,
-                    $expectedStatuses,
-                    true
-                )
-            ) {
-                throw new RuntimeException(
-                    sprintf(
-                        'El anuncio no puede pasar de %s a %s.',
-                        $previousStatus,
-                        $newStatus
-                    )
-                );
-            }
-
-            $this->validateTransition(
-                $advertisement,
-                $previousStatus,
-                $newStatus
-            );
-
-            /*
-             * Solo al entrar en estado active comprobamos el cupo.
-             *
-             * Se excluye el propio anuncio para que una transición
-             * idempotente o una futura reactivación no se cuente dos veces.
-             */
-            if (
-                $newStatus
-                === AdvertisementStatus::ACTIVE
-                && $previousStatus
-                !== AdvertisementStatus::ACTIVE
-            ) {
-                $this->assertActiveAdvertisementLimit(
-                    customerId:
-                        (int) $advertisement[
-                            'customer_id'
-                        ],
-
-                    excludedAdvertisementId:
-                        $advertisementId
-                );
-            }
-
-            $updateData = [
-                'status' =>
-                    $newStatus,
-
-                'updated_at' =>
-                    $this->now(),
-            ];
-
-            foreach (
-                $additionalFields
-                as $field => $value
-            ) {
-                if (
-                    !in_array(
-                        $field,
-                        [
-                            'rejection_reason',
-                            'reserved_at',
-                            'published_at',
-                            'closed_at',
-                            'closure_reason',
-                        ],
-                        true
-                    )
-                ) {
-                    continue;
-                }
-
-                $updateData[$field] =
-                    $value;
-            }
-
-            $formats =
-                $this->buildFormats(
-                    $updateData
-                );
-
-            $updated =
-                $this->database->update(
-                    $this->advertisementsTable,
-                    $updateData,
-                    [
-                        'id' =>
-                            $advertisementId,
-                    ],
-                    $formats,
-                    [
-                        '%d',
-                    ]
-                );
-
-            if ($updated === false) {
-                throw new RuntimeException(
-                    'No se pudo actualizar el anuncio: '
-                    . $this->database->last_error
-                );
-            }
-
-            $this->insertStatusHistory(
-                advertisementId:
-                    $advertisementId,
-
-                previousStatus:
-                    $previousStatus,
-
-                newStatus:
-                    $newStatus,
-
-                notes:
-                    $notes
-            );
-
-            $committed =
-                $this->database->query(
-                    'COMMIT'
-                );
-
-            if ($committed === false) {
-                throw new RuntimeException(
-                    'No se pudo confirmar la transacción.'
-                );
-            }
-
-            return [
-                'advertisement_id' =>
-                    $advertisementId,
-
-                'customer_id' =>
-                    (int) $advertisement[
-                        'customer_id'
-                    ],
-
-                'previous_status' =>
-                    $previousStatus,
-
-                'new_status' =>
-                    $newStatus,
-
-                'closed_at' =>
-                    isset(
-                        $updateData['closed_at']
-                    )
-                    && is_string(
-                        $updateData['closed_at']
-                    )
-                        ? $updateData['closed_at']
-                        : null,
-            ];
-        } catch (Throwable $exception) {
-            $this->database->query(
-                'ROLLBACK'
-            );
-
-            throw $exception;
-        }
-    }
-
-    /**
-     * Bloquea y devuelve un anuncio.
-     *
-     * @return array<string, mixed>|null
-     */
-    private function lockAdvertisement(
-        int $advertisementId
-    ): ?array {
-        $sql =
-            $this->database->prepare(
-                "
-                SELECT
-                    id,
-                    customer_id,
-                    store_id,
-                    category_id,
-                    title,
-                    description,
-                    price,
-                    condition_code,
-                    status,
-                    rejection_reason,
-                    reserved_at,
-                    published_at,
-                    closed_at,
-                    closure_reason
-                FROM {$this->advertisementsTable}
-                WHERE id = %d
-                LIMIT 1
-                FOR UPDATE
-                ",
-                $advertisementId
-            );
-
-        if (!is_string($sql)) {
-            return null;
-        }
-
-        $row =
-            $this->database->get_row(
-                $sql,
-                ARRAY_A
-            );
-
-        return is_array($row)
-            ? $row
-            : null;
-    }
-
-    /**
-     * Valida requisitos propios de la transición.
-     *
-     * @param array<string, mixed> $advertisement
-     */
-    private function validateTransition(
-        array $advertisement,
-        string $previousStatus,
-        string $newStatus
-    ): void {
-        if (
-            $newStatus
-            === AdvertisementStatus::ACTIVE
-            && $previousStatus
-            === AdvertisementStatus::PENDING
-        ) {
-            if (
-                trim(
-                    (string) (
-                        $advertisement['title']
-                        ?? ''
-                    )
-                ) === ''
-            ) {
-                throw new RuntimeException(
-                    'El anuncio no tiene título.'
-                );
-            }
-
-            if (
-                trim(
-                    (string) (
-                        $advertisement[
-                            'description'
-                        ]
-                        ?? ''
-                    )
-                ) === ''
-            ) {
-                throw new RuntimeException(
-                    'El anuncio no tiene descripción.'
-                );
-            }
-
-            if (
-                (int) (
-                    $advertisement[
-                        'category_id'
-                    ]
-                    ?? 0
-                ) <= 0
-            ) {
-                throw new RuntimeException(
-                    'El anuncio no tiene categoría.'
-                );
-            }
-
-            if (
-                trim(
-                    (string) (
-                        $advertisement[
-                            'condition_code'
-                        ]
-                        ?? ''
-                    )
-                ) === ''
-            ) {
-                throw new RuntimeException(
-                    'El anuncio no tiene estado de conservación.'
-                );
-            }
-
-            if (
-                (float) (
-                    $advertisement['price']
-                    ?? 0
-                ) < 0
-            ) {
-                throw new RuntimeException(
-                    'El precio del anuncio no es válido.'
-                );
-            }
-        }
-
-        if (
-            $newStatus
-            === AdvertisementStatus::RESERVED
-            && $previousStatus
-            !== AdvertisementStatus::ACTIVE
-        ) {
-            throw new RuntimeException(
-                'Solo pueden reservarse anuncios activos.'
-            );
-        }
-
-        if (
-            $newStatus
-            === AdvertisementStatus::ACTIVE
-            && !in_array(
-                $previousStatus,
-                [
-                    AdvertisementStatus::PENDING,
-                    AdvertisementStatus::RESERVED,
-                ],
-                true
-            )
-        ) {
-            throw new RuntimeException(
-                'El anuncio no puede activarse desde su estado actual.'
-            );
-        }
-
-        if (
-            $newStatus
-            === AdvertisementStatus::CLOSED
-            && !in_array(
-                $previousStatus,
-                [
-                    AdvertisementStatus::ACTIVE,
-                    AdvertisementStatus::RESERVED,
-                ],
-                true
-            )
-        ) {
-            throw new RuntimeException(
-                'Solo pueden cerrarse anuncios activos o reservados.'
-            );
-        }
-    }
-
-    /**
-     * Verifica el límite configurable de anuncios activos.
-     *
-     * Mientras DSM Suscripciones no exista:
-     *
-     * - el límite predeterminado es 10;
-     * - puede modificarse con el filtro;
-     * - -1 significa ilimitado.
-     */
-    private function assertActiveAdvertisementLimit(
-        int $customerId,
-        int $excludedAdvertisementId = 0
-    ): void {
-        if ($customerId <= 0) {
-            throw new RuntimeException(
-                'El anuncio no tiene un cliente válido.'
-            );
-        }
-
-        $defaultLimit =
-            self::DEFAULT_ACTIVE_LIMIT;
-
-        /**
-         * Filtro sencillo para modificar el límite activo.
-         *
-         * DSM Suscripciones podrá engancharse aquí.
-         *
-         * @param int $limit
-         * @param int $customerId
-         */
-        $limit =
-            (int) apply_filters(
-                'dsm_customer_active_advertisement_limit',
-                $defaultLimit,
-                $customerId
-            );
-
-        /**
-         * Filtro alternativo basado en código de capacidad.
-         *
-         * Permite reutilizar un futuro servicio genérico de
-         * características de suscripción.
-         *
-         * @param int    $value
-         * @param int    $customerId
-         * @param string $featureCode
-         */
-        $limit =
-            (int) apply_filters(
-                'dsm_customer_feature_value',
-                $limit,
-                $customerId,
-                'advertisements.max_active'
-            );
-
-        if ($limit === -1) {
-            return;
-        }
-
-        $limit =
-            max(
-                0,
-                $limit
-            );
-
-        $used =
-            $this->countActiveAdvertisements(
-                $customerId,
-                $excludedAdvertisementId
-            );
-
-        $result = [
-            'allowed' =>
-                $used < $limit,
-
-            'limit' =>
-                $limit,
-
-            'used' =>
-                $used,
-
-            'remaining' =>
-                max(
-                    0,
-                    $limit - $used
-                ),
-        ];
-
-        /**
-         * Permite que otro módulo sustituya o complete la decisión.
-         *
-         * @param array<string, int|bool> $result
-         * @param int                    $customerId
-         * @param int                    $excludedAdvertisementId
-         */
-        $result =
-            apply_filters(
-                'dsm_customer_can_activate_advertisement',
-                $result,
-                $customerId,
-                $excludedAdvertisementId
-            );
-
-        $allowed =
-            isset($result['allowed'])
-                ? (bool) $result['allowed']
-                : false;
-
-        if ($allowed) {
-            return;
-        }
-
-        $resolvedLimit =
-            isset($result['limit'])
-                ? (int) $result['limit']
-                : $limit;
-
-        $resolvedUsed =
-            isset($result['used'])
-                ? (int) $result['used']
-                : $used;
-
-        throw new RuntimeException(
-            sprintf(
-                'El cliente ha alcanzado el límite de anuncios activos (%d de %d).',
-                $resolvedUsed,
-                $resolvedLimit
-            )
-        );
-    }
-
-    /**
-     * Cuenta únicamente anuncios con status = active.
-     */
-    private function countActiveAdvertisements(
-        int $customerId,
-        int $excludedAdvertisementId = 0
-    ): int {
-        if ($excludedAdvertisementId > 0) {
-            $sql =
-                $this->database->prepare(
-                    "
-                    SELECT COUNT(*)
-                    FROM {$this->advertisementsTable}
-                    WHERE customer_id = %d
-                      AND status = %s
-                      AND id <> %d
-                    ",
-                    $customerId,
-                    AdvertisementStatus::ACTIVE,
-                    $excludedAdvertisementId
-                );
-        } else {
-            $sql =
-                $this->database->prepare(
-                    "
-                    SELECT COUNT(*)
-                    FROM {$this->advertisementsTable}
-                    WHERE customer_id = %d
-                      AND status = %s
-                    ",
-                    $customerId,
-                    AdvertisementStatus::ACTIVE
-                );
-        }
-
-        if (!is_string($sql)) {
-            return 0;
-        }
-
-        return max(
-            0,
-            (int) $this->database->get_var(
-                $sql
-            )
-        );
-    }
-
-    /**
-     * Inserta el historial de estado.
-     */
-    private function insertStatusHistory(
-        int $advertisementId,
-        ?string $previousStatus,
-        string $newStatus,
-        ?string $notes
-    ): void {
-        $inserted =
-            $this->database->insert(
-                $this->statusHistoryTable,
-                [
-                    'advertisement_id' =>
-                        $advertisementId,
-
-                    'previous_status' =>
-                        $previousStatus,
-
-                    'new_status' =>
-                        $newStatus,
-
-                    'changed_by_customer_id' =>
-                        null,
-
-                    'changed_by_user_id' =>
-                        get_current_user_id(),
-
-                    'notes' =>
-                        $notes,
-
-                    'created_at' =>
-                        $this->now(),
-                ],
-                [
-                    '%d',
-                    '%s',
-                    '%s',
-                    '%d',
-                    '%d',
-                    '%s',
-                    '%s',
+    private function getRejectionReason(): string
+    {
+        $reason =
+            isset(
+                $_POST[
+                    'rejection_reason'
                 ]
+            )
+                ? sanitize_textarea_field(
+                    wp_unslash(
+                        (string) $_POST[
+                            'rejection_reason'
+                        ]
+                    )
+                )
+                : '';
+
+        $reason =
+            trim(
+                $reason
             );
 
-        if ($inserted === false) {
+        if ($reason === '') {
             throw new RuntimeException(
-                'No se pudo registrar el historial del anuncio: '
-                . $this->database->last_error
+                'Debes indicar el motivo del rechazo.'
             );
         }
-    }
 
-    /**
-     * @param array<string, mixed> $data
-     *
-     * @return array<int, string>
-     */
-    private function buildFormats(
-        array $data
-    ): array {
-        $formats = [];
+        $length =
+            function_exists(
+                'mb_strlen'
+            )
+                ? mb_strlen(
+                    $reason
+                )
+                : strlen(
+                    $reason
+                );
 
-        foreach ($data as $value) {
-            $formats[] =
-                is_int($value)
-                    ? '%d'
-                    : '%s';
+        if ($length > 2000) {
+            throw new RuntimeException(
+                'El motivo del rechazo no puede superar '
+                . 'los 2000 caracteres.'
+            );
         }
 
-        return $formats;
+        return $reason;
     }
 
     /**
-     * Obtiene el ID enviado por POST.
+     * Obtiene el identificador enviado por POST.
      */
     private function getAdvertisementId(): int
     {
         $advertisementId =
-            isset($_POST['advertisement_id'])
+            isset(
+                $_POST[
+                    'advertisement_id'
+                ]
+            )
                 ? absint(
                     wp_unslash(
                         (string) $_POST[
@@ -1297,7 +582,8 @@ final class AdvertisementAdminController
                     'dsm-anuncios'
                 ),
                 [
-                    'response' => 400,
+                    'response' =>
+                        400,
                 ]
             );
         }
@@ -1306,7 +592,7 @@ final class AdvertisementAdminController
     }
 
     /**
-     * Construye el nonce de una acción.
+     * Construye el nonce específico de una acción.
      */
     public static function getNonceAction(
         string $action,
@@ -1318,7 +604,8 @@ final class AdvertisementAdminController
     }
 
     /**
-     * Guarda un error temporal.
+     * Guarda un error temporal para que AdvertisementsPage
+     * pueda mostrarlo después de la redirección.
      */
     private function storeLastError(
         string $message
@@ -1372,7 +659,7 @@ final class AdvertisementAdminController
     }
 
     /**
-     * Registra una excepción.
+     * Guarda y registra una excepción.
      */
     private function handleException(
         string $operation,
@@ -1384,17 +671,18 @@ final class AdvertisementAdminController
         );
 
         error_log(
-            '[DSM Anuncios] Error '
-            . $operation
-            . ' el anuncio '
-            . $advertisementId
-            . ': '
-            . $exception->getMessage()
+            sprintf(
+                '[DSM Anuncios] Error %s el anuncio %d: %s',
+                $operation,
+                $advertisementId,
+                $exception->getMessage()
+            )
         );
     }
 
     /**
-     * Emite un evento para la futura auditoría.
+     * Emite un evento neutral para el futuro módulo
+     * de auditoría.
      *
      * @param array<string, mixed> $extra
      */
@@ -1423,7 +711,7 @@ final class AdvertisementAdminController
     }
 
     /**
-     * Redirige al detalle del anuncio.
+     * Redirige al detalle administrativo.
      */
     private function redirectToAdvertisement(
         int $advertisementId,
@@ -1443,24 +731,17 @@ final class AdvertisementAdminController
                         $advertisementId,
 
                     'dsm_ad_status' =>
-                        $status,
+                        sanitize_key(
+                            $status
+                        ),
                 ],
-                admin_url('admin.php')
+                admin_url(
+                    'admin.php'
+                )
             )
         );
 
         exit;
-    }
-
-    /**
-     * Fecha UTC para almacenamiento.
-     */
-    private function now(): string
-    {
-        return current_time(
-            'mysql',
-            true
-        );
     }
 
     /**
@@ -1486,7 +767,8 @@ final class AdvertisementAdminController
                 'dsm-anuncios'
             ),
             [
-                'response' => 403,
+                'response' =>
+                    403,
             ]
         );
     }

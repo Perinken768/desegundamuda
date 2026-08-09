@@ -230,7 +230,7 @@ final class Advertisement
         return $this->categoryId;
     }
 
-    public function getAreadId(): ?int
+    public function getAreaId(): ?int
     {
         return $this->areaId;
     }
@@ -380,7 +380,8 @@ final class Advertisement
             return null;
         }
 
-        $integer = (int) $value;
+        $integer =
+            (int) $value;
 
         return $integer > 0
             ? $integer
@@ -405,7 +406,9 @@ final class Advertisement
     ): ?string {
         if (
             $value === null
-            || trim((string) $value) === ''
+            || trim(
+                (string) $value
+            ) === ''
         ) {
             return null;
         }
@@ -425,12 +428,14 @@ final class Advertisement
             return null;
         }
 
-        $date = DateTimeImmutable::createFromFormat(
-            '!Y-m-d',
-            (string) $value
-        );
+        $date =
+            DateTimeImmutable::createFromFormat(
+                '!Y-m-d',
+                (string) $value
+            );
 
-        $errors = DateTimeImmutable::getLastErrors();
+        $errors =
+            DateTimeImmutable::getLastErrors();
 
         if (
             $date === false

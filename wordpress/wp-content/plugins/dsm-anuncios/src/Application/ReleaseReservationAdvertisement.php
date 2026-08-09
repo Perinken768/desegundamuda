@@ -13,13 +13,13 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Caso de uso para aprobar y publicar un anuncio.
+ * Caso de uso para liberar la reserva de un anuncio.
  *
  * La validación de la transición, la actualización del
  * estado y el registro del historial se delegan en
  * AdvertisementModerationService.
  */
-final class PublishAdvertisement
+final class ReleaseReservationAdvertisement
 {
     public function __construct(
         private readonly AdvertisementModerationService $moderationService
@@ -27,33 +27,30 @@ final class PublishAdvertisement
     }
 
     /**
-     * Publica un anuncio pendiente.
-     *
-     * @param int         $advertisementId Identificador del anuncio.
-     * @param int         $userId          Usuario de WordPress responsable.
-     * @param string|null $notes           Notas administrativas opcionales.
+     * Devuelve al estado activo un anuncio reservado
+     * perteneciente al cliente.
      */
     public function execute(
+        int $customerId,
         int $advertisementId,
-        int $userId,
         ?string $notes = null
     ): Advertisement {
+        if ($customerId <= 0) {
+            throw new RuntimeException(
+                'El identificador del cliente no es válido.'
+            );
+        }
+
         if ($advertisementId <= 0) {
             throw new RuntimeException(
                 'El identificador del anuncio no es válido.'
             );
         }
 
-        if ($userId <= 0) {
-            throw new RuntimeException(
-                'El identificador del usuario no es válido.'
-            );
-        }
-
         return $this->moderationService
-            ->publish(
+            ->releaseReservation(
+                $customerId,
                 $advertisementId,
-                $userId,
                 $notes
             );
     }

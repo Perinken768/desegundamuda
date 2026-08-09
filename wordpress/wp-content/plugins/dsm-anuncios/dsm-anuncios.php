@@ -21,7 +21,7 @@ define(
 
 define(
     'DSM_ANUNCIOS_DB_VERSION',
-    6
+    7
 );
 
 define(
@@ -46,10 +46,13 @@ use DSM\Anuncios\Category\CategoryRepository;
 use DSM\Anuncios\Database\Installer;
 use DSM\Anuncios\Frontend\AdvertisementController;
 use DSM\Anuncios\Frontend\AdvertisementDetailShortcode;
+use DSM\Anuncios\Frontend\AdvertisementFormController;
 use DSM\Anuncios\Frontend\AdvertisementFormIntegration;
 use DSM\Anuncios\Frontend\AdvertisementFormShortcode;
 use DSM\Anuncios\Frontend\AdvertisementListShortcode;
 use DSM\Anuncios\Frontend\AdvertisementSearchRepository;
+use DSM\Anuncios\Frontend\CustomerAdvertisementActionController;
+use DSM\Anuncios\Frontend\CustomerAdvertisementsShortcode;
 use DSM\Anuncios\Frontend\RelatedAdvertisementRepository;
 use DSM\Anuncios\Support\Autoloader;
 
@@ -101,20 +104,6 @@ $advertisementAdminController->register();
 $categoryRepository =
     new CategoryRepository();
 
-/*
- * Datos auxiliares del formulario público:
- *
- * - categorías;
- * - islas;
- * - municipios.
- */
-$advertisementFormIntegration =
-    new AdvertisementFormIntegration(
-        $categoryRepository
-    );
-
-$advertisementFormIntegration->register();
-
 $categoriesPage =
     new CategoriesPage(
         $categoryRepository
@@ -128,6 +117,21 @@ $categoryAdminController =
     );
 
 $categoryAdminController->register();
+
+/*
+ * Datos auxiliares del formulario de anuncios:
+ *
+ * - categorías;
+ * - países;
+ * - áreas;
+ * - municipios.
+ */
+$advertisementFormIntegration =
+    new AdvertisementFormIntegration(
+        $categoryRepository
+    );
+
+$advertisementFormIntegration->register();
 
 /*
  * Repositorio compartido por el marketplace público,
@@ -171,13 +175,45 @@ $advertisementDetailShortcode =
 $advertisementDetailShortcode->register();
 
 /*
- * Formulario público de creación y edición.
+ * Formulario de creación y edición.
  *
  * Shortcode:
  *
  * [dsm_advertisement_form]
  */
 AdvertisementFormShortcode::register();
+
+/*
+ * Procesamiento POST del formulario de creación
+ * y edición de anuncios.
+ */
+$advertisementFormController =
+    new AdvertisementFormController();
+
+$advertisementFormController->register();
+
+/*
+ * Anuncios del cliente autenticado.
+ *
+ * Shortcode:
+ *
+ * [dsm_customer_advertisements]
+ */
+CustomerAdvertisementsShortcode::register();
+
+/*
+ * Acciones del propietario desde "Mis anuncios":
+ *
+ * - enviar a revisión;
+ * - reservar;
+ * - liberar reserva;
+ * - cerrar;
+ * - eliminar.
+ */
+$customerAdvertisementActionController =
+    new CustomerAdvertisementActionController();
+
+$customerAdvertisementActionController->register();
 
 /*
  * URLs públicas de anuncios:

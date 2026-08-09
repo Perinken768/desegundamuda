@@ -23,9 +23,12 @@ final class Installer
     public static function migrate(): void
     {
         $installedVersion =
-            (int) get_option(
-                self::OPTION_NAME,
-                0
+            max(
+                0,
+                (int) get_option(
+                    self::OPTION_NAME,
+                    0
+                )
             );
 
         $migrations =
@@ -78,7 +81,8 @@ final class Installer
             < DSM_ANUNCIOS_DB_VERSION
         ) {
             throw new RuntimeException(
-                'No se completaron todas las migraciones de DSM Anuncios.'
+                'No se completaron todas las migraciones '
+                . 'de DSM Anuncios.'
             );
         }
     }
@@ -118,6 +122,11 @@ final class Installer
                 DSM_ANUNCIOS_PATH
                 . 'database/migrations/'
                 . '006-add-closure-reason.php',
+
+            7 =>
+                DSM_ANUNCIOS_PATH
+                . 'database/migrations/'
+                . '007-rename-island-to-area.php',
         ];
     }
 

@@ -7,6 +7,7 @@ namespace DSM\Anuncios\Application;
 use DSM\Anuncios\Advertisement\Advertisement;
 use DSM\Anuncios\Advertisement\AdvertisementRepository;
 use DSM\Anuncios\Advertisement\AdvertisementStatus;
+use DSM\Anuncios\Moderation\AdvertisementModerationService;
 use RuntimeException;
 
 if (!defined('ABSPATH')) {
@@ -16,7 +17,8 @@ if (!defined('ABSPATH')) {
 final class SubmitAdvertisementForReview
 {
     public function __construct(
-        private readonly AdvertisementRepository $advertisementRepository
+        private readonly AdvertisementRepository $advertisementRepository,
+        private readonly AdvertisementModerationService $moderationService
     ) {
     }
 
@@ -57,16 +59,6 @@ final class SubmitAdvertisementForReview
             );
         }
 
-        if (
-            !AdvertisementStatus::canBeSubmitted(
-                $advertisement->getStatus()
-            )
-        ) {
-            throw new RuntimeException(
-                'El anuncio no puede enviarse a revisión en su estado actual.'
-            );
-        }
-
         if (trim($advertisement->getTitle()) === '') {
             throw new RuntimeException(
                 'El anuncio necesita un título.'
@@ -95,22 +87,10 @@ final class SubmitAdvertisementForReview
             );
         }
 
-        $this->advertisementRepository->updateStatus(
-            $advertisementId,
-            AdvertisementStatus::PENDING
-        );
-
-        $updatedAdvertisement =
-            $this->advertisementRepository->findById(
+        return $this->moderationService
+            ->submitForReview(
+                $customerId,
                 $advertisementId
             );
-
-        if ($updatedAdvertisement === null) {
-            throw new RuntimeException(
-                'El anuncio se envió, pero no pudo recuperarse.'
-            );
-        }
-
-        return $updatedAdvertisement;
     }
 }
