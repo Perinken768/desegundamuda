@@ -801,6 +801,14 @@ $renderActionForm =
                     ?? null
                 );
 
+            $hasExtensionActions =
+    (bool) apply_filters(
+        'dsm_customer_advertisement_has_extension_actions',
+        false,
+        $advertisement,
+        $customerId
+    );
+
             $hasActions =
                 (
                     $isPublic
@@ -814,7 +822,8 @@ $renderActionForm =
                 || $canReserve
                 || $canRelease
                 || $canClose
-                || $canDelete;
+                || $canDelete
+                || $hasExtensionActions;
             ?>
 
             <article
@@ -1131,6 +1140,14 @@ $renderActionForm =
                         );
                         ?>
                     <?php endif; ?>
+
+                    <?php
+                    do_action(
+                        'dsm_customer_advertisement_actions',
+                        $advertisement,
+                        $customerId
+                    );
+                    ?>
 
                     <?php if (!$hasActions) : ?>
                         <span class="dsm-customer-advertisement-card__no-actions">

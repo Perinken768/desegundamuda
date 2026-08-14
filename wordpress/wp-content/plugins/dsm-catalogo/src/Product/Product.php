@@ -16,6 +16,7 @@ final class Product
     public function __construct(
         private readonly int $id,
         private readonly int $storeId,
+        private readonly ?int $categoryId,
         private readonly ?int $brandId,
         private readonly string $name,
         private readonly string $slug,
@@ -44,6 +45,15 @@ final class Product
         if ($this->storeId <= 0) {
             throw new InvalidArgumentException(
                 'El identificador de la tienda no es válido.'
+            );
+        }
+
+        if (
+            $this->categoryId !== null
+            && $this->categoryId <= 0
+        ) {
+            throw new InvalidArgumentException(
+                'El identificador de la categoría no es válido.'
             );
         }
 
@@ -141,6 +151,11 @@ final class Product
             storeId: (int) (
                 $data['store_id']
                 ?? 0
+            ),
+
+            categoryId: self::nullableInt(
+                $data['category_id']
+                ?? null
             ),
 
             brandId: self::nullableInt(
@@ -247,6 +262,11 @@ final class Product
         return $this->storeId;
     }
 
+    public function getCategoryId(): ?int
+    {
+        return $this->categoryId;
+    }
+
     public function getBrandId(): ?int
     {
         return $this->brandId;
@@ -335,6 +355,11 @@ final class Product
     public function getArchivedAt(): ?DateTimeImmutable
     {
         return $this->archivedAt;
+    }
+
+    public function hasCategory(): bool
+    {
+        return $this->categoryId !== null;
     }
 
     public function hasBrand(): bool

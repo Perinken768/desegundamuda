@@ -108,6 +108,10 @@ final class Installer
             6 => DSM_CATALOGO_PATH
                 . 'database/migrations/'
                 . '006-add-expired-at-to-reservations.php',
+
+            7 => DSM_CATALOGO_PATH
+                . 'database/migrations/'
+                . '007-add-category-to-products.php',
         ];
     }
 

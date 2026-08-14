@@ -21,7 +21,7 @@ define(
 
 define(
     'DSM_CATALOGO_DB_VERSION',
-    6
+    7
 );
 
 define(
@@ -41,10 +41,12 @@ use DSM\Catalogo\Admin\BrandAdminController;
 use DSM\Catalogo\Admin\CatalogPage;
 use DSM\Catalogo\Admin\ProductAdminController;
 use DSM\Catalogo\Admin\VariantAdminController;
+use DSM\Catalogo\Cron\ExpiredReservationsCron;
 use DSM\Catalogo\Database\Installer;
 use DSM\Catalogo\Support\Autoloader;
 
 Autoloader::register();
+ExpiredReservationsCron::register();
 
 /*
  * Instalación y migraciones.
@@ -57,11 +59,35 @@ register_activation_hook(
     ]
 );
 
+register_activation_hook(
+    __FILE__,
+    [
+        ExpiredReservationsCron::class,
+        'activate',
+    ]
+);
+
+register_deactivation_hook(
+    __FILE__,
+    [
+        ExpiredReservationsCron::class,
+        'deactivate',
+    ]
+);
+
 add_action(
     'plugins_loaded',
     [
         Installer::class,
         'migrate',
+    ]
+);
+
+add_action(
+    'plugins_loaded',
+    [
+        ExpiredReservationsCron::class,
+        'ensureScheduled',
     ]
 );
 

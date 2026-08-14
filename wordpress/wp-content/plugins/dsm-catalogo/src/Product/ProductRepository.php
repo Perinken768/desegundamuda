@@ -37,6 +37,7 @@ final class ProductRepository
                 "SELECT
                     id,
                     store_id,
+                    category_id,
                     brand_id,
                     name,
                     slug,
@@ -91,6 +92,7 @@ final class ProductRepository
                 "SELECT
                     id,
                     store_id,
+                    category_id,
                     brand_id,
                     name,
                     slug,
@@ -148,6 +150,7 @@ final class ProductRepository
                 "SELECT
                     id,
                     store_id,
+                    category_id,
                     brand_id,
                     name,
                     slug,
@@ -204,6 +207,7 @@ final class ProductRepository
                 "SELECT
                     id,
                     store_id,
+                    category_id,
                     brand_id,
                     name,
                     slug,
@@ -251,6 +255,12 @@ final class ProductRepository
             $data['store_id']
             ?? 0
         );
+
+        $categoryId =
+            self::nullablePositiveInt(
+                $data['category_id']
+                    ?? null
+            );
 
         $brandId =
             self::nullablePositiveInt(
@@ -411,6 +421,9 @@ final class ProductRepository
                 'store_id' =>
                     $storeId,
 
+                'category_id' =>
+                    $categoryId,
+
                 'brand_id' =>
                     $brandId,
 
@@ -518,6 +531,15 @@ final class ProductRepository
                 'El producto no se puede editar en su estado actual.'
             );
         }
+
+        $categoryId = array_key_exists(
+            'category_id',
+            $data
+        )
+            ? self::nullablePositiveInt(
+                $data['category_id']
+            )
+            : $product->getCategoryId();
 
         $brandId = array_key_exists(
             'brand_id',
@@ -684,7 +706,7 @@ final class ProductRepository
                 ? (string) $data['slug']
                 : $name;
 
-            $slug = $this->generateUniqueSlug(
+            $slug = $this->generateUniqueSlug( 
                 $product->getStoreId(),
                 $slugSource,
                 $productId
@@ -694,6 +716,10 @@ final class ProductRepository
         $updated = $wpdb->update(
             $this->tableName,
             [
+
+                'category_id' =>
+                    $categoryId,
+
                 'brand_id' =>
                     $brandId,
 
@@ -930,6 +956,7 @@ final class ProductRepository
             "SELECT
                 id,
                 store_id,
+                category_id,
                 brand_id,
                 name,
                 slug,

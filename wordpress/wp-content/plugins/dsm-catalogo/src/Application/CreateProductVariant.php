@@ -7,6 +7,7 @@ namespace DSM\Catalogo\Application;
 use DSM\Catalogo\Product\ProductRepository;
 use DSM\Catalogo\Stock\StockResult;
 use DSM\Catalogo\Stock\StockService;
+use DSM\Catalogo\Support\CustomerContext;
 use DSM\Catalogo\Variant\ProductVariant;
 use DSM\Catalogo\Variant\ProductVariantRepository;
 use RuntimeException;
@@ -47,11 +48,9 @@ final class CreateProductVariant
             );
         }
 
-        if ($customerId <= 0) {
-            throw new RuntimeException(
-                'El identificador del cliente no es válido.'
-            );
-        }
+        CustomerContext::requireActive(
+            $customerId
+        );
 
         if ($productId <= 0) {
             throw new RuntimeException(

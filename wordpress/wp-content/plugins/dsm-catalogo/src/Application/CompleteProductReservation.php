@@ -8,6 +8,7 @@ use DSM\Catalogo\Reservation\ProductReservation;
 use DSM\Catalogo\Reservation\ProductReservationRepository;
 use DSM\Catalogo\Stock\StockResult;
 use DSM\Catalogo\Stock\StockService;
+use DSM\Catalogo\Support\CustomerContext;
 use RuntimeException;
 use Throwable;
 
@@ -44,11 +45,9 @@ final class CompleteProductReservation
             );
         }
 
-        if ($sellerCustomerId <= 0) {
-            throw new RuntimeException(
-                'El identificador del vendedor no es válido.'
-            );
-        }
+        CustomerContext::requireActive(
+            $sellerCustomerId
+        );
 
         if ($reservationId <= 0) {
             throw new RuntimeException(

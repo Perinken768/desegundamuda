@@ -8,6 +8,8 @@ use DSM\Catalogo\Brand\BrandRepository;
 use DSM\Catalogo\Product\Product;
 use DSM\Catalogo\Product\ProductRepository;
 use DSM\Catalogo\Product\ProductStatus;
+use DSM\Catalogo\Support\CategoryContext;
+use DSM\Catalogo\Support\CustomerContext;
 use RuntimeException;
 
 if (!defined('ABSPATH')) {
@@ -36,11 +38,25 @@ final class CreateProduct
             );
         }
 
-        if ($customerId <= 0) {
+        CustomerContext::requireActive(
+            $customerId
+        );
+
+        $categoryId =
+            self::nullablePositiveInt(
+                $data['category_id']
+                ?? null
+            );
+
+        if ($categoryId === null) {
             throw new RuntimeException(
-                'El identificador del cliente no es válido.'
+                'Debes seleccionar una categoría.'
             );
         }
+
+        CategoryContext::requireStoreCategory(
+            $categoryId
+        );
 
         $name = trim(
             (string) (
@@ -177,6 +193,9 @@ final class CreateProduct
                 [
                     'store_id' =>
                         $storeId,
+
+                    'category_id' =>
+                        $categoryId,
 
                     'brand_id' =>
                         $brandId,

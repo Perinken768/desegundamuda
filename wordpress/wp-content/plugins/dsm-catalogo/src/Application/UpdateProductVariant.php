@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace DSM\Catalogo\Application;
 
 use DSM\Catalogo\Product\ProductRepository;
+use DSM\Catalogo\Support\CustomerContext;
 use DSM\Catalogo\Variant\ProductVariant;
 use DSM\Catalogo\Variant\ProductVariantRepository;
 use RuntimeException;
@@ -36,11 +37,9 @@ final class UpdateProductVariant
             );
         }
 
-        if ($customerId <= 0) {
-            throw new RuntimeException(
-                'El identificador del cliente no es válido.'
-            );
-        }
+        CustomerContext::requireActive(
+            $customerId
+        );
 
         if ($variantId <= 0) {
             throw new RuntimeException(

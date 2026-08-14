@@ -10,6 +10,8 @@ use DSM\Catalogo\Brand\BrandRepository;
 use DSM\Catalogo\Product\Product;
 use DSM\Catalogo\Product\ProductRepository;
 use DSM\Catalogo\Product\ProductStatus;
+use DSM\Catalogo\Support\CategoryContext;
+use DSM\Catalogo\Support\CustomerContext;
 use RuntimeException;
 use Throwable;
 
@@ -344,11 +346,9 @@ final class ProductAdminController
                 );
             }
 
-            if ($customerId <= 0) {
-                throw new RuntimeException(
-                    'El identificador del cliente no es válido.'
-                );
-            }
+            CustomerContext::requireActive(
+                $customerId
+            );
 
             if (
                 !ProductStatus::isValid(
@@ -601,6 +601,9 @@ final class ProductAdminController
             $this->brandRepository
                 ->findSelectable();
 
+        $categories =
+            CategoryContext::getStoreCategories();
+
         $notice =
             $this->getNotice();
 
@@ -641,6 +644,15 @@ final class ProductAdminController
         array $source
     ): array {
         return [
+        'category_id' =>
+            isset($source['category_id'])
+                ? absint(
+                    wp_unslash(
+                        (string) $source['category_id']
+                    )
+                )
+                : null,
+
             'brand_id' =>
                 isset($source['brand_id'])
                     ? absint(

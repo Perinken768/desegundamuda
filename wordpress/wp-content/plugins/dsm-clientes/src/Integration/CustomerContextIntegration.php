@@ -20,6 +20,7 @@ if (!defined('ABSPATH')) {
  * Expone:
  *
  * - contexto del cliente autenticado;
+ * - contexto neutral de un cliente concreto por ID;
  * - información pública del vendedor de un anuncio;
  * - preferencias de llamada y WhatsApp;
  * - URLs de contacto autorizadas;
@@ -46,6 +47,23 @@ final class CustomerContextIntegration
             ],
             10,
             1
+        );
+
+        /*
+         * Contexto neutral de un cliente concreto por ID.
+         *
+         * Permite a otros módulos comprobar la existencia
+         * y estado de un cliente sin conocer las clases
+         * internas de DSM Clientes.
+         */
+        add_filter(
+            'dsm_customer_context_by_id',
+            [
+                self::class,
+                'resolveById',
+            ],
+            10,
+            2
         );
 
         /*
@@ -154,6 +172,88 @@ final class CustomerContextIntegration
                 '[DSM Clientes] No se pudo construir '
                 . 'el contexto del cliente: '
                 . $exception->getMessage()
+            );
+
+            return null;
+        }
+    }
+
+    /**
+     * Construye un contexto neutral para un cliente concreto.
+     *
+     * Este contexto no depende de que el cliente esté
+     * autenticado y está pensado para integraciones entre
+     * módulos que únicamente necesitan comprobar:
+     *
+     * - existencia;
+     * - identificador;
+     * - estado;
+     * - verificación del correo;
+     * - fechas básicas de la cuenta.
+     *
+     * No expone información del perfil, teléfono,
+     * preferencias de contacto ni ubicación.
+     *
+     * @param mixed $currentContext
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function resolveById(
+        mixed $currentContext,
+        int $customerId
+    ): ?array {
+        /*
+         * Respeta un contexto ya aportado por otra integración
+         * ejecutada con una prioridad anterior.
+         */
+        if (is_array($currentContext)) {
+            return $currentContext;
+        }
+
+        if ($customerId <= 0) {
+            return null;
+        }
+
+        try {
+            $customerRepository =
+                new CustomerRepository();
+
+            $customer =
+                $customerRepository->findById(
+                    $customerId
+                );
+
+            if ($customer === null) {
+                return null;
+            }
+
+            return [
+                'id' =>
+                    $customer->getId(),
+
+                'email' =>
+                    $customer->getEmail(),
+
+                'status' =>
+                    $customer->getStatus(),
+
+                'email_verified' =>
+                    $customer->isEmailVerified(),
+
+                'created_at' =>
+                    $customer->getCreatedAt(),
+
+                'updated_at' =>
+                    $customer->getUpdatedAt(),
+            ];
+        } catch (Throwable $exception) {
+            error_log(
+                sprintf(
+                    '[DSM Clientes] No se pudo construir '
+                    . 'el contexto del cliente %d: %s',
+                    $customerId,
+                    $exception->getMessage()
+                )
             );
 
             return null;

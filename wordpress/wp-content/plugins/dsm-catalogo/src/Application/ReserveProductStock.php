@@ -10,6 +10,7 @@ use DSM\Catalogo\Reservation\ProductReservationRepository;
 use DSM\Catalogo\Reservation\ProductReservationStatus;
 use DSM\Catalogo\Stock\StockResult;
 use DSM\Catalogo\Stock\StockService;
+use DSM\Catalogo\Support\CustomerContext;
 use DSM\Catalogo\Variant\ProductVariantRepository;
 use RuntimeException;
 use Throwable;
@@ -51,11 +52,9 @@ final class ReserveProductStock
             );
         }
 
-        if ($sellerCustomerId <= 0) {
-            throw new RuntimeException(
-                'El identificador del vendedor no es válido.'
-            );
-        }
+        CustomerContext::requireActive(
+            $sellerCustomerId
+        );
 
         if ($variantId <= 0) {
             throw new RuntimeException(
@@ -119,10 +118,20 @@ final class ReserveProductStock
             );
         }
 
-        $buyerCustomerId = self::nullablePositiveInt(
-            $context['buyer_customer_id']
-            ?? null
-        );
+        if ($buyerCustomerId !== null) {
+            CustomerContext::requireActive(
+                $buyerCustomerId
+            );
+
+            if (
+                $buyerCustomerId
+                === $sellerCustomerId
+            ) {
+                throw new RuntimeException(
+                    'El comprador no puede ser el mismo cliente que el vendedor.'
+                );
+            }
+        }
 
         $conversationId = self::nullablePositiveInt(
             $context['conversation_id']

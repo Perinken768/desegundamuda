@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
  *
  * @var Product|null $product
  * @var array<int, Brand> $brands
+ * @var array<int, array<string, mixed>> $categories
  * @var bool $isEditing
  */
 
@@ -35,6 +36,11 @@ $description =
 $selectedBrandId =
     $isEditing
         ? $product->getBrandId()
+        : null;
+
+$selectedCategoryId =
+    $isEditing
+        ? $product->getCategoryId()
         : null;
 ?>
 
@@ -90,6 +96,107 @@ $selectedBrandId =
                             );
                             ?>
                         </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row">
+                        <label for="dsm-product-category">
+                            <?php
+                            echo esc_html__(
+                                'Categoría',
+                                'dsm-catalogo'
+                            );
+                            ?>
+                        </label>
+                    </th>
+
+                    <td>
+                        <select
+                            id="dsm-product-category"
+                            name="category_id"
+                            class="regular-text"
+                            required
+                        >
+                            <option value="">
+                                <?php
+                                echo esc_html__(
+                                    'Selecciona una categoría',
+                                    'dsm-catalogo'
+                                );
+                                ?>
+                            </option>
+
+                            <?php foreach ($categories as $category): ?>
+                                <?php
+                                $categoryId =
+                                    isset($category['id'])
+                                        ? (int) $category['id']
+                                        : 0;
+
+                                $categoryName =
+                                    isset($category['name'])
+                                        ? (string) $category['name']
+                                        : '';
+
+                                $parentId =
+                                    isset($category['parent_id'])
+                                        ? (int) $category['parent_id']
+                                        : 0;
+
+                                if (
+                                    $categoryId <= 0
+                                    || $categoryName === ''
+                                ) {
+                                    continue;
+                                }
+                                ?>
+
+                                <option
+                                    value="<?php
+                                    echo esc_attr(
+                                        (string) $categoryId
+                                    );
+                                    ?>"
+                                    <?php
+                                    selected(
+                                        $selectedCategoryId,
+                                        $categoryId
+                                    );
+                                    ?>
+                                >
+                                    <?php
+                                    echo esc_html(
+                                        $parentId > 0
+                                            ? '— ' . $categoryName
+                                            : $categoryName
+                                    );
+                                    ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+
+                        <p class="description">
+                            <?php
+                            echo esc_html__(
+                                'Categoría del producto. Solo aparecen categorías activas y disponibles para tiendas.',
+                                'dsm-catalogo'
+                            );
+                            ?>
+                        </p>
+
+                        <?php if ($categories === []): ?>
+                            <p class="description">
+                                <strong>
+                                    <?php
+                                    echo esc_html__(
+                                        'No hay categorías disponibles para productos de tienda.',
+                                        'dsm-catalogo'
+                                    );
+                                    ?>
+                                </strong>
+                            </p>
+                        <?php endif; ?>
                     </td>
                 </tr>
 

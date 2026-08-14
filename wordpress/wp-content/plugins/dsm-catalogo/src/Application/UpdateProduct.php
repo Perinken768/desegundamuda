@@ -7,6 +7,8 @@ namespace DSM\Catalogo\Application;
 use DSM\Catalogo\Brand\BrandRepository;
 use DSM\Catalogo\Product\Product;
 use DSM\Catalogo\Product\ProductRepository;
+use DSM\Catalogo\Support\CategoryContext;
+use DSM\Catalogo\Support\CustomerContext;
 use RuntimeException;
 
 if (!defined('ABSPATH')) {
@@ -36,11 +38,9 @@ final class UpdateProduct
             );
         }
 
-        if ($customerId <= 0) {
-            throw new RuntimeException(
-                'El identificador del cliente no es válido.'
-            );
-        }
+        CustomerContext::requireActive(
+            $customerId
+        );
 
         if ($productId <= 0) {
             throw new RuntimeException(
@@ -70,6 +70,26 @@ final class UpdateProduct
                 'El producto no se puede editar en su estado actual.'
             );
         }
+
+        $categoryId =
+            array_key_exists(
+                'category_id',
+                $data
+            )
+                ? self::nullablePositiveInt(
+                    $data['category_id']
+                )
+                : $product->getCategoryId();
+
+        if ($categoryId === null) {
+            throw new RuntimeException(
+                'Debes seleccionar una categoría.'
+            );
+        }
+
+        CategoryContext::requireStoreCategory(
+            $categoryId
+        );
 
         $brandId = array_key_exists(
             'brand_id',
@@ -215,6 +235,9 @@ final class UpdateProduct
             : $product->tracksStock();
 
         $updateData = [
+            'category_id' =>
+                $categoryId,
+
             'brand_id' =>
                 $brandId,
 

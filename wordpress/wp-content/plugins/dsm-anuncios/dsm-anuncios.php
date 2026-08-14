@@ -42,7 +42,9 @@ use DSM\Anuncios\Admin\AdvertisementAdminRepository;
 use DSM\Anuncios\Admin\AdvertisementsPage;
 use DSM\Anuncios\Admin\CategoriesPage;
 use DSM\Anuncios\Admin\CategoryAdminController;
+use DSM\Anuncios\Advertisement\AdvertisementIntegration;
 use DSM\Anuncios\Category\CategoryRepository;
+use DSM\Anuncios\Category\CategoryIntegration;
 use DSM\Anuncios\Database\Installer;
 use DSM\Anuncios\Frontend\AdvertisementController;
 use DSM\Anuncios\Frontend\AdvertisementDetailShortcode;
@@ -119,6 +121,25 @@ $categoryAdminController =
 $categoryAdminController->register();
 
 /*
+ * Contratos públicos de categorías.
+ *
+ * Permiten que otros módulos consulten categorías
+ * sin depender directamente de CategoryRepository.
+ *
+ * - categorías disponibles para tiendas;
+ * - contexto neutral de una categoría por ID.
+ */
+CategoryIntegration::register();
+
+/*
+ * Contratos públicos neutrales de anuncios.
+ *
+ * Permiten que otros módulos consulten información
+ * de un anuncio sin acoplarse a sus repositorios internos.
+ */
+AdvertisementIntegration::register();
+
+/*
  * Datos auxiliares del formulario de anuncios:
  *
  * - categorías;
@@ -126,6 +147,13 @@ $categoryAdminController->register();
  * - áreas;
  * - municipios.
  */
+$advertisementFormIntegration =
+    new AdvertisementFormIntegration(
+        $categoryRepository
+    );
+
+$advertisementFormIntegration->register();
+
 $advertisementFormIntegration =
     new AdvertisementFormIntegration(
         $categoryRepository

@@ -498,6 +498,15 @@ $statusClass = match ($customerStatus) {
 
         </div>
 
+        <?php
+        do_action(
+            'dsm_customer_account_sections',
+            $customer,
+            $profile
+        );
+        ?>
+        
+
         <?php if (!$isImpersonating) : ?>
             <section class="dsm-account__danger-zone">
                 <article class="dsm-card dsm-card--danger">
