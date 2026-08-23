@@ -112,6 +112,10 @@ final class Installer
             7 => DSM_CATALOGO_PATH
                 . 'database/migrations/'
                 . '007-add-category-to-products.php',
+
+            8 => DSM_CATALOGO_PATH
+                . 'database/migrations/'
+                . '008-create-product-images.php',
         ];
     }
 

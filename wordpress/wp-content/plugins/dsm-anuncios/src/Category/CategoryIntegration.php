@@ -22,6 +22,22 @@ final class CategoryIntegration
     public static function register(): void
     {
         /*
+         * Lista neutral de categorías públicas.
+         *
+         * Incluye categorías activas que puedan utilizarse
+         * en marketplace, en tienda o en ambos.
+         */
+        add_filter(
+            'dsm_public_categories',
+            [
+                self::class,
+                'resolvePublicCategories',
+            ],
+            10,
+            1
+        );
+
+        /*
          * Lista neutral de categorías disponibles para tiendas.
          */
         add_filter(
@@ -49,6 +65,61 @@ final class CategoryIntegration
             10,
             2
         );
+    }
+
+    /**
+     * @param mixed $currentCategories
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function resolvePublicCategories(
+        mixed $currentCategories
+    ): array {
+        if (
+            is_array($currentCategories)
+            && $currentCategories !== []
+        ) {
+            return $currentCategories;
+        }
+
+        try {
+            $repository =
+                new CategoryRepository();
+
+            $categories =
+                $repository
+                    ->findAll(
+                        true
+                    );
+
+            $result = [];
+
+            foreach ($categories as $category) {
+                if (
+                    !$category
+                        ->canBeUsedInMarketplace()
+                    && !$category
+                        ->canBeUsedInStore()
+                ) {
+                    continue;
+                }
+
+                $result[] =
+                    self::toContext(
+                        $category
+                    );
+            }
+
+            return $result;
+        } catch (Throwable $exception) {
+            error_log(
+                '[DSM Anuncios] No se pudieron resolver '
+                . 'las categorías públicas: '
+                . $exception->getMessage()
+            );
+
+            return [];
+        }
     }
 
     /**

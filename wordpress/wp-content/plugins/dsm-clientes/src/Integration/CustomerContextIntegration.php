@@ -67,6 +67,24 @@ final class CustomerContextIntegration
         );
 
         /*
+         * Información de contacto WhatsApp de un cliente.
+         *
+         * Contrato neutral para integraciones entre módulos.
+         *
+         * No construye mensajes ni conoce anuncios,
+         * reservas, productos o tiendas.
+         */
+        add_filter(
+            'dsm_customer_whatsapp_contact_by_id',
+            [
+                self::class,
+                'resolveWhatsappContactById',
+            ],
+            10,
+            2
+        );
+
+        /*
          * Información pública del vendedor de un anuncio.
          *
          * DSM Anuncios envía:
@@ -251,6 +269,103 @@ final class CustomerContextIntegration
                 sprintf(
                     '[DSM Clientes] No se pudo construir '
                     . 'el contexto del cliente %d: %s',
+                    $customerId,
+                    $exception->getMessage()
+                )
+            );
+
+            return null;
+        }
+    }
+
+    /**
+     * Obtiene exclusivamente los datos necesarios para
+     * contactar con un cliente mediante WhatsApp.
+     *
+     * Este contrato está pensado para ser consumido por
+     * DSM WhatsApp y evita que otros módulos tengan que
+     * conocer CustomerProfileRepository.
+     *
+     * @param mixed $currentContact
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function resolveWhatsappContactById(
+        mixed $currentContact,
+        int $customerId
+    ): ?array {
+        /*
+         * Respeta información aportada por una integración
+         * ejecutada con una prioridad anterior.
+         */
+        if (is_array($currentContact)) {
+            return $currentContact;
+        }
+
+        if ($customerId <= 0) {
+            return null;
+        }
+
+        try {
+            $customerRepository =
+                new CustomerRepository();
+
+            $customer =
+                $customerRepository
+                    ->findById(
+                        $customerId
+                    );
+
+            if ($customer === null) {
+                return null;
+            }
+
+            /*
+             * Un cliente que no esté activo no debe poder
+             * actuar como destinatario de contacto.
+             */
+            if ($customer->getStatus() !== 'active') {
+                return null;
+            }
+
+            $profileRepository =
+                new CustomerProfileRepository();
+
+            $profile =
+                $profileRepository
+                    ->findByCustomerId(
+                        $customerId
+                    );
+
+            if ($profile === null) {
+                return [
+                    'customer_id' =>
+                        $customerId,
+
+                    'phone' =>
+                        '',
+
+                    'allow_whatsapp' =>
+                        false,
+                ];
+            }
+
+            return [
+                'customer_id' =>
+                    $customerId,
+
+                'phone' =>
+                    $profile->getPhone()
+                    ?? '',
+
+                'allow_whatsapp' =>
+                    $profile->allowsWhatsapp(),
+            ];
+        } catch (Throwable $exception) {
+            error_log(
+                sprintf(
+                    '[DSM Clientes] No se pudo resolver '
+                    . 'el contacto WhatsApp del cliente %d: %s',
                     $customerId,
                     $exception->getMessage()
                 )

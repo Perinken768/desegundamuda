@@ -227,6 +227,11 @@ final class PaymentProvidersPage
                             ''
                         )
                     ) !== '',
+
+                'webhook_url' =>
+                    rest_url(
+                        'dsm-pagos/v1/stripe/webhook'
+                    ),
             ],
 
             'redsys' => [

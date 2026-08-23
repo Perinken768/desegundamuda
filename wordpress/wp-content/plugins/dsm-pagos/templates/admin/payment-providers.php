@@ -41,6 +41,7 @@ if (!defined('ABSPATH')) {
     <hr class="wp-header-end">
 
     <?php if ($notice === 'saved') : ?>
+
         <div class="notice notice-success is-dismissible">
             <p>
                 <?php
@@ -51,14 +52,17 @@ if (!defined('ABSPATH')) {
                 ?>
             </p>
         </div>
+
     <?php endif; ?>
 
     <?php if ($error !== '') : ?>
+
         <div class="notice notice-error">
             <p>
                 <?php echo esc_html($error); ?>
             </p>
         </div>
+
     <?php endif; ?>
 
     <form
@@ -94,12 +98,16 @@ if (!defined('ABSPATH')) {
 
         <h2>Stripe</h2>
 
-        <table class="form-table" role="presentation">
+        <table
+            class="form-table"
+            role="presentation"
+        >
 
             <tr>
                 <th scope="row">
                     Habilitado
                 </th>
+
                 <td>
                     <label>
                         <input
@@ -112,6 +120,7 @@ if (!defined('ABSPATH')) {
                             );
                             ?>
                         >
+
                         Permitir pagos mediante Stripe
                     </label>
                 </td>
@@ -121,8 +130,10 @@ if (!defined('ABSPATH')) {
                 <th scope="row">
                     Entorno
                 </th>
+
                 <td>
                     <select name="stripe_mode">
+
                         <option
                             value="test"
                             <?php
@@ -146,6 +157,7 @@ if (!defined('ABSPATH')) {
                         >
                             Producción
                         </option>
+
                     </select>
                 </td>
             </tr>
@@ -154,6 +166,7 @@ if (!defined('ABSPATH')) {
                 <th scope="row">
                     Secret key
                 </th>
+
                 <td>
                     <input
                         type="password"
@@ -166,10 +179,12 @@ if (!defined('ABSPATH')) {
                     <?php if (
                         $settings['stripe']['has_secret_key']
                     ) : ?>
+
                         <p class="description">
                             Hay una Secret Key guardada.
                             Déjalo vacío para conservarla.
                         </p>
+
                     <?php endif; ?>
                 </td>
             </tr>
@@ -178,6 +193,7 @@ if (!defined('ABSPATH')) {
                 <th scope="row">
                     Webhook secret
                 </th>
+
                 <td>
                     <input
                         type="password"
@@ -190,11 +206,72 @@ if (!defined('ABSPATH')) {
                     <?php if (
                         $settings['stripe']['has_webhook_secret']
                     ) : ?>
+
                         <p class="description">
                             Hay un Webhook Secret guardado.
                             Déjalo vacío para conservarlo.
                         </p>
+
                     <?php endif; ?>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    URL del webhook
+                </th>
+
+                <td>
+
+                    <input
+                        type="text"
+                        value="<?php
+                        echo esc_attr(
+                            $settings['stripe']['webhook_url']
+                        );
+                        ?>"
+                        class="large-text code"
+                        readonly
+                        onclick="this.select();"
+                    >
+
+                    <p class="description">
+                        Registra esta URL como endpoint
+                        webhook en Stripe.
+                    </p>
+
+                    <p class="description">
+                        Evento necesario:
+                        <code>
+                            checkout.session.completed
+                        </code>
+                    </p>
+
+                    <?php if (
+                        str_contains(
+                            (string) $settings['stripe']['webhook_url'],
+                            '.local'
+                        )
+                    ) : ?>
+
+                        <p class="description">
+
+                            <strong>
+                                Entorno local:
+                            </strong>
+
+                            Stripe no podrá acceder
+                            directamente a esta URL desde Internet.
+
+                            Cuando DeSegundaMuda esté desplegado
+                            en el servidor público, la URL se
+                            generará automáticamente usando
+                            el dominio configurado en WordPress.
+
+                        </p>
+
+                    <?php endif; ?>
+
                 </td>
             </tr>
 
@@ -202,18 +279,29 @@ if (!defined('ABSPATH')) {
                 <th scope="row">
                     Estado
                 </th>
+
                 <td>
+
                     <?php if (
                         $providers['stripe']->isAvailable()
                     ) : ?>
-                        <strong>Disponible</strong>
+
+                        <strong>
+                            Disponible
+                        </strong>
+
                     <?php elseif (
                         $providers['stripe']->isConfigured()
                     ) : ?>
+
                         Configurado, pero deshabilitado.
+
                     <?php else : ?>
+
                         Falta configuración.
+
                     <?php endif; ?>
+
                 </td>
             </tr>
 
@@ -223,12 +311,16 @@ if (!defined('ABSPATH')) {
 
         <h2>Redsys</h2>
 
-        <table class="form-table" role="presentation">
+        <table
+            class="form-table"
+            role="presentation"
+        >
 
             <tr>
                 <th scope="row">
                     Habilitado
                 </th>
+
                 <td>
                     <label>
                         <input
@@ -241,6 +333,7 @@ if (!defined('ABSPATH')) {
                             );
                             ?>
                         >
+
                         Permitir pagos mediante Redsys
                     </label>
                 </td>
@@ -250,8 +343,10 @@ if (!defined('ABSPATH')) {
                 <th scope="row">
                     Entorno
                 </th>
+
                 <td>
                     <select name="redsys_mode">
+
                         <option
                             value="test"
                             <?php
@@ -275,6 +370,7 @@ if (!defined('ABSPATH')) {
                         >
                             Producción
                         </option>
+
                     </select>
                 </td>
             </tr>
@@ -283,6 +379,7 @@ if (!defined('ABSPATH')) {
                 <th scope="row">
                     Código de comercio
                 </th>
+
                 <td>
                     <input
                         type="text"
@@ -301,6 +398,7 @@ if (!defined('ABSPATH')) {
                 <th scope="row">
                     Terminal
                 </th>
+
                 <td>
                     <input
                         type="text"
@@ -319,6 +417,7 @@ if (!defined('ABSPATH')) {
                 <th scope="row">
                     Clave de firma
                 </th>
+
                 <td>
                     <input
                         type="password"
@@ -331,11 +430,14 @@ if (!defined('ABSPATH')) {
                     <?php if (
                         $settings['redsys']['has_secret_key']
                     ) : ?>
+
                         <p class="description">
                             Hay una clave de firma guardada.
                             Déjalo vacío para conservarla.
                         </p>
+
                     <?php endif; ?>
+
                 </td>
             </tr>
 
@@ -343,18 +445,29 @@ if (!defined('ABSPATH')) {
                 <th scope="row">
                     Estado
                 </th>
+
                 <td>
+
                     <?php if (
                         $providers['redsys']->isAvailable()
                     ) : ?>
-                        <strong>Disponible</strong>
+
+                        <strong>
+                            Disponible
+                        </strong>
+
                     <?php elseif (
                         $providers['redsys']->isConfigured()
                     ) : ?>
+
                         Configurado, pero deshabilitado.
+
                     <?php else : ?>
+
                         Falta configuración.
+
                     <?php endif; ?>
+
                 </td>
             </tr>
 
@@ -364,12 +477,16 @@ if (!defined('ABSPATH')) {
 
         <h2>PayPal</h2>
 
-        <table class="form-table" role="presentation">
+        <table
+            class="form-table"
+            role="presentation"
+        >
 
             <tr>
                 <th scope="row">
                     Habilitado
                 </th>
+
                 <td>
                     <label>
                         <input
@@ -382,6 +499,7 @@ if (!defined('ABSPATH')) {
                             );
                             ?>
                         >
+
                         Permitir pagos mediante PayPal
                     </label>
                 </td>
@@ -391,8 +509,10 @@ if (!defined('ABSPATH')) {
                 <th scope="row">
                     Entorno
                 </th>
+
                 <td>
                     <select name="paypal_mode">
+
                         <option
                             value="sandbox"
                             <?php
@@ -416,6 +536,7 @@ if (!defined('ABSPATH')) {
                         >
                             Producción
                         </option>
+
                     </select>
                 </td>
             </tr>
@@ -424,6 +545,7 @@ if (!defined('ABSPATH')) {
                 <th scope="row">
                     Client ID
                 </th>
+
                 <td>
                     <input
                         type="text"
@@ -442,6 +564,7 @@ if (!defined('ABSPATH')) {
                 <th scope="row">
                     Client Secret
                 </th>
+
                 <td>
                     <input
                         type="password"
@@ -454,11 +577,14 @@ if (!defined('ABSPATH')) {
                     <?php if (
                         $settings['paypal']['has_client_secret']
                     ) : ?>
+
                         <p class="description">
                             Hay un Client Secret guardado.
                             Déjalo vacío para conservarlo.
                         </p>
+
                     <?php endif; ?>
+
                 </td>
             </tr>
 
@@ -466,6 +592,7 @@ if (!defined('ABSPATH')) {
                 <th scope="row">
                     Webhook ID
                 </th>
+
                 <td>
                     <input
                         type="text"
@@ -484,18 +611,29 @@ if (!defined('ABSPATH')) {
                 <th scope="row">
                     Estado
                 </th>
+
                 <td>
+
                     <?php if (
                         $providers['paypal']->isAvailable()
                     ) : ?>
-                        <strong>Disponible</strong>
+
+                        <strong>
+                            Disponible
+                        </strong>
+
                     <?php elseif (
                         $providers['paypal']->isConfigured()
                     ) : ?>
+
                         Configurado, pero deshabilitado.
+
                     <?php else : ?>
+
                         Falta configuración.
+
                     <?php endif; ?>
+
                 </td>
             </tr>
 

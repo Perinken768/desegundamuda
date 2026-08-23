@@ -41,3 +41,144 @@
 .dsm-site-footer p {
     margin: 0;
 }
+
+
+/* ==========================================================
+   CABECERA PRINCIPAL
+   ========================================================== */
+
+.dsm-header-main {
+    display: flex;
+    align-items: center;
+    min-height: 72px;
+    gap: var(--dsm-space-5);
+}
+
+.dsm-header-brand {
+    flex: 0 0 auto;
+}
+
+.dsm-site-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--dsm-space-3);
+
+    color: var(--dsm-color-primary);
+    font-size: var(--dsm-font-size-xl);
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.dsm-site-logo {
+    width: auto;
+    max-width: 180px;
+    max-height: 54px;
+}
+
+.dsm-site-title {
+    white-space: nowrap;
+}
+
+.dsm-primary-navigation {
+    flex: 1 1 auto;
+}
+
+.dsm-primary-menu {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--dsm-space-4);
+
+    margin: 0;
+    padding: 0;
+
+    list-style: none;
+}
+
+.dsm-primary-menu a {
+    font-size: var(--dsm-font-size-sm);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.dsm-header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--dsm-space-4);
+}
+
+.dsm-header-action {
+    font-size: var(--dsm-font-size-sm);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.dsm-navigation-toggle {
+    display: none;
+
+    padding: var(--dsm-space-2);
+    color: var(--dsm-color-primary);
+    background: transparent;
+
+    border: 0;
+
+    font-size: var(--dsm-font-size-xl);
+    cursor: pointer;
+}
+
+
+/* ==========================================================
+   CABECERA RESPONSIVE
+   ========================================================== */
+
+@media (max-width: 900px) {
+    .dsm-header-main {
+        position: relative;
+        flex-wrap: wrap;
+    }
+
+    .dsm-header-brand {
+        flex: 1 1 auto;
+    }
+
+    .dsm-navigation-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .dsm-primary-navigation {
+        display: none;
+        flex: 0 0 100%;
+        order: 4;
+    }
+
+    .dsm-primary-navigation--open {
+        display: block;
+    }
+
+    .dsm-primary-menu {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 0;
+
+        padding-block: var(--dsm-space-3);
+    }
+
+    .dsm-primary-menu a {
+        display: block;
+        padding: var(--dsm-space-3) 0;
+    }
+}
+
+@media (max-width: 600px) {
+    .dsm-site-title {
+        font-size: var(--dsm-font-size-lg);
+    }
+
+    .dsm-header-actions {
+        flex: 0 0 100%;
+        justify-content: space-between;
+        order: 3;
+    }
+}

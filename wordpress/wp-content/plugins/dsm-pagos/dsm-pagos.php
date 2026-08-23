@@ -34,6 +34,20 @@ define(
     plugin_dir_url(__FILE__)
 );
 
+/*
+ * Dependencias externas instaladas mediante Composer.
+ */
+$composerAutoload =
+    DSM_PAGOS_PATH
+    . 'vendor/autoload.php';
+
+if (is_file($composerAutoload)) {
+    require_once $composerAutoload;
+}
+
+/*
+ * Autoloader propio de DSM Pagos.
+ */
 require_once DSM_PAGOS_PATH
     . 'src/Support/Autoloader.php';
 
@@ -43,12 +57,15 @@ use DSM\Pagos\Frontend\CheckoutShortcode;
 use DSM\Pagos\Frontend\PaymentCheckoutController;
 use DSM\Pagos\Integration\PaymentProviderIntegration;
 use DSM\Pagos\Support\Autoloader;
+use DSM\Pagos\Webhook\StripeWebhookController;
 
 Autoloader::register();
+
 PaymentProviderIntegration::register();
 PaymentProvidersPage::register();
 CheckoutShortcode::register();
 PaymentCheckoutController::register();
+StripeWebhookController::register();
 
 /*
  * Instalación y migraciones.

@@ -224,6 +224,37 @@ $accountStatus = isset($_GET['account_status'])
             >
 
             <?php
+            $redirectTo =
+                isset($_GET['redirect_to'])
+                    ? trim(
+                        (string) wp_unslash(
+                            $_GET['redirect_to']
+                        )
+                    )
+                    : '';
+
+            $redirectTo =
+                wp_validate_redirect(
+                    $redirectTo,
+                    ''
+                );
+            ?>
+
+            <?php if ($redirectTo !== '') : ?>
+
+                <input
+                    type="hidden"
+                    name="redirect_to"
+                    value="<?php
+                    echo esc_attr(
+                        $redirectTo
+                    );
+                    ?>"
+                >
+
+            <?php endif; ?>
+
+            <?php
             wp_nonce_field(
                 'dsm_customer_login',
                 'dsm_login_nonce'

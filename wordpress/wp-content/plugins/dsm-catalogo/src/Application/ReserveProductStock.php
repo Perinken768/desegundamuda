@@ -118,6 +118,16 @@ final class ReserveProductStock
             );
         }
 
+        /*
+         * El comprador se recibe a través del contexto.
+         * Puede ser null cuando la reserva esté asociada
+         * a una conversación o a un contacto externo.
+         */
+        $buyerCustomerId = self::nullablePositiveInt(
+            $context['buyer_customer_id']
+            ?? null
+        );
+
         if ($buyerCustomerId !== null) {
             CustomerContext::requireActive(
                 $buyerCustomerId

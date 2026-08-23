@@ -71,6 +71,29 @@ final class AuthController
             ? (string) wp_unslash($_POST['password'])
             : '';
 
+        /*
+         * URL a la que volveremos después de autenticar.
+         *
+         * Solo aceptamos destinos válidos para evitar
+         * redirecciones externas.
+         */
+        $redirectTo =
+            isset($_POST['redirect_to'])
+                ? trim(
+                    (string) wp_unslash(
+                        $_POST['redirect_to']
+                    )
+                )
+                : '';
+
+        $redirectTo =
+            wp_validate_redirect(
+                $redirectTo,
+                home_url(
+                    '/mi-cuenta/'
+                )
+            );
+
         try {
             $login = new LoginCustomer(
                 new CustomerRepository(),
@@ -87,17 +110,31 @@ final class AuthController
             self::persistLogin($result);
 
             wp_safe_redirect(
-                home_url('/mi-cuenta/')
+                $redirectTo
             );
 
             exit;
         } catch (Throwable $exception) {
-            wp_safe_redirect(
+            $loginUrl =
                 add_query_arg(
                     'login_error',
                     'invalid_credentials',
-                    home_url('/iniciar-sesion/')
-                )
+                    home_url(
+                        '/iniciar-sesion/'
+                    )
+                );
+
+            if ($redirectTo !== '') {
+                $loginUrl =
+                    add_query_arg(
+                        'redirect_to',
+                        $redirectTo,
+                        $loginUrl
+                    );
+            }
+
+            wp_safe_redirect(
+                $loginUrl
             );
 
             exit;

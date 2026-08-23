@@ -55,6 +55,7 @@ use DSM\Anuncios\Frontend\AdvertisementListShortcode;
 use DSM\Anuncios\Frontend\AdvertisementSearchRepository;
 use DSM\Anuncios\Frontend\CustomerAdvertisementActionController;
 use DSM\Anuncios\Frontend\CustomerAdvertisementsShortcode;
+use DSM\Anuncios\Frontend\HomeThemeIntegration;
 use DSM\Anuncios\Frontend\RelatedAdvertisementRepository;
 use DSM\Anuncios\Support\Autoloader;
 
@@ -132,6 +133,14 @@ $categoryAdminController->register();
 CategoryIntegration::register();
 
 /*
+ * Integración pública con el tema DeSegundaMuda.
+ *
+ * El plugin aporta datos y el tema decide
+ * cómo presentarlos.
+ */
+HomeThemeIntegration::register();
+
+/*
  * Contratos públicos neutrales de anuncios.
  *
  * Permiten que otros módulos consulten información
@@ -147,13 +156,6 @@ AdvertisementIntegration::register();
  * - áreas;
  * - municipios.
  */
-$advertisementFormIntegration =
-    new AdvertisementFormIntegration(
-        $categoryRepository
-    );
-
-$advertisementFormIntegration->register();
-
 $advertisementFormIntegration =
     new AdvertisementFormIntegration(
         $categoryRepository
