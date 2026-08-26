@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace DSM\Clientes\Frontend;
 
+use DSM\Clientes\Application\AuthenticateCustomer;
+use DSM\Clientes\Application\CreateCustomerLoginSession;
 use DSM\Clientes\Application\LoginCustomer;
 use DSM\Clientes\Application\LogoutCustomer;
 use DSM\Clientes\Application\RegisterCustomer;
@@ -95,19 +97,78 @@ final class AuthController
             );
 
         try {
-            $login = new LoginCustomer(
-                new CustomerRepository(),
-                new CustomerSessionRepository()
-            );
+            /*
+             * Primera fase:
+             * validamos las credenciales sin crear todavía
+             * ninguna sesión del cliente.
+             */
+            $authenticate =
+                new AuthenticateCustomer(
+                    new CustomerRepository()
+                );
 
-            $result = $login->execute(
-                $email,
-                $password,
-                self::getIpAddress(),
-                self::getUserAgent()
-            );
+            $customer =
+                $authenticate->execute(
+                    $email,
+                    $password
+                );
 
-            self::persistLogin($result);
+            $ipAddress =
+                self::getIpAddress();
+
+            $userAgent =
+                self::getUserAgent();
+
+            /*
+             * Punto de integración neutral para MFA.
+             *
+             * DSM Clientes no conoce DSM MFA.
+             * Si ningún módulo solicita segundo factor,
+             * el filtro devolverá una cadena vacía y el
+             * login continuará de la forma tradicional.
+             */
+            $mfaRedirect =
+                apply_filters(
+                    'dsm_customer_login_mfa_redirect',
+                    '',
+                    $customer,
+                    $redirectTo,
+                    $ipAddress,
+                    $userAgent
+                );
+
+            if (
+                is_string(
+                    $mfaRedirect
+                )
+                && $mfaRedirect !== ''
+            ) {
+                wp_safe_redirect(
+                    $mfaRedirect
+                );
+
+                exit;
+            }
+
+            /*
+             * Sin MFA activo:
+             * creamos ahora la sesión definitiva.
+             */
+            $createSession =
+                new CreateCustomerLoginSession(
+                    new CustomerSessionRepository()
+                );
+
+            $result =
+                $createSession->execute(
+                    $customer,
+                    $ipAddress,
+                    $userAgent
+                );
+
+            self::persistLogin(
+                $result
+            );
 
             wp_safe_redirect(
                 $redirectTo

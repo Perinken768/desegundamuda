@@ -12,7 +12,13 @@ if (!defined('ABSPATH')) {
     <div class="dsm-container">
 
         <div class="dsm-section-heading">
-            <h2>Categorías</h2>
+            <h2>
+                <?php
+                echo esc_html(
+                    dsm_theme_home_categories_title()
+                );
+                ?>
+            </h2>
         </div>
 
         <div class="dsm-category-strip">

@@ -25,6 +25,43 @@ if (!defined('ABSPATH')) {
 
 <?php wp_body_open(); ?>
 
+<?php
+$favoriteCount = 0;
+
+$customerContext =
+    apply_filters(
+        'dsm_current_customer_context',
+        null
+    );
+
+if (
+    is_array($customerContext)
+    && (int) (
+        $customerContext['id']
+        ?? 0
+    ) > 0
+    && sanitize_key(
+        (string) (
+            $customerContext['status']
+            ?? ''
+        )
+    ) === 'active'
+) {
+    $favoriteCount =
+        max(
+            0,
+            (int) apply_filters(
+                'dsm_favorite_customer_count',
+                0,
+                (int) $customerContext['id']
+            )
+        );
+}
+
+$hasFavorites =
+    $favoriteCount > 0;
+?>
+
 <header class="dsm-site-header">
 
     <div class="dsm-container">
@@ -136,7 +173,17 @@ if (!defined('ABSPATH')) {
             <div class="dsm-header-actions">
 
                 <a
-                    class="dsm-header-action"
+                    class="<?php
+                    echo esc_attr(
+                        'dsm-header-action '
+                        . 'dsm-header-action--favorites'
+                        . (
+                            $hasFavorites
+                                ? ' is-active'
+                                : ''
+                        )
+                    );
+                    ?>"
                     href="<?php
                     echo esc_url(
                         home_url(
@@ -144,8 +191,77 @@ if (!defined('ABSPATH')) {
                         )
                     );
                     ?>"
+                    aria-label="<?php
+                    echo esc_attr(
+                        $hasFavorites
+                            ? sprintf(
+                                'Favoritos: %d',
+                                $favoriteCount
+                            )
+                            : 'Favoritos'
+                    );
+                    ?>"
+                    title="<?php
+                    echo esc_attr(
+                        $hasFavorites
+                            ? sprintf(
+                                'Favoritos: %d',
+                                $favoriteCount
+                            )
+                            : 'Favoritos'
+                    );
+                    ?>"
                 >
-                    Favoritos
+                    <svg
+                        class="dsm-header-favorites-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                        focusable="false"
+                    >
+                        <path
+                            d="
+                                M12 21
+                                C12 21 3 15.5 3 8.5
+                                C3 5.5 5.3 3.5 8 3.5
+                                C9.8 3.5 11.1 4.4 12 5.7
+                                C12.9 4.4 14.2 3.5 16 3.5
+                                C18.7 3.5 21 5.5 21 8.5
+                                C21 15.5 12 21 12 21
+                                Z
+                            "
+                        />
+                    </svg>
+
+                    <?php if ($hasFavorites) : ?>
+
+                        <span
+                            class="dsm-header-favorites-count"
+                            aria-hidden="true"
+                        >
+                            <?php
+                            echo esc_html(
+                                (string) min(
+                                    $favoriteCount,
+                                    99
+                                )
+                            );
+                            ?>
+                        </span>
+
+                    <?php endif; ?>
+
+                    <span class="screen-reader-text">
+                        <?php
+                        echo esc_html(
+                            $hasFavorites
+                                ? sprintf(
+                                    'Favoritos: %d',
+                                    $favoriteCount
+                                )
+                                : 'Favoritos'
+                        );
+                        ?>
+                    </span>
                 </a>
 
                 <a

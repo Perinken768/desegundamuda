@@ -1,0 +1,123 @@
+/* ==========================================================
+   DSM MFA
+   ========================================================== */
+
+.dsm-mfa {
+    padding-block:
+        var(--dsm-space-7, 2rem);
+}
+
+.dsm-mfa-challenge {
+    width: min(
+        100%,
+        32rem
+    );
+
+    margin-inline: auto;
+
+    padding:
+        var(--dsm-space-6, 1.5rem);
+
+    border:
+        1px solid
+        var(--dsm-color-border, #d8d8d8);
+
+    border-radius:
+        var(--dsm-radius-lg, 1rem);
+
+    background:
+        var(--dsm-color-surface, #fff);
+}
+
+.dsm-mfa-challenge__header {
+    margin-bottom:
+        var(--dsm-space-5, 1.25rem);
+}
+
+.dsm-mfa-challenge__title {
+    margin-top: 0;
+}
+
+.dsm-mfa-challenge__description {
+    margin-bottom: 0;
+}
+
+.dsm-mfa-challenge__form {
+    display: grid;
+
+    gap:
+        var(--dsm-space-4, 1rem);
+}
+
+.dsm-mfa-challenge__label {
+    font-weight: 600;
+}
+
+.dsm-mfa-challenge__code {
+    width: 100%;
+
+    padding:
+        0.9rem 1rem;
+
+    font-size: 1.5rem;
+
+    font-weight: 700;
+
+    letter-spacing: 0.35em;
+
+    text-align: center;
+}
+
+.dsm-mfa-challenge__submit {
+    cursor: pointer;
+
+    padding:
+        0.9rem 1.25rem;
+}
+
+.dsm-mfa-challenge__message {
+    margin-bottom:
+        var(--dsm-space-4, 1rem);
+
+    padding:
+        var(--dsm-space-4, 1rem);
+
+    border-radius:
+        var(--dsm-radius-md, 0.75rem);
+}
+
+.dsm-mfa-challenge__message--error {
+    border:
+        1px solid
+        currentColor;
+}
+
+
+/* ==========================================================
+   DSM MFA - REENVÍO
+   ========================================================== */
+
+.dsm-mfa-challenge__message--success {
+    border:
+        1px solid
+        currentColor;
+}
+
+.dsm-mfa-challenge__resend {
+    margin-top:
+        var(--dsm-space-4, 1rem);
+
+    text-align: center;
+}
+
+.dsm-mfa-challenge__resend-button {
+    cursor: pointer;
+
+    border: 0;
+
+    background: transparent;
+
+    font: inherit;
+
+    text-decoration: underline;
+}

@@ -7,71 +7,69 @@ if (!defined('ABSPATH')) {
 }
 
 get_header();
+
+$sections =
+    dsm_theme_home_section_order();
+
+$visibility = [
+    'search' =>
+        dsm_theme_home_enabled(
+            'dsm_home_show_search'
+        ),
+
+    'categories' =>
+        dsm_theme_home_enabled(
+            'dsm_home_show_categories'
+        ),
+
+    'filters' =>
+        dsm_theme_home_enabled(
+            'dsm_home_show_filters'
+        ),
+
+    'advertising' =>
+        dsm_theme_home_enabled(
+            'dsm_home_show_advertising'
+        ),
+
+    /*
+     * Resultados forman parte estructural
+     * de la portada y siempre están disponibles.
+     */
+    'listings' =>
+        true,
+];
 ?>
 
 <main class="dsm-site-main dsm-home">
 
-    <?php if (
-        dsm_theme_home_enabled(
-            'dsm_home_show_search'
-        )
+    <?php foreach (
+        $sections
+        as $section
     ) : ?>
+
+        <?php if (
+            !isset(
+                $visibility[
+                    $section
+                ]
+            )
+            || !$visibility[
+                $section
+            ]
+        ) {
+            continue;
+        }
+        ?>
 
         <?php
         get_template_part(
-            'template-parts/home/search'
+            'template-parts/home/'
+            . $section
         );
         ?>
 
-    <?php endif; ?>
-
-    <?php if (
-        dsm_theme_home_enabled(
-            'dsm_home_show_categories'
-        )
-    ) : ?>
-
-        <?php
-        get_template_part(
-            'template-parts/home/categories'
-        );
-        ?>
-
-    <?php endif; ?>
-
-    <?php if (
-        dsm_theme_home_enabled(
-            'dsm_home_show_filters'
-        )
-    ) : ?>
-
-        <?php
-        get_template_part(
-            'template-parts/home/filters'
-        );
-        ?>
-
-    <?php endif; ?>
-
-    <?php if (
-        dsm_theme_home_enabled(
-            'dsm_home_show_advertising'
-        )
-    ) : ?>
-
-        <?php
-        get_template_part(
-            'template-parts/home/advertising'
-        );
-        ?>
-
-    <?php endif; ?>
-
-    <?php
-    get_template_part(
-        'template-parts/home/listings'
-    );
-    ?>
+    <?php endforeach; ?>
 
 </main>
 

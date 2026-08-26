@@ -13,7 +13,15 @@ if (!defined('ABSPATH')) {
 final class TemplateRenderer
 {
     /**
-     * Renderiza una plantilla del plugin.
+     * Renderiza una plantilla DSM Clientes.
+     *
+     * Prioridad:
+     *
+     * 1. Override del tema:
+     *    /dsm-clientes/{plantilla}.php
+     *
+     * 2. Plantilla incluida en el plugin:
+     *    /templates/{plantilla}.php
      *
      * @param array<string, mixed> $data
      */
@@ -21,30 +29,19 @@ final class TemplateRenderer
         string $template,
         array $data = []
     ): string {
-        $template = self::normalizeTemplateName($template);
-
-        $templateFile = DSM_CLIENTES_PATH
-            . 'templates/'
-            . $template
-            . '.php';
-
-        if (!is_file($templateFile)) {
-            throw new RuntimeException(
-                sprintf(
-                    'No se encontró la plantilla DSM Clientes: %s',
-                    $templateFile
-                )
+        $template =
+            self::normalizeTemplateName(
+                $template
             );
-        }
+
+        $templateFile =
+            self::locateTemplate(
+                $template
+            );
 
         /*
-         * Convierte las claves del array en variables locales.
-         *
-         * Ejemplo:
-         * ['hasError' => true]
-         *
-         * Dentro de la plantilla:
-         * $hasError
+         * Convierte las claves del array en variables
+         * locales disponibles dentro de la plantilla.
          */
         extract(
             $data,
@@ -55,7 +52,8 @@ final class TemplateRenderer
 
         include $templateFile;
 
-        $output = ob_get_clean();
+        $output =
+            ob_get_clean();
 
         if ($output === false) {
             throw new RuntimeException(
@@ -69,13 +67,66 @@ final class TemplateRenderer
         return $output;
     }
 
+    private static function locateTemplate(
+        string $template
+    ): string {
+        /*
+         * Primero permitimos que el tema activo controle
+         * la presentación.
+         */
+        $themeTemplate =
+            locate_template(
+                [
+                    'dsm-clientes/'
+                    . $template
+                    . '.php',
+                ],
+                false,
+                false
+            );
+
+        if (
+            is_string($themeTemplate)
+            && $themeTemplate !== ''
+            && is_file($themeTemplate)
+        ) {
+            return $themeTemplate;
+        }
+
+        /*
+         * Si el tema no aporta override, DSM Clientes
+         * mantiene su plantilla propia como fallback.
+         */
+        $pluginTemplate =
+            DSM_CLIENTES_PATH
+            . 'templates/'
+            . $template
+            . '.php';
+
+        if (!is_file($pluginTemplate)) {
+            throw new RuntimeException(
+                sprintf(
+                    'No se encontró la plantilla DSM Clientes: %s',
+                    $pluginTemplate
+                )
+            );
+        }
+
+        return $pluginTemplate;
+    }
+
     private static function normalizeTemplateName(
         string $template
     ): string {
-        $template = trim(
-            str_replace('\\', '/', $template),
-            '/'
-        );
+        $template =
+            trim(
+                str_replace(
+                    '\\',
+                    '/',
+                    $template
+                ),
+                '/'
+            );
 
         /*
          * Solo permitimos letras, números, guiones,
@@ -94,9 +145,15 @@ final class TemplateRenderer
         }
 
         /*
-         * Protección contra intentos de subir directorios.
+         * Protección contra intentos de subir
+         * directorios.
          */
-        if (str_contains($template, '..')) {
+        if (
+            str_contains(
+                $template,
+                '..'
+            )
+        ) {
             throw new RuntimeException(
                 'La ruta de la plantilla no es válida.'
             );

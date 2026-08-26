@@ -106,6 +106,16 @@ if (
 
     <div class="dsm-container">
 
+        <div class="dsm-section-heading">
+            <h2>
+                <?php
+                echo esc_html(
+                    dsm_theme_home_filters_title()
+                );
+                ?>
+            </h2>
+        </div>
+
         <form
             class="dsm-filter-bar"
             method="get"

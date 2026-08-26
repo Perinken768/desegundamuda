@@ -291,7 +291,20 @@ $baseUrl =
 
         </nav>
 
-        <div class="dsm-listing-grid">
+        <?php
+        $listingColumns =
+            dsm_theme_home_listing_columns();
+        ?>
+
+        <div
+            class="<?php
+            echo esc_attr(
+                'dsm-listing-grid '
+                . 'dsm-listing-grid--columns-'
+                . $listingColumns
+            );
+            ?>"
+        >
 
             <?php if (
                 $listingItems === []

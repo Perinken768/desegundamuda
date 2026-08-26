@@ -498,13 +498,15 @@ $statusClass = match ($customerStatus) {
 
         </div>
 
-        <?php
-        do_action(
-            'dsm_customer_account_sections',
-            $customer,
-            $profile
-        );
-        ?>
+        <div class="dsm-account__modules">
+            <?php
+            do_action(
+                'dsm_customer_account_sections',
+                $customer,
+                $profile
+            );
+            ?>
+        </div>
         
 
         <?php if (!$isImpersonating) : ?>

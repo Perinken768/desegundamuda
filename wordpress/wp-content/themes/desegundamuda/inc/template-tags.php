@@ -243,3 +243,278 @@ function dsm_theme_home_islands(): array
         ? $areas
         : [];
 }
+
+
+/**
+ * Devuelve el orden válido de las secciones de portada.
+ *
+ * Secciones permitidas:
+ *
+ * - search
+ * - categories
+ * - filters
+ * - advertising
+ * - listings
+ *
+ * @return array<int, string>
+ */
+function dsm_theme_home_section_order(): array
+{
+    $allowed = [
+        'search',
+        'categories',
+        'filters',
+        'advertising',
+        'listings',
+    ];
+
+    $defaults = [
+        1 => 'search',
+        2 => 'categories',
+        3 => 'filters',
+        4 => 'advertising',
+        5 => 'listings',
+    ];
+
+    $result = [];
+
+    foreach (
+        $defaults
+        as $position => $defaultSection
+    ) {
+        $section =
+            sanitize_key(
+                (string) get_theme_mod(
+                    'dsm_home_section_position_'
+                    . $position,
+                    $defaultSection
+                )
+            );
+
+        if (
+            !in_array(
+                $section,
+                $allowed,
+                true
+            )
+            || in_array(
+                $section,
+                $result,
+                true
+            )
+        ) {
+            continue;
+        }
+
+        $result[] =
+            $section;
+    }
+
+    /*
+     * Si hubiera duplicados o un valor inválido,
+     * completamos automáticamente las secciones
+     * que falten.
+     */
+    foreach ($allowed as $section) {
+        if (
+            !in_array(
+                $section,
+                $result,
+                true
+            )
+        ) {
+            $result[] =
+                $section;
+        }
+    }
+
+    return $result;
+}
+
+
+function dsm_theme_home_categories_title(): string
+{
+    $title =
+        trim(
+            (string) get_theme_mod(
+                'dsm_home_categories_title',
+                'Categorías'
+            )
+        );
+
+    return $title !== ''
+        ? $title
+        : 'Categorías';
+}
+
+
+function dsm_theme_home_filters_title(): string
+{
+    $title =
+        trim(
+            (string) get_theme_mod(
+                'dsm_home_filters_title',
+                'Filtrar resultados'
+            )
+        );
+
+    return $title !== ''
+        ? $title
+        : 'Filtrar resultados';
+}
+
+
+function dsm_theme_home_listing_columns(): int
+{
+    $columns =
+        (int) get_theme_mod(
+            'dsm_home_listing_columns',
+            4
+        );
+
+    return in_array(
+        $columns,
+        [
+            3,
+            4,
+            5,
+        ],
+        true
+    )
+        ? $columns
+        : 4;
+}
+
+
+/**
+ * Orden configurado de los módulos de Mi cuenta.
+ *
+ * @param array<string, array<string, mixed>> $modules
+ *
+ * @return array<string, array<string, mixed>>
+ */
+function dsm_theme_account_order_modules(
+    array $modules
+): array {
+    if ($modules === []) {
+        return [];
+    }
+
+    /*
+     * Primero ordenamos por la prioridad por defecto
+     * declarada por cada plugin.
+     */
+    uasort(
+        $modules,
+        static function (
+            mixed $first,
+            mixed $second
+        ): int {
+            $firstPriority =
+                is_array($first)
+                    ? (int) (
+                        $first[
+                            'default_priority'
+                        ]
+                        ?? 100
+                    )
+                    : 100;
+
+            $secondPriority =
+                is_array($second)
+                    ? (int) (
+                        $second[
+                            'default_priority'
+                        ]
+                        ?? 100
+                    )
+                    : 100;
+
+            return $firstPriority
+                <=> $secondPriority;
+        }
+    );
+
+    $availableIds =
+        array_keys(
+            $modules
+        );
+
+    $configured = [];
+
+    /*
+     * Disponemos inicialmente de hasta 10 posiciones.
+     *
+     * Esto permite añadir nuevos módulos en el futuro
+     * sin tener que rehacer este helper.
+     */
+    for (
+        $position = 1;
+        $position <= 10;
+        $position++
+    ) {
+        $moduleId =
+            sanitize_key(
+                (string) get_theme_mod(
+                    'dsm_account_module_position_'
+                    . $position,
+                    ''
+                )
+            );
+
+        if (
+            $moduleId === ''
+            || !in_array(
+                $moduleId,
+                $availableIds,
+                true
+            )
+            || in_array(
+                $moduleId,
+                $configured,
+                true
+            )
+        ) {
+            continue;
+        }
+
+        $configured[] =
+            $moduleId;
+    }
+
+    /*
+     * Los módulos no configurados manualmente se añaden
+     * después respetando su prioridad por defecto.
+     */
+    foreach (
+        $availableIds
+        as $moduleId
+    ) {
+        if (
+            !in_array(
+                $moduleId,
+                $configured,
+                true
+            )
+        ) {
+            $configured[] =
+                $moduleId;
+        }
+    }
+
+    $ordered = [];
+
+    foreach (
+        $configured
+        as $moduleId
+    ) {
+        $ordered[
+            $moduleId
+        ] =
+            $modules[
+                $moduleId
+            ];
+    }
+
+    return $ordered;
+}

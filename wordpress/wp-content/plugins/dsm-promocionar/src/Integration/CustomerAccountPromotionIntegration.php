@@ -16,15 +16,45 @@ final class CustomerAccountPromotionIntegration
 {
     public static function register(): void
     {
-        add_action(
-            'dsm_customer_account_sections',
+        add_filter(
+            'dsm_customer_account_modules',
             [
+                self::class,
+                'registerModule',
+            ],
+            10,
+            1
+        );
+    }
+
+    /**
+     * @param array<string, array<string, mixed>> $modules
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public static function registerModule(
+        array $modules
+    ): array {
+        $modules['promotions'] = [
+            'id' =>
+                'promotions',
+
+            'label' =>
+                __(
+                    'Promociones',
+                    'dsm-promocionar'
+                ),
+
+            'default_priority' =>
+                10,
+
+            'callback' => [
                 self::class,
                 'render',
             ],
-            10,
-            2
-        );
+        ];
+
+        return $modules;
     }
 
     public static function render(

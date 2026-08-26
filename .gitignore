@@ -64,3 +64,4 @@ phpinfo.txt
 
 # Dependencias Composer - DSM Pagos
 wordpress/wp-content/plugins/dsm-pagos/vendor/
+*.bak*

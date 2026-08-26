@@ -444,3 +444,502 @@
     color: var(--dsm-color-text-inverse);
     background: var(--dsm-color-error);
 }
+
+/* ==========================================================
+   DASHBOARD DE MI CUENTA
+   ========================================================== */
+
+.dsm-account .dsm-container {
+    width: min(1180px, calc(100% - 32px));
+    margin-inline: auto;
+}
+
+.dsm-account__header {
+    max-width: 760px;
+    margin-bottom: var(--dsm-space-6);
+}
+
+.dsm-account__title {
+    font-size: clamp(
+        2rem,
+        4vw,
+        3rem
+    );
+}
+
+.dsm-account__description {
+    font-size: var(--dsm-font-size-base);
+}
+
+
+/*
+ * Perfil + acciones principales.
+ */
+.dsm-account__grid {
+    grid-template-columns:
+        minmax(0, 1.35fr)
+        minmax(280px, 0.65fr);
+
+    align-items: stretch;
+    margin-bottom: var(--dsm-space-5);
+}
+
+.dsm-account__grid > .dsm-card {
+    height: 100%;
+}
+
+
+/*
+ * Módulos aportados por otros plugins:
+ *
+ * - promociones;
+ * - publicidad;
+ * - multitienda;
+ * - futuros módulos DSM.
+ */
+.dsm-account__modules {
+    display: grid;
+    grid-template-columns: repeat(
+        2,
+        minmax(0, 1fr)
+    );
+    gap: var(--dsm-space-5);
+    margin-top: var(--dsm-space-5);
+}
+
+.dsm-account__modules > * {
+    min-width: 0;
+    margin: 0;
+}
+
+
+/*
+ * Los módulos de cuenta no necesitan otra capa
+ * de separación visual alrededor de la tarjeta.
+ */
+.dsm-account-module {
+    display: block;
+}
+
+.dsm-account-module > .dsm-card {
+    height: 100%;
+}
+
+
+/*
+ * Contenido interno de Mi publicidad y Mi tienda.
+ */
+.dsm-account-module__content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--dsm-space-5);
+    height: 100%;
+}
+
+.dsm-account-module__content p {
+    margin-top: 0;
+}
+
+.dsm-account-module__summary {
+    margin-bottom: 0;
+    color: var(--dsm-color-text-muted);
+    font-size: var(--dsm-font-size-sm);
+}
+
+.dsm-account-module__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--dsm-space-3);
+}
+
+
+/*
+ * Las tarjetas principales ganan algo de presencia.
+ */
+.dsm-account .dsm-card {
+    padding: clamp(
+        var(--dsm-space-5),
+        2.5vw,
+        var(--dsm-space-6)
+    );
+}
+
+.dsm-account .dsm-card__title {
+    margin-bottom: var(--dsm-space-3);
+    font-size: clamp(
+        1.2rem,
+        2vw,
+        1.5rem
+    );
+}
+
+
+/*
+ * Zona sensible claramente separada del dashboard.
+ */
+.dsm-account__danger-zone {
+    margin-top: var(--dsm-space-7);
+}
+
+
+/* ==========================================================
+   MI CUENTA - TABLET
+   ========================================================== */
+
+@media (max-width: 900px) {
+
+    .dsm-account__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dsm-account__modules {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* ==========================================================
+   MI CUENTA - MÓVIL
+   ========================================================== */
+
+@media (max-width: 600px) {
+
+    .dsm-account .dsm-container {
+        width: min(
+            100% - 24px,
+            1180px
+        );
+    }
+
+    .dsm-account {
+        padding-top: var(--dsm-space-5);
+        padding-bottom: var(--dsm-space-6);
+    }
+
+    .dsm-account__header {
+        margin-bottom: var(--dsm-space-5);
+    }
+
+    .dsm-account__title {
+        font-size: 2rem;
+    }
+
+    .dsm-account__grid,
+    .dsm-account__modules {
+        gap: var(--dsm-space-4);
+    }
+
+    .dsm-account .dsm-card {
+        padding: var(--dsm-space-5);
+    }
+
+    .dsm-account-module__actions,
+    .dsm-account-module__actions .dsm-button {
+        width: 100%;
+    }
+
+    .dsm-account-module__actions .dsm-button {
+        justify-content: center;
+    }
+}
+
+
+/* ==========================================================
+   DASHBOARD DE MI CUENTA
+   ========================================================== */
+
+.dsm-account .dsm-container {
+    width: min(1180px, calc(100% - 32px));
+    margin-inline: auto;
+}
+
+.dsm-account__header {
+    max-width: 760px;
+    margin-bottom: var(--dsm-space-6);
+}
+
+.dsm-account__title {
+    font-size: clamp(
+        2rem,
+        4vw,
+        3rem
+    );
+}
+
+.dsm-account__description {
+    font-size: var(--dsm-font-size-base);
+}
+
+
+/*
+ * Perfil + acciones principales.
+ */
+.dsm-account__grid {
+    grid-template-columns:
+        minmax(0, 1.35fr)
+        minmax(280px, 0.65fr);
+
+    align-items: stretch;
+    margin-bottom: var(--dsm-space-5);
+}
+
+.dsm-account__grid > .dsm-card {
+    height: 100%;
+}
+
+
+/*
+ * Módulos aportados por otros plugins:
+ *
+ * - promociones;
+ * - publicidad;
+ * - multitienda;
+ * - futuros módulos DSM.
+ */
+.dsm-account__modules {
+    display: grid;
+    grid-template-columns: repeat(
+        2,
+        minmax(0, 1fr)
+    );
+    gap: var(--dsm-space-5);
+    margin-top: var(--dsm-space-5);
+}
+
+.dsm-account__modules > * {
+    min-width: 0;
+    margin: 0;
+}
+
+
+/*
+ * Los módulos de cuenta no necesitan otra capa
+ * de separación visual alrededor de la tarjeta.
+ */
+.dsm-account-module {
+    display: block;
+}
+
+.dsm-account-module > .dsm-card {
+    height: 100%;
+}
+
+
+/*
+ * Contenido interno de Mi publicidad y Mi tienda.
+ */
+.dsm-account-module__content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--dsm-space-5);
+    height: 100%;
+}
+
+.dsm-account-module__content p {
+    margin-top: 0;
+}
+
+.dsm-account-module__summary {
+    margin-bottom: 0;
+    color: var(--dsm-color-text-muted);
+    font-size: var(--dsm-font-size-sm);
+}
+
+.dsm-account-module__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--dsm-space-3);
+}
+
+
+/*
+ * Las tarjetas principales ganan algo de presencia.
+ */
+.dsm-account .dsm-card {
+    padding: clamp(
+        var(--dsm-space-5),
+        2.5vw,
+        var(--dsm-space-6)
+    );
+}
+
+.dsm-account .dsm-card__title {
+    margin-bottom: var(--dsm-space-3);
+    font-size: clamp(
+        1.2rem,
+        2vw,
+        1.5rem
+    );
+}
+
+
+/*
+ * Zona sensible claramente separada del dashboard.
+ */
+.dsm-account__danger-zone {
+    margin-top: var(--dsm-space-7);
+}
+
+
+/* ==========================================================
+   MI CUENTA - TABLET
+   ========================================================== */
+
+@media (max-width: 900px) {
+
+    .dsm-account__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dsm-account__modules {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* ==========================================================
+   MI CUENTA - MÓVIL
+   ========================================================== */
+
+@media (max-width: 600px) {
+
+    .dsm-account .dsm-container {
+        width: min(
+            100% - 24px,
+            1180px
+        );
+    }
+
+    .dsm-account {
+        padding-top: var(--dsm-space-5);
+        padding-bottom: var(--dsm-space-6);
+    }
+
+    .dsm-account__header {
+        margin-bottom: var(--dsm-space-5);
+    }
+
+    .dsm-account__title {
+        font-size: 2rem;
+    }
+
+    .dsm-account__grid,
+    .dsm-account__modules {
+        gap: var(--dsm-space-4);
+    }
+
+    .dsm-account .dsm-card {
+        padding: var(--dsm-space-5);
+    }
+
+    .dsm-account-module__actions,
+    .dsm-account-module__actions .dsm-button {
+        width: 100%;
+    }
+
+    .dsm-account-module__actions .dsm-button {
+        justify-content: center;
+    }
+}
+
+
+/* ==========================================================
+   MI PUBLICIDAD
+   ========================================================== */
+
+.dsm-customer-advertising {
+    width: min(
+        1180px,
+        calc(100% - 32px)
+    );
+    margin-inline: auto;
+    padding-top: var(--dsm-space-7);
+    padding-bottom: var(--dsm-space-7);
+}
+
+.dsm-customer-advertising__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--dsm-space-5);
+    margin-bottom: var(--dsm-space-6);
+}
+
+.dsm-customer-advertising__header h1 {
+    margin-bottom: var(--dsm-space-2);
+    font-size: clamp(
+        2rem,
+        4vw,
+        3rem
+    );
+}
+
+.dsm-customer-advertising__header p {
+    margin: 0;
+    color: var(--dsm-color-text-muted);
+}
+
+.dsm-customer-advertising__actions {
+    flex: 0 0 auto;
+}
+
+.dsm-customer-advertising__list {
+    display: grid;
+    grid-template-columns: repeat(
+        2,
+        minmax(0, 1fr)
+    );
+    gap: var(--dsm-space-5);
+}
+
+.dsm-customer-advertising__item {
+    overflow: hidden;
+    padding: var(--dsm-space-5);
+
+    background: var(--dsm-color-surface);
+    border: 1px solid var(--dsm-color-border);
+    border-radius: var(--dsm-radius-lg);
+    box-shadow: var(--dsm-shadow-sm);
+}
+
+.dsm-customer-advertising__item img {
+    display: block;
+    width: 100%;
+    max-height: 260px;
+    margin-bottom: var(--dsm-space-4);
+
+    object-fit: cover;
+    border-radius: var(--dsm-radius-md);
+}
+
+@media (max-width: 760px) {
+
+    .dsm-customer-advertising {
+        width: min(
+            100% - 24px,
+            1180px
+        );
+        padding-top: var(--dsm-space-5);
+        padding-bottom: var(--dsm-space-6);
+    }
+
+    .dsm-customer-advertising__header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .dsm-customer-advertising__actions,
+    .dsm-customer-advertising__actions .dsm-button {
+        width: 100%;
+    }
+
+    .dsm-customer-advertising__actions .dsm-button {
+        justify-content: center;
+    }
+
+    .dsm-customer-advertising__list {
+        grid-template-columns: 1fr;
+    }
+}

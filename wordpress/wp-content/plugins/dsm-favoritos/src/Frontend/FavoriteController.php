@@ -74,12 +74,22 @@ final class FavoriteController
             ]
         );
 
+        /*
+         * IMPORTANTE:
+         *
+         * Los clientes DSM no son usuarios WordPress.
+         * Por tanto, incluso un cliente DSM autenticado
+         * entra por admin_post_nopriv_*.
+         *
+         * La autenticación real se comprueba después
+         * mediante dsm_current_customer_context.
+         */
         add_action(
             'admin_post_nopriv_'
             . self::ACTION_ADD,
             [
                 $this,
-                'handleGuest',
+                'handleAdd',
             ]
         );
 
@@ -97,7 +107,7 @@ final class FavoriteController
             . self::ACTION_REMOVE,
             [
                 $this,
-                'handleGuest',
+                'handleRemove',
             ]
         );
     }
@@ -172,21 +182,43 @@ final class FavoriteController
 
     /**
      * Gestiona peticiones realizadas sin una sesión
-     * autenticada.
+     * de cliente DSM autenticada.
      *
-     * En lugar de dejar admin-post sin respuesta,
-     * enviamos al login de WordPress y conservamos
-     * la URL desde la que se realizó la acción.
+     * Los clientes de DeSegundaMuda no utilizan
+     * el sistema de usuarios de WordPress, por lo
+     * que nunca debemos enviarlos a wp-login.php.
+     *
+     * Conservamos la URL original para regresar
+     * después del inicio de sesión.
      */
-    public function handleGuest(): void
+    public function handleGuest(): never
     {
         $redirectUrl =
             $this->resolveRedirectUrl();
 
-        wp_safe_redirect(
-            wp_login_url(
+        $loginUrl =
+            home_url(
+                '/iniciar-sesion/'
+            );
+
+        $loginUrl =
+            add_query_arg(
+                [
+                    'redirect_to' =>
+                        $redirectUrl,
+                ],
+                $loginUrl
+            );
+
+        $loginUrl =
+            (string) apply_filters(
+                'dsm_customer_login_url',
+                $loginUrl,
                 $redirectUrl
-            )
+            );
+
+        wp_safe_redirect(
+            $loginUrl
         );
 
         exit;
@@ -247,9 +279,7 @@ final class FavoriteController
             );
 
         if (!is_array($context)) {
-            throw new RuntimeException(
-                'No se pudo identificar al cliente.'
-            );
+            $this->handleGuest();
         }
 
         $customerId =
@@ -262,9 +292,7 @@ final class FavoriteController
             );
 
         if ($customerId <= 0) {
-            throw new RuntimeException(
-                'No se pudo identificar al cliente.'
-            );
+            $this->handleGuest();
         }
 
         $status =

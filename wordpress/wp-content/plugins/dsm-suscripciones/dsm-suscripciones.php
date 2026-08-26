@@ -44,11 +44,17 @@ use DSM\Suscripciones\Frontend\SubscriptionPlansShortcode;
 use DSM\Suscripciones\Frontend\SubscriptionPurchaseController;
 use DSM\Suscripciones\Integration\PaymentSubscriptionIntegration;
 use DSM\Suscripciones\Support\Autoloader;
+use DSM\Suscripciones\Integration\CustomerEntitlementIntegration;
 
 /*
  * Autoload.
  */
 Autoloader::register();
+
+/*
+ * Contratos públicos de derechos de suscripción.
+ */
+CustomerEntitlementIntegration::register();
 
 /*
  * Administración.

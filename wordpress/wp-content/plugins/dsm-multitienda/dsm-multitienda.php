@@ -39,6 +39,7 @@ require_once DSM_MULTITIENDA_PATH
 
 use DSM\Multitienda\Database\Installer;
 use DSM\Multitienda\Frontend\MyStoreShortcode;
+use DSM\Multitienda\Integration\CustomerAccountIntegration;
 use DSM\Multitienda\Frontend\PublicStoreController;
 use DSM\Multitienda\Frontend\PublicReservationController;
 use DSM\Multitienda\Frontend\StoreProductFormController;
@@ -67,6 +68,11 @@ Autoloader::register();
  */
 
 MyStoreShortcode::register();
+
+/*
+ * Integración con Mi cuenta.
+ */
+CustomerAccountIntegration::register();
 
 PublicReservationController::register();
 

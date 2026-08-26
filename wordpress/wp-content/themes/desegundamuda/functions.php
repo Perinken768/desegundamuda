@@ -153,6 +153,31 @@ add_action(
                 ],
                 $version
             );
+
+            wp_enqueue_script(
+                'dsm-front-page',
+                get_template_directory_uri()
+                    . '/assets/js/front-page.js',
+                [],
+                $version,
+                true
+            );
+        }
+
+        if (
+            is_page(
+                'mi-cuenta'
+            )
+        ) {
+            wp_enqueue_style(
+                'dsm-account',
+                get_template_directory_uri()
+                    . '/assets/css/account.css',
+                [
+                    'dsm-components',
+                ],
+                $version
+            );
         }
 
         wp_enqueue_script(
@@ -164,4 +189,121 @@ add_action(
             true
         );
     }
+);
+
+
+/*
+ * ==========================================================
+ * COLORES PERSONALIZABLES DEL TEMA
+ * ==========================================================
+ */
+
+add_action(
+    'wp_enqueue_scripts',
+    static function (): void {
+        $colors = [
+            '--dsm-color-primary' =>
+                get_theme_mod(
+                    'dsm_color_primary',
+                    '#24352a'
+                ),
+
+            '--dsm-color-primary-hover' =>
+                get_theme_mod(
+                    'dsm_color_primary_hover',
+                    '#17231b'
+                ),
+
+            '--dsm-color-secondary' =>
+                get_theme_mod(
+                    'dsm_color_secondary',
+                    '#dce8df'
+                ),
+
+            '--dsm-color-accent' =>
+                get_theme_mod(
+                    'dsm_color_accent',
+                    '#b8793d'
+                ),
+
+            '--dsm-color-background' =>
+                get_theme_mod(
+                    'dsm_color_background',
+                    '#f5f7f5'
+                ),
+
+            '--dsm-color-surface' =>
+                get_theme_mod(
+                    'dsm_color_surface',
+                    '#ffffff'
+                ),
+
+            '--dsm-color-surface-muted' =>
+                get_theme_mod(
+                    'dsm_color_surface_muted',
+                    '#eef2ef'
+                ),
+
+            '--dsm-color-text' =>
+                get_theme_mod(
+                    'dsm_color_text',
+                    '#1e2520'
+                ),
+
+            '--dsm-color-text-muted' =>
+                get_theme_mod(
+                    'dsm_color_text_muted',
+                    '#667069'
+                ),
+
+            '--dsm-color-border' =>
+                get_theme_mod(
+                    'dsm_color_border',
+                    '#d9dfda'
+                ),
+
+            '--dsm-color-focus' =>
+                get_theme_mod(
+                    'dsm_color_focus',
+                    '#4f7d5b'
+                ),
+        ];
+
+        $declarations = [];
+
+        foreach (
+            $colors
+            as $variable => $value
+        ) {
+            $value =
+                sanitize_hex_color(
+                    (string) $value
+                );
+
+            if ($value === '') {
+                continue;
+            }
+
+            $declarations[] =
+                $variable
+                . ': '
+                . $value
+                . ';';
+        }
+
+        if ($declarations === []) {
+            return;
+        }
+
+        wp_add_inline_style(
+            'dsm-tokens',
+            ':root { '
+            . implode(
+                ' ',
+                $declarations
+            )
+            . ' }'
+        );
+    },
+    20
 );

@@ -62,29 +62,6 @@
     flex: 0 0 auto;
 }
 
-.dsm-home-filters {
-    padding-top: var(--dsm-space-4);
-}
-
-.dsm-filter-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--dsm-space-2);
-}
-
-.dsm-filter-bar span {
-    padding:
-        var(--dsm-space-2)
-        var(--dsm-space-4);
-
-    background: var(--dsm-color-surface);
-    border: 1px solid var(--dsm-color-border);
-    border-radius: 999px;
-
-    font-size: var(--dsm-font-size-sm);
-    font-weight: 700;
-}
-
 .dsm-home-advertising {
     padding-top: var(--dsm-space-6);
 }
@@ -121,16 +98,6 @@
     text-decoration: none;
 }
 
-.dsm-listing-grid {
-    display: grid;
-    grid-template-columns:
-        repeat(
-            4,
-            minmax(0, 1fr)
-        );
-    gap: var(--dsm-space-5);
-}
-
 .dsm-empty-state {
     grid-column: 1 / -1;
 
@@ -143,26 +110,6 @@
     border-radius: var(--dsm-radius-lg);
 
     text-align: center;
-}
-
-@media (max-width: 1000px) {
-    .dsm-listing-grid {
-        grid-template-columns:
-            repeat(
-                3,
-                minmax(0, 1fr)
-            );
-    }
-}
-
-@media (max-width: 760px) {
-    .dsm-listing-grid {
-        grid-template-columns:
-            repeat(
-                2,
-                minmax(0, 1fr)
-            );
-    }
 }
 
 @media (max-width: 600px) {
@@ -219,136 +166,6 @@
 
     transform: translateY(-1px);
 }
-
-
-/* ==========================================================
-   TARJETAS DE RESULTADOS
-   ========================================================== */
-
-.dsm-listing-card {
-    min-width: 0;
-    overflow: hidden;
-
-    background: var(--dsm-color-surface);
-    border: 1px solid var(--dsm-color-border);
-    border-radius: var(--dsm-radius-lg);
-    box-shadow: var(--dsm-shadow-sm);
-
-    transition:
-        transform var(--dsm-transition-fast),
-        box-shadow var(--dsm-transition-fast);
-}
-
-.dsm-listing-card:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--dsm-shadow-card);
-}
-
-.dsm-listing-card__link {
-    display: block;
-    height: 100%;
-
-    color: inherit;
-    text-decoration: none;
-}
-
-.dsm-listing-card__media {
-    position: relative;
-
-    aspect-ratio: 4 / 5;
-    overflow: hidden;
-
-    background: var(--dsm-color-surface-muted);
-}
-
-.dsm-listing-card__image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.dsm-listing-card__image--empty {
-    display: grid;
-    place-items: center;
-
-    color: var(--dsm-color-text-muted);
-    font-size: var(--dsm-font-size-sm);
-}
-
-.dsm-listing-card__badges {
-    position: absolute;
-    top: var(--dsm-space-3);
-    left: var(--dsm-space-3);
-
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--dsm-space-2);
-}
-
-.dsm-listing-badge {
-    padding:
-        var(--dsm-space-1)
-        var(--dsm-space-2);
-
-    color: var(--dsm-color-text);
-    background: var(--dsm-color-surface);
-
-    border-radius: 999px;
-
-    font-size: var(--dsm-font-size-xs);
-    font-weight: 800;
-}
-
-.dsm-listing-badge--promoted {
-    color: var(--dsm-color-text-inverse);
-    background: var(--dsm-color-accent);
-}
-
-.dsm-listing-badge--reserved {
-    color: var(--dsm-color-warning);
-    background: var(--dsm-color-warning-background);
-}
-
-.dsm-listing-card__body {
-    padding: var(--dsm-space-4);
-}
-
-.dsm-listing-card__title {
-    margin-bottom: var(--dsm-space-2);
-
-    font-size: var(--dsm-font-size-md);
-    line-height: var(--dsm-line-height-sm);
-}
-
-.dsm-listing-card__seller {
-    margin-bottom: var(--dsm-space-2);
-
-    color: var(--dsm-color-text-muted);
-    font-size: var(--dsm-font-size-sm);
-}
-
-.dsm-listing-card__price {
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: var(--dsm-space-2);
-}
-
-.dsm-listing-card__price strong {
-    font-size: var(--dsm-font-size-lg);
-}
-
-.dsm-listing-card__price del {
-    color: var(--dsm-color-text-muted);
-    font-size: var(--dsm-font-size-sm);
-}
-
-.dsm-listing-tabs a.is-active {
-    color: var(--dsm-color-text-inverse);
-    background: var(--dsm-color-primary);
-    border-color: var(--dsm-color-primary);
-}
-
 
 /* ==========================================================
    FILTROS DE PORTADA
@@ -445,11 +262,6 @@
 
 .dsm-listing-grid {
     display: grid;
-    grid-template-columns:
-        repeat(
-            4,
-            minmax(0, 1fr)
-        );
     gap: 22px;
 }
 
@@ -459,7 +271,9 @@
    ========================================================== */
 
 .dsm-listing-card {
+    display: flex;
     min-width: 0;
+    min-height: 100%;
     overflow: hidden;
     border: 1px solid var(--dsm-color-border);
     border-radius: 18px;
@@ -479,7 +293,9 @@
 }
 
 .dsm-listing-card__link {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
     height: 100%;
     color: inherit;
     text-decoration: none;
@@ -497,15 +313,6 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-}
-
-.dsm-listing-card__image--empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    color: var(--dsm-color-text-muted);
-    text-align: center;
 }
 
 .dsm-listing-card__badges {
@@ -538,26 +345,43 @@
 }
 
 .dsm-listing-card__body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
     padding: 15px;
 }
 
 .dsm-listing-card__title {
+    display: -webkit-box;
+    overflow: hidden;
+
+    min-height: 2.6em;
     margin: 0 0 7px;
+
     font-size: 1rem;
     line-height: 1.3;
+
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
 }
 
 .dsm-listing-card__seller {
+    overflow: hidden;
     margin: 0 0 11px;
+
     color: var(--dsm-color-text-muted);
+
     font-size: 0.88rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .dsm-listing-card__price {
     display: flex;
     align-items: baseline;
-    gap: 8px;
     flex-wrap: wrap;
+    gap: 8px;
+    margin-top: auto;
 }
 
 .dsm-listing-card__price strong {
@@ -571,58 +395,13 @@
 
 
 /* ==========================================================
-   RESPONSIVE
+   RESPONSIVE GENERAL
    ========================================================== */
-
-@media (max-width: 1100px) {
-
-    .dsm-listing-grid {
-        grid-template-columns:
-            repeat(
-                3,
-                minmax(0, 1fr)
-            );
-    }
-
-    .dsm-filter-bar {
-        grid-template-columns:
-            repeat(
-                2,
-                minmax(0, 1fr)
-            );
-    }
-
-    .dsm-filter-actions {
-        grid-column: 1 / -1;
-    }
-}
 
 @media (max-width: 760px) {
 
     .dsm-listing-grid {
-        grid-template-columns:
-            repeat(
-                2,
-                minmax(0, 1fr)
-            );
         gap: 12px;
-    }
-
-    .dsm-filter-bar {
-        grid-template-columns:
-            1fr;
-        padding: 14px;
-    }
-
-    .dsm-filter-actions {
-        grid-column: auto;
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .dsm-filter-actions .dsm-button {
-        width: 100%;
-        text-align: center;
     }
 }
 
@@ -813,11 +592,6 @@
 
     .dsm-listing-grid {
         display: grid;
-        grid-template-columns:
-            repeat(
-                2,
-                minmax(0, 1fr)
-            );
         gap: 10px;
     }
 
@@ -937,4 +711,381 @@
     .dsm-listing-card__price strong {
         font-size: 0.92rem;
     }
+}
+
+/* ==========================================================
+   PUBLICIDAD DE PORTADA
+   ========================================================== */
+
+.dsm-home-advertising {
+    padding-top: var(--dsm-space-6);
+}
+
+.dsm-advertising-card {
+    width: 100%;
+    max-width: 1180px;
+    margin-inline: auto;
+}
+
+.dsm-advertising-banner {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+
+    background: var(--dsm-color-surface-muted);
+    border-radius: var(--dsm-radius-lg);
+    box-shadow: var(--dsm-shadow-sm);
+}
+
+.dsm-advertising-banner img {
+    display: block;
+    width: 100%;
+    max-height: 360px;
+
+    object-fit: cover;
+    object-position: center;
+}
+
+.dsm-advertising-card__actions {
+    display: grid;
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0, 1fr)
+        );
+
+    gap: var(--dsm-space-3);
+    margin-top: var(--dsm-space-4);
+}
+
+.dsm-advertising-card__actions .dsm-button {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+
+    justify-content: center;
+    text-align: center;
+}
+
+
+/* ==========================================================
+   PUBLICIDAD - TABLET
+   ========================================================== */
+
+@media (max-width: 760px) {
+
+    .dsm-home-advertising {
+        padding-top: var(--dsm-space-5);
+    }
+
+    .dsm-advertising-banner img {
+        max-height: 260px;
+    }
+
+    .dsm-advertising-card__actions {
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+
+        gap: 10px;
+    }
+}
+
+
+/* ==========================================================
+   PUBLICIDAD - MÓVIL
+   ========================================================== */
+
+@media (max-width: 520px) {
+
+    .dsm-advertising-banner {
+        border-radius: 12px;
+    }
+
+    .dsm-advertising-banner img {
+        max-height: 220px;
+    }
+
+    .dsm-advertising-card__actions {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .dsm-advertising-card__actions .dsm-button {
+        min-height: 46px;
+    }
+}
+
+
+/* ==========================================================
+   TARJETAS - MÓVIL
+   ========================================================== */
+
+@media (max-width: 760px) {
+
+    .dsm-listing-card__title {
+        min-height: 2.5em;
+    }
+
+}
+
+
+/* ==========================================================
+   TARJETAS - PLACEHOLDER SIN IMAGEN
+   ========================================================== */
+
+.dsm-listing-card__image--empty {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0;
+
+    color: transparent;
+    background: var(--dsm-color-surface-muted);
+
+    font-size: 0;
+}
+
+.dsm-listing-card__image--empty::before {
+    content: "";
+
+    width: 42px;
+    height: 42px;
+
+    background: none;
+    border: 2px solid var(--dsm-color-border);
+    border-radius: 10px;
+}
+
+.dsm-listing-card__image--empty::after {
+    content: "";
+
+    position: absolute;
+
+    width: 9px;
+    height: 9px;
+
+    border: 2px solid var(--dsm-color-border);
+    border-radius: 50%;
+
+    transform: translate(
+        -9px,
+        -8px
+    );
+}
+
+@media (max-width: 760px) {
+
+    .dsm-listing-card__image--empty::before {
+        width: 36px;
+        height: 36px;
+    }
+
+    .dsm-listing-card__image--empty::after {
+        width: 8px;
+        height: 8px;
+
+        transform: translate(
+            -8px,
+            -7px
+        );
+    }
+}
+
+
+/* ==========================================================
+   CARRUSEL DE PUBLICIDAD
+   ========================================================== */
+
+.dsm-advertising-carousel {
+    width: 100%;
+}
+
+.dsm-advertising-carousel__slide[hidden] {
+    display: none;
+}
+
+.dsm-advertising-carousel__controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+
+    margin-top: 12px;
+}
+
+.dsm-advertising-carousel__control {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 36px;
+    height: 36px;
+    padding: 0;
+
+    background: var(--dsm-color-surface);
+    border: 1px solid var(--dsm-color-border);
+    border-radius: 50%;
+
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.dsm-advertising-carousel__dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+}
+
+.dsm-advertising-carousel__dot {
+    width: 8px;
+    height: 8px;
+    padding: 0;
+
+    background: var(--dsm-color-border);
+    border: 0;
+    border-radius: 50%;
+
+    cursor: pointer;
+}
+
+.dsm-advertising-carousel__dot.is-active {
+    width: 20px;
+    border-radius: 999px;
+    background: var(--dsm-color-primary);
+}
+
+@media (max-width: 520px) {
+
+    .dsm-advertising-carousel__controls {
+        margin-top: 10px;
+    }
+
+    .dsm-advertising-carousel__control {
+        width: 34px;
+        height: 34px;
+    }
+}
+
+
+/* ==========================================================
+   RESULTADOS - COLUMNAS CONFIGURABLES
+   ========================================================== */
+
+/*
+ * Escritorio amplio.
+ *
+ * El valor elegido en el Customizer representa el máximo
+ * de columnas que puede mostrar la portada.
+ */
+
+.dsm-listing-grid--columns-3 {
+    grid-template-columns:
+        repeat(
+            3,
+            minmax(0, 1fr)
+        );
+}
+
+.dsm-listing-grid--columns-4 {
+    grid-template-columns:
+        repeat(
+            4,
+            minmax(0, 1fr)
+        );
+}
+
+.dsm-listing-grid--columns-5 {
+    grid-template-columns:
+        repeat(
+            5,
+            minmax(0, 1fr)
+        );
+}
+
+
+/*
+ * Portátiles y escritorios de anchura media.
+ *
+ * Una configuración de 5 columnas baja a 4.
+ * Las configuraciones de 3 y 4 conservan su máximo.
+ */
+
+@media (max-width: 1180px) {
+
+    .dsm-listing-grid--columns-5 {
+        grid-template-columns:
+            repeat(
+                4,
+                minmax(0, 1fr)
+            );
+    }
+}
+
+
+/*
+ * Tablet horizontal y portátiles estrechos.
+ *
+ * Cualquier configuración superior queda limitada
+ * a un máximo de 3 columnas.
+ */
+
+@media (max-width: 900px) {
+
+    .dsm-listing-grid--columns-4,
+    .dsm-listing-grid--columns-5 {
+        grid-template-columns:
+            repeat(
+                3,
+                minmax(0, 1fr)
+            );
+    }
+}
+
+
+/*
+ * Tablet vertical y móvil.
+ *
+ * Conservamos las dos columnas del diseño marketplace
+ * que ya utiliza la portada móvil.
+ */
+
+@media (max-width: 760px) {
+
+    .dsm-listing-grid--columns-3,
+    .dsm-listing-grid--columns-4,
+    .dsm-listing-grid--columns-5 {
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+    }
+}
+
+
+
+/* ==========================================================
+   PUBLICIDAD - BOTÓN WHATSAPP
+   ========================================================== */
+
+.dsm-advertising-card__actions .dsm-button--whatsapp {
+    background: #25D366;
+    border-color: #25D366;
+    color: #ffffff;
+}
+
+.dsm-advertising-card__actions .dsm-button--whatsapp:hover,
+.dsm-advertising-card__actions .dsm-button--whatsapp:focus-visible {
+    background: #1ebe5d;
+    border-color: #1ebe5d;
+    color: #ffffff;
 }

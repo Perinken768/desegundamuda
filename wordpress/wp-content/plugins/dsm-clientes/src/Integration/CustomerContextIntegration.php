@@ -74,6 +74,22 @@ final class CustomerContextIntegration
          * No construye mensajes ni conoce anuncios,
          * reservas, productos o tiendas.
          */
+        /*
+         * Información pública neutral de contacto.
+         *
+         * Puede ser consumida por Publicidad, Multitienda
+         * u otros módulos sin conocer CustomerProfile.
+         */
+        add_filter(
+            'dsm_customer_public_contact_by_id',
+            [
+                self::class,
+                'resolvePublicContactById',
+            ],
+            10,
+            2
+        );
+
         add_filter(
             'dsm_customer_whatsapp_contact_by_id',
             [
@@ -290,6 +306,126 @@ final class CustomerContextIntegration
      *
      * @return array<string, mixed>|null
      */
+    /**
+     * Devuelve los métodos públicos de contacto autorizados
+     * de un cliente DSM.
+     *
+     * Nunca devuelve el teléfono como texto público.
+     *
+     * @param mixed $currentContact
+     *
+     * @return array<string, mixed>
+     */
+    public static function resolvePublicContactById(
+        mixed $currentContact,
+        int $customerId
+    ): array {
+        if (is_array($currentContact)) {
+            return $currentContact;
+        }
+
+        $emptyContact = [
+            'customer_id' =>
+                $customerId,
+
+            'allows_phone_calls' =>
+                false,
+
+            'allows_whatsapp' =>
+                false,
+
+            'has_valid_contact' =>
+                false,
+
+            'phone_call_url' =>
+                '',
+
+            'whatsapp_url' =>
+                '',
+        ];
+
+        if ($customerId <= 0) {
+            return $emptyContact;
+        }
+
+        try {
+            $customerRepository =
+                new CustomerRepository();
+
+            $customer =
+                $customerRepository->findById(
+                    $customerId
+                );
+
+            if (
+                $customer === null
+                || sanitize_key(
+                    $customer->getStatus()
+                ) !== 'active'
+            ) {
+                return $emptyContact;
+            }
+
+            $profileRepository =
+                new CustomerProfileRepository();
+
+            $profile =
+                $profileRepository
+                    ->findByCustomerId(
+                        $customerId
+                    );
+
+            if ($profile === null) {
+                return $emptyContact;
+            }
+
+            $phoneCallUrl =
+                $profile->getPhoneCallUrl()
+                ?? '';
+
+            $whatsappUrl =
+                $profile->getWhatsappUrl()
+                ?? '';
+
+            return [
+                'customer_id' =>
+                    $customerId,
+
+                'allows_phone_calls' =>
+                    $profile
+                        ->allowsPhoneCalls(),
+
+                'allows_whatsapp' =>
+                    $profile
+                        ->allowsWhatsapp(),
+
+                'has_valid_contact' =>
+                    $profile
+                        ->hasValidContactMethod(),
+
+                'phone_call_url' =>
+                    esc_url_raw(
+                        $phoneCallUrl
+                    ),
+
+                'whatsapp_url' =>
+                    esc_url_raw(
+                        $whatsappUrl
+                    ),
+            ];
+        } catch (Throwable $exception) {
+            error_log(
+                '[DSM Clientes] No se pudo resolver '
+                . 'el contacto público del cliente '
+                . $customerId
+                . ': '
+                . $exception->getMessage()
+            );
+
+            return $emptyContact;
+        }
+    }
+
     public static function resolveWhatsappContactById(
         mixed $currentContact,
         int $customerId

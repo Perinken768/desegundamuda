@@ -6,10 +6,7 @@ namespace DSM\Clientes\Application;
 
 use DSM\Clientes\Authentication\CustomerSessionRepository;
 use DSM\Clientes\Authentication\LoginResult;
-use DSM\Clientes\Authentication\SessionToken;
 use DSM\Clientes\Customer\CustomerRepository;
-use DSM\Clientes\Customer\CustomerStatus;
-use RuntimeException;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -17,13 +14,23 @@ if (!defined('ABSPATH')) {
 
 final class LoginCustomer
 {
-    private const SESSION_DURATION =
-        2592000; // 30 días.
+    private AuthenticateCustomer $authenticateCustomer;
+
+    private CreateCustomerLoginSession $createSession;
 
     public function __construct(
-        private readonly CustomerRepository $customerRepository,
-        private readonly CustomerSessionRepository $sessionRepository
+        CustomerRepository $customerRepository,
+        CustomerSessionRepository $sessionRepository
     ) {
+        $this->authenticateCustomer =
+            new AuthenticateCustomer(
+                $customerRepository
+            );
+
+        $this->createSession =
+            new CreateCustomerLoginSession(
+                $sessionRepository
+            );
     }
 
     public function execute(
@@ -32,102 +39,16 @@ final class LoginCustomer
         ?string $ipAddress,
         ?string $userAgent
     ): LoginResult {
-        $email = strtolower(trim($email));
-
-        if (!is_email($email)) {
-            throw new RuntimeException(
-                'Las credenciales no son válidas.'
+        $customer =
+            $this->authenticateCustomer->execute(
+                $email,
+                $password
             );
-        }
 
-        $credentials = $this->customerRepository
-            ->findCredentialsByEmail($email);
-
-        if (
-            $credentials === null
-            || !wp_check_password(
-                $password,
-                $credentials['password_hash']
-            )
-        ) {
-            throw new RuntimeException(
-                'Las credenciales no son válidas.'
-            );
-        }
-
-        if (
-            !CustomerStatus::canAuthenticate(
-                $credentials['status']
-            )
-        ) {
-            throw new RuntimeException(
-                'La cuenta no está disponible para iniciar sesión.'
-            );
-        }
-
-        $customer = $this->customerRepository->findById(
-            $credentials['id']
-        );
-
-        if ($customer === null) {
-            throw new RuntimeException(
-                'No se pudo recuperar la cuenta.'
-            );
-        }
-
-        $token = SessionToken::generate();
-        $tokenHash = SessionToken::hash($token);
-
-        $session = $this->sessionRepository->create(
-            $customer->getId(),
-            $tokenHash,
-            $this->normalizeIpAddress($ipAddress),
-            $this->normalizeUserAgent($userAgent),
-            self::SESSION_DURATION
-        );
-
-        return new LoginResult(
+        return $this->createSession->execute(
             $customer,
-            $session,
-            $token
-        );
-    }
-
-    private function normalizeIpAddress(
-        ?string $ipAddress
-    ): ?string {
-        if (
-            $ipAddress === null
-            || $ipAddress === ''
-        ) {
-            return null;
-        }
-
-        return filter_var(
             $ipAddress,
-            FILTER_VALIDATE_IP
-        ) !== false
-            ? $ipAddress
-            : null;
-    }
-
-    private function normalizeUserAgent(
-        ?string $userAgent
-    ): ?string {
-        if ($userAgent === null) {
-            return null;
-        }
-
-        $userAgent = trim($userAgent);
-
-        if ($userAgent === '') {
-            return null;
-        }
-
-        return mb_substr(
-            $userAgent,
-            0,
-            500
+            $userAgent
         );
     }
 }
