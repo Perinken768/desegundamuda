@@ -74,6 +74,32 @@ final class CustomerAccountIntegration
             return;
         }
 
+        /*
+         * =====================================================
+         * DERECHO DE ACCESO A PUBLICIDAD
+         * =====================================================
+         *
+         * DSM Publicidad no conoce la implementación interna
+         * de Suscripciones.
+         *
+         * Únicamente consume el contrato neutral expuesto
+         * mediante este filtro.
+         */
+        $hasAccess =
+            (bool) apply_filters(
+                'dsm_customer_has_advertising',
+                false,
+                $customerId
+            );
+
+        /*
+         * =====================================================
+         * CAMPAÑAS EXISTENTES
+         * =====================================================
+         */
+
+        $count = 0;
+
         try {
             $repository =
                 new AdvertisingBannerRepository();
@@ -84,22 +110,40 @@ final class CustomerAccountIntegration
                 );
 
             $count =
-                count($banners);
+                count(
+                    $banners
+                );
         } catch (Throwable $exception) {
             error_log(
                 '[DSM Publicidad] No se pudo cargar '
                 . 'el resumen de Mi cuenta: '
                 . $exception->getMessage()
             );
-
-            $count = 0;
         }
+
+        /*
+         * Si tiene acceso contratado entra en la gestión.
+         *
+         * Si no lo tiene, va directamente a los planes.
+         */
+        $targetUrl =
+            $hasAccess
+                ? home_url(
+                    '/mi-publicidad/'
+                )
+                : home_url(
+                    '/suscripciones/'
+                );
 
         ?>
         <section class="dsm-account-module">
+
             <article class="dsm-card">
+
                 <div class="dsm-account-module__content">
+
                     <div>
+
                         <h2 class="dsm-card__title">
                             <?php
                             esc_html_e(
@@ -109,49 +153,95 @@ final class CustomerAccountIntegration
                             ?>
                         </h2>
 
-                        <p>
-                            <?php
-                            esc_html_e(
-                                'Gestiona tus campañas publicitarias y banners en DeSegundaMuda.',
-                                'dsm-publicidad'
-                            );
-                            ?>
-                        </p>
 
-                        <p class="dsm-account-module__summary">
-                            <?php
-                            printf(
-                                esc_html(
-                                    _n(
-                                        '%d campaña registrada.',
-                                        '%d campañas registradas.',
-                                        $count,
-                                        'dsm-publicidad'
-                                    )
-                                ),
-                                $count
-                            );
-                            ?>
-                        </p>
+                        <?php if ($hasAccess) : ?>
+
+                            <p>
+                                <?php
+                                esc_html_e(
+                                    'Gestiona tus campañas publicitarias y banners en DeSegundaMuda.',
+                                    'dsm-publicidad'
+                                );
+                                ?>
+                            </p>
+
+                            <p class="dsm-account-module__summary">
+
+                                <?php
+                                printf(
+                                    esc_html(
+                                        _n(
+                                            '%d campaña registrada.',
+                                            '%d campañas registradas.',
+                                            $count,
+                                            'dsm-publicidad'
+                                        )
+                                    ),
+                                    $count
+                                );
+                                ?>
+
+                            </p>
+
+                        <?php else : ?>
+
+                            <p>
+                                <?php
+                                esc_html_e(
+                                    'Promociona tu negocio mediante espacios publicitarios en DeSegundaMuda.',
+                                    'dsm-publicidad'
+                                );
+                                ?>
+                            </p>
+
+                            <p class="dsm-account-module__summary">
+                                <?php
+                                esc_html_e(
+                                    'Publicidad no está activa actualmente en tu cuenta.',
+                                    'dsm-publicidad'
+                                );
+                                ?>
+                            </p>
+
+                        <?php endif; ?>
+
                     </div>
 
+
                     <div class="dsm-account-module__actions">
+
                         <a
-                            class="dsm-button dsm-button--primary"
-                            href="<?php echo esc_url(
-                                home_url('/mi-publicidad/')
-                            ); ?>"
+                            class="
+                                dsm-button
+                                dsm-button--primary
+                            "
+                            href="<?php
+                            echo esc_url(
+                                $targetUrl
+                            );
+                            ?>"
                         >
                             <?php
-                            esc_html_e(
-                                'Gestionar mi publicidad',
-                                'dsm-publicidad'
+                            echo esc_html(
+                                $hasAccess
+                                    ? __(
+                                        'Gestionar mi publicidad',
+                                        'dsm-publicidad'
+                                    )
+                                    : __(
+                                        'Activar Publicidad',
+                                        'dsm-publicidad'
+                                    )
                             );
                             ?>
                         </a>
+
                     </div>
+
                 </div>
+
             </article>
+
         </section>
         <?php
     }

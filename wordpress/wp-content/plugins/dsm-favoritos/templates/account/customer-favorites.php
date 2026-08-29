@@ -313,6 +313,75 @@ $currentUrl =
                         <?php endif; ?>
                     </a>
 
+                    <form
+                        class="dsm-customer-favorite__heart-form"
+                        method="post"
+                        action="<?php echo esc_url(
+                            admin_url(
+                                'admin-post.php'
+                            )
+                        ); ?>"
+                        data-dsm-favorite-form
+                    >
+                        <input
+                            type="hidden"
+                            name="action"
+                            value="<?php echo esc_attr(
+                                FavoriteController::
+                                    ACTION_REMOVE
+                            ); ?>"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="advertisement_id"
+                            value="<?php echo esc_attr(
+                                (string) $advertisementId
+                            ); ?>"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="redirect_to"
+                            value="<?php echo esc_attr(
+                                $currentUrl
+                            ); ?>"
+                        >
+
+                        <?php
+                        wp_nonce_field(
+                            $nonceAction,
+                            FavoriteController::
+                                NONCE_FIELD
+                        );
+                        ?>
+
+                        <button
+                            class="dsm-customer-favorite__heart"
+                            type="submit"
+                            data-dsm-favorite-button
+                            aria-label="<?php
+                            echo esc_attr__(
+                                'Quitar de favoritos',
+                                'dsm-favoritos'
+                            );
+                            ?>"
+                            title="<?php
+                            echo esc_attr__(
+                                'Quitar de favoritos',
+                                'dsm-favoritos'
+                            );
+                            ?>"
+                        >
+                            <span
+                                class="dsm-customer-favorite__heart-icon"
+                                aria-hidden="true"
+                            >
+                                ♥
+                            </span>
+                        </button>
+                    </form>
+
                     <div class="dsm-customer-favorite__content">
                         <h2 class="dsm-customer-favorite__title">
                             <a href="<?php echo esc_url(
@@ -417,66 +486,6 @@ $currentUrl =
                                 ?>
                             </a>
 
-                            <form
-                                method="post"
-                                action="<?php echo esc_url(
-                                    admin_url(
-                                        'admin-post.php'
-                                    )
-                                ); ?>"
-                                data-dsm-favorite-form
-                            >
-                                <input
-                                    type="hidden"
-                                    name="action"
-                                    value="<?php echo esc_attr(
-                                        FavoriteController::
-                                            ACTION_REMOVE
-                                    ); ?>"
-                                >
-
-                                <input
-                                    type="hidden"
-                                    name="advertisement_id"
-                                    value="<?php echo esc_attr(
-                                        (string) $advertisementId
-                                    ); ?>"
-                                >
-
-                                <input
-                                    type="hidden"
-                                    name="redirect_to"
-                                    value="<?php echo esc_attr(
-                                        $currentUrl
-                                    ); ?>"
-                                >
-
-                                <?php
-                                wp_nonce_field(
-                                    $nonceAction,
-                                    FavoriteController::
-                                        NONCE_FIELD
-                                );
-                                ?>
-
-                                <button
-                                    class="dsm-favorites-button dsm-favorites-button--secondary"
-                                    type="submit"
-                                    data-dsm-favorite-button
-                                >
-                                    <span
-                                        class="dashicons dashicons-heart"
-                                        aria-hidden="true"
-                                    ></span>
-
-                                    <?php
-                                    esc_html_e(
-                                        'Quitar',
-                                        'dsm-favoritos'
-                                    );
-                                    ?>
-                                </button>
-                            </form>
                         </div>
                     </div>
                 </article>

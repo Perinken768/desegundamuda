@@ -22,6 +22,9 @@ final class StoreProductFormController
     public const CREATE_ACTION =
         'dsm_multistore_create_product';
 
+    public const UPDATE_ACTION =
+        'dsm_multistore_update_product';
+
     public const NONCE_FIELD =
         'dsm_multistore_product_form_nonce';
 
@@ -46,6 +49,24 @@ final class StoreProductFormController
             [
                 self::class,
                 'handleCreate',
+            ]
+        );
+
+        add_action(
+            'admin_post_'
+            . self::UPDATE_ACTION,
+            [
+                self::class,
+                'handleUpdate',
+            ]
+        );
+
+        add_action(
+            'admin_post_nopriv_'
+            . self::UPDATE_ACTION,
+            [
+                self::class,
+                'handleUpdate',
             ]
         );
     }
@@ -157,6 +178,161 @@ final class StoreProductFormController
                 ]
             );
         }
+    }
+
+    public static function handleUpdate(): never
+    {
+        $productId = 0;
+
+        try {
+            $context =
+                CustomerContext::
+                    requireCurrentActive();
+
+            $customerId =
+                max(
+                    0,
+                    (int) (
+                        $context['id']
+                        ?? 0
+                    )
+                );
+
+            if ($customerId <= 0) {
+                throw new RuntimeException(
+                    'No se pudo identificar al cliente.'
+                );
+            }
+
+            $catalogStoreService =
+                new CatalogStoreService();
+
+            $store =
+                $catalogStoreService
+                    ->requireStoreForCustomer(
+                        $customerId
+                    );
+
+            $productId =
+                isset($_POST['product_id'])
+                    ? absint(
+                        wp_unslash(
+                            (string) $_POST[
+                                'product_id'
+                            ]
+                        )
+                    )
+                    : 0;
+
+            if ($productId <= 0) {
+                throw new RuntimeException(
+                    'El identificador del producto no es válido.'
+                );
+            }
+
+            check_admin_referer(
+                self::getUpdateNonceAction(
+                    $productId
+                ),
+                self::NONCE_FIELD
+            );
+
+            $productRepository =
+                new ProductRepository();
+
+            $product =
+                $productRepository->findById(
+                    $productId
+                );
+
+            if (
+                $product === null
+                || !$product->belongsToStore(
+                    $store->getId()
+                )
+            ) {
+                throw new RuntimeException(
+                    'El producto no pertenece a tu tienda.'
+                );
+            }
+
+            $name =
+                isset($_POST['name'])
+                    ? sanitize_text_field(
+                        wp_unslash(
+                            (string) $_POST[
+                                'name'
+                            ]
+                        )
+                    )
+                    : '';
+
+            $description =
+                isset($_POST['description'])
+                    ? sanitize_textarea_field(
+                        wp_unslash(
+                            (string) $_POST[
+                                'description'
+                            ]
+                        )
+                    )
+                    : '';
+
+            if ($name === '') {
+                throw new RuntimeException(
+                    'El nombre del producto es obligatorio.'
+                );
+            }
+
+            $productRepository->update(
+                $productId,
+                $customerId,
+                [
+                    'name' =>
+                        $name,
+
+                    'description' =>
+                        $description,
+                ]
+            );
+
+            self::redirect(
+                [
+                    'store_section' =>
+                        'products',
+
+                    'product_id' =>
+                        $productId,
+
+                    'product_notice' =>
+                        'updated',
+                ]
+            );
+        } catch (Throwable $exception) {
+            self::redirect(
+                [
+                    'store_section' =>
+                        'products',
+
+                    'product_id' =>
+                        $productId,
+
+                    'product_notice' =>
+                        'error',
+
+                    'product_error' =>
+                        $exception->getMessage(),
+                ]
+            );
+        }
+    }
+
+    public static function getUpdateNonceAction(
+        int $productId
+    ): string {
+        return self::UPDATE_ACTION
+            . '_'
+            . $productId;
     }
 
     public static function getCreateNonceAction(

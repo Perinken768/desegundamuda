@@ -5,6 +5,7 @@ declare(strict_types=1);
 use DSM\Catalogo\Image\ProductImage;
 use DSM\Catalogo\Product\Product;
 use DSM\Catalogo\Variant\ProductVariant;
+use DSM\Multitienda\Frontend\StoreProductFormController;
 use DSM\Multitienda\Frontend\StoreProductImageController;
 use DSM\Multitienda\Frontend\StoreProductVariantController;
 use DSM\Multitienda\Frontend\StoreStockController;
@@ -23,6 +24,139 @@ if (!defined('ABSPATH')) {
  */
 
 ?>
+
+<article class="dsm-card">
+
+    <h2>
+        Información del producto
+    </h2>
+
+    <?php if (
+        isset($productNotice)
+        && $productNotice === 'updated'
+    ) : ?>
+
+        <div class="dsm-account-notice dsm-account-notice--success">
+            El producto se actualizó correctamente.
+        </div>
+
+    <?php elseif (
+        isset($productNotice)
+        && $productNotice === 'error'
+        && isset($productError)
+        && $productError !== ''
+    ) : ?>
+
+        <div class="dsm-account-notice dsm-account-notice--error">
+            <?php
+            echo esc_html(
+                $productError
+            );
+            ?>
+        </div>
+
+    <?php endif; ?>
+
+    <form
+        method="post"
+        action="<?php
+        echo esc_url(
+            admin_url(
+                'admin-post.php'
+            )
+        );
+        ?>"
+    >
+
+        <input
+            type="hidden"
+            name="action"
+            value="<?php
+            echo esc_attr(
+                StoreProductFormController::
+                    UPDATE_ACTION
+            );
+            ?>"
+        >
+
+        <input
+            type="hidden"
+            name="product_id"
+            value="<?php
+            echo esc_attr(
+                (string)
+                $editProduct->getId()
+            );
+            ?>"
+        >
+
+        <?php
+        wp_nonce_field(
+            StoreProductFormController::
+                getUpdateNonceAction(
+                    $editProduct->getId()
+                ),
+            StoreProductFormController::
+                NONCE_FIELD
+        );
+        ?>
+
+        <p>
+            <label>
+                <strong>
+                    Nombre del producto
+                </strong>
+            </label>
+
+            <br>
+
+            <input
+                type="text"
+                name="name"
+                maxlength="180"
+                value="<?php
+                echo esc_attr(
+                    $editProduct->getName()
+                );
+                ?>"
+                required
+            >
+        </p>
+
+        <p>
+            <label>
+                <strong>
+                    Descripción
+                </strong>
+            </label>
+
+            <br>
+
+            <textarea
+                name="description"
+                rows="5"
+            ><?php
+            echo esc_textarea(
+                $editProduct->getDescription()
+                ?? ''
+            );
+            ?></textarea>
+        </p>
+
+        <button
+            type="submit"
+            class="
+                dsm-button
+                dsm-button--primary
+            "
+        >
+            Guardar cambios
+        </button>
+
+    </form>
+
+</article>
+
 
 <article class="dsm-card">
 

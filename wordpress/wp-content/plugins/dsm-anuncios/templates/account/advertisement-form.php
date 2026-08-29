@@ -46,6 +46,22 @@ $isEditing =
         ? (bool) $isEditing
         : $advertisementId > 0;
 
+$advertisementStatus =
+    $advertisement !== null
+        ? sanitize_key(
+            (string) (
+                $advertisement[
+                    'status'
+                ]
+                ?? ''
+            )
+        )
+        : '';
+
+$isActiveEditing =
+    $isEditing
+    && $advertisementStatus === 'active';
+
 $categories =
     isset($categories)
     && is_array($categories)
@@ -208,68 +224,84 @@ $categoryId =
         )
         : 0;
 
-$countryId =
+$customerCountryId =
+    max(
+        0,
+        (int) (
+            $currentCustomer[
+                'country_id'
+            ]
+            ?? 0
+        )
+    );
+
+$customerAreaId =
+    max(
+        0,
+        (int) (
+            $currentCustomer[
+                'area_id'
+            ]
+            ?? 0
+        )
+    );
+
+$customerMunicipalityId =
+    max(
+        0,
+        (int) (
+            $currentCustomer[
+                'municipality_id'
+            ]
+            ?? 0
+        )
+    );
+
+$advertisementAreaId =
     $advertisement !== null
         ? max(
             0,
             (int) (
                 $advertisement[
-                    'country_id'
+                    'area_id'
                 ]
                 ?? 0
             )
         )
-        : max(
+        : 0;
+
+$advertisementMunicipalityId =
+    $advertisement !== null
+        ? max(
             0,
             (int) (
-                $currentCustomer[
-                    'country_id'
+                $advertisement[
+                    'municipality_id'
                 ]
                 ?? 0
             )
-        );
+        )
+        : 0;
+
+/*
+ * Los anuncios antiguos pueden no tener todavía
+ * ubicación almacenada.
+ *
+ * En ese caso usamos como valor inicial la ubicación
+ * actual configurada por el cliente.
+ */
+$countryId =
+    $customerCountryId;
 
 $areaId =
-    $advertisement !== null
-        ? max(
-            0,
-            (int) (
-                $advertisement[
-                    'area_id'
-                ]
-                ?? 0
-            )
-        )
-        : max(
-            0,
-            (int) (
-                $currentCustomer[
-                    'area_id'
-                ]
-                ?? 0
-            )
-        );
+    $advertisementAreaId > 0
+        ? $advertisementAreaId
+        : $customerAreaId;
 
 $municipalityId =
-    $advertisement !== null
-        ? max(
-            0,
-            (int) (
-                $advertisement[
-                    'municipality_id'
-                ]
-                ?? 0
-            )
-        )
-        : max(
-            0,
-            (int) (
-                $currentCustomer[
-                    'municipality_id'
-                ]
-                ?? 0
-            )
-        );
+    $advertisementMunicipalityId > 0
+        ? $advertisementMunicipalityId
+        : $customerMunicipalityId;
 
 $title =
     trim(
@@ -1600,10 +1632,22 @@ $formError =
 
                     <p>
                         <?php
-                        esc_html_e(
-                            'Puedes guardar el anuncio como borrador o enviarlo directamente a revisión.',
-                            'dsm-anuncios'
-                        );
+                        if ($isActiveEditing) {
+                            esc_html_e(
+                                'Al modificar un anuncio publicado, los cambios deberán revisarse antes de volver a publicarse.',
+                                'dsm-anuncios'
+                            );
+                        } elseif ($isEditing) {
+                            esc_html_e(
+                                'Puedes guardar los cambios o volver a enviar el anuncio a revisión.',
+                                'dsm-anuncios'
+                            );
+                        } else {
+                            esc_html_e(
+                                'Puedes guardar el anuncio como borrador o enviarlo directamente a revisión.',
+                                'dsm-anuncios'
+                            );
+                        }
                         ?>
                     </p>
                 </div>
@@ -1682,26 +1726,28 @@ $formError =
                     ?>
                 </a>
 
-                <button
-                    class="dsm-button dsm-button--secondary"
-                    type="submit"
-                    name="submit_intent"
-                    value="draft"
-                >
-                    <?php
-                    if ($isEditing) {
-                        esc_html_e(
-                            'Guardar cambios',
-                            'dsm-anuncios'
-                        );
-                    } else {
-                        esc_html_e(
-                            'Guardar borrador',
-                            'dsm-anuncios'
-                        );
-                    }
-                    ?>
-                </button>
+                <?php if (!$isActiveEditing) : ?>
+                    <button
+                        class="dsm-button dsm-button--secondary"
+                        type="submit"
+                        name="submit_intent"
+                        value="draft"
+                    >
+                        <?php
+                        if ($isEditing) {
+                            esc_html_e(
+                                'Guardar cambios',
+                                'dsm-anuncios'
+                            );
+                        } else {
+                            esc_html_e(
+                                'Guardar borrador',
+                                'dsm-anuncios'
+                            );
+                        }
+                        ?>
+                    </button>
+                <?php endif; ?>
 
                 <button
                     class="dsm-button dsm-button--primary"
@@ -1710,7 +1756,12 @@ $formError =
                     value="review"
                 >
                     <?php
-                    if ($autoPublishEnabled) {
+                    if ($isActiveEditing) {
+                        esc_html_e(
+                            'Guardar cambios y enviar a revisión',
+                            'dsm-anuncios'
+                        );
+                    } elseif ($autoPublishEnabled) {
                         esc_html_e(
                             'Guardar y publicar',
                             'dsm-anuncios'

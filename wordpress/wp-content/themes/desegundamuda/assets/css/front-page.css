@@ -272,6 +272,8 @@
 
 .dsm-listing-card {
     display: flex;
+    flex-direction: column;
+    width: 100%;
     min-width: 0;
     min-height: 100%;
     overflow: hidden;
@@ -299,6 +301,43 @@
     height: 100%;
     color: inherit;
     text-decoration: none;
+}
+
+/*
+ * La tarjeta puede contener enlaces independientes:
+ *
+ * - imagen/título -> ficha del artículo
+ * - vendedor      -> tienda
+ *
+ * La estructura vertical pertenece a la tarjeta,
+ * no a un enlace que envuelva todo el contenido.
+ */
+.dsm-listing-card__media-link {
+    display: block;
+    flex: 0 0 auto;
+    width: 100%;
+    color: inherit;
+    text-decoration: none;
+}
+
+.dsm-listing-card__title a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.dsm-listing-card__title a:hover,
+.dsm-listing-card__title a:focus-visible {
+    text-decoration: underline;
+}
+
+.dsm-listing-card__seller-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.dsm-listing-card__seller-link:hover,
+.dsm-listing-card__seller-link:focus-visible {
+    text-decoration: underline;
 }
 
 .dsm-listing-card__media {
@@ -1088,4 +1127,273 @@
     background: #1ebe5d;
     border-color: #1ebe5d;
     color: #ffffff;
+}
+
+
+/* ==========================================================
+   FICHA PÚBLICA DE PRODUCTO DE TIENDA
+   ========================================================== */
+
+.dsm-store-product {
+    padding-block: 28px 48px;
+}
+
+.dsm-store-product__breadcrumb {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 22px;
+    font-size: 0.9rem;
+}
+
+.dsm-product-detail {
+    display: grid;
+    grid-template-columns:
+        minmax(0, 1.15fr)
+        minmax(320px, 0.85fr);
+    gap: 48px;
+    align-items: start;
+}
+
+.dsm-product-gallery {
+    min-width: 0;
+}
+
+.dsm-product-gallery__main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    aspect-ratio: 4 / 5;
+    border-radius: 18px;
+    background: var(--dsm-color-surface-muted);
+}
+
+.dsm-product-gallery__main img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.dsm-product-gallery__placeholder {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    color: var(--dsm-color-text-muted);
+}
+
+.dsm-product-gallery__thumbnails {
+    display: grid;
+    grid-template-columns:
+        repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.dsm-product-gallery__thumbnail {
+    overflow: hidden;
+    padding: 0;
+    aspect-ratio: 1;
+    border:
+        2px solid
+        transparent;
+    border-radius: 10px;
+    background: transparent;
+    cursor: pointer;
+}
+
+.dsm-product-gallery__thumbnail.is-active {
+    border-color:
+        var(--dsm-color-primary);
+}
+
+.dsm-product-gallery__thumbnail img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.dsm-product-detail__information {
+    position: sticky;
+    top: 24px;
+}
+
+.dsm-product-detail__store {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--dsm-color-text-muted);
+}
+
+.dsm-product-detail__title {
+    margin:
+        0
+        0
+        14px;
+    font-size:
+        clamp(
+            1.8rem,
+            4vw,
+            2.8rem
+        );
+}
+
+.dsm-product-detail__price {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 28px;
+}
+
+.dsm-product-detail__price strong {
+    font-size: 1.65rem;
+}
+
+.dsm-product-detail__price del {
+    color: var(--dsm-color-text-muted);
+}
+
+.dsm-product-selector__group {
+    margin: 0 0 24px;
+    padding: 0;
+    border: 0;
+}
+
+.dsm-product-selector__group legend {
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.dsm-product-selector__options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+}
+
+.dsm-product-option {
+    min-width: 48px;
+    min-height: 44px;
+    padding: 9px 14px;
+    border:
+        1px solid
+        var(--dsm-color-border);
+    border-radius: 10px;
+    background: var(--dsm-color-surface);
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.dsm-product-option:hover {
+    border-color:
+        var(--dsm-color-primary);
+}
+
+.dsm-product-option.is-selected {
+    border-color:
+        var(--dsm-color-primary);
+    background:
+        var(--dsm-color-primary);
+    color: white;
+}
+
+.dsm-product-selector__hint {
+    color:
+        var(--dsm-color-text-muted);
+    font-size: 0.9rem;
+}
+
+.dsm-product-selector__stock {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    margin: 4px 0 22px;
+    padding: 14px 0;
+    border-top:
+        1px solid
+        var(--dsm-color-border);
+    border-bottom:
+        1px solid
+        var(--dsm-color-border);
+}
+
+.dsm-product-reservation {
+    display: grid;
+    grid-template-columns:
+        110px
+        minmax(0, 1fr);
+    gap: 12px;
+    align-items: end;
+}
+
+.dsm-product-reservation__quantity {
+    display: grid;
+    gap: 6px;
+}
+
+.dsm-product-reservation__quantity span {
+    font-weight: 700;
+}
+
+.dsm-product-reservation__quantity input {
+    width: 100%;
+    min-height: 46px;
+    padding: 8px 10px;
+    border:
+        1px solid
+        var(--dsm-color-border);
+    border-radius: 10px;
+}
+
+.dsm-product-reservation__button {
+    min-height: 46px;
+}
+
+.dsm-product-detail__description {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top:
+        1px solid
+        var(--dsm-color-border);
+}
+
+.dsm-product-detail__description h2 {
+    margin-top: 0;
+}
+
+
+/* ==========================================================
+   FICHA PRODUCTO - MÓVIL
+   ========================================================== */
+
+@media (max-width: 760px) {
+
+    .dsm-store-product {
+        padding-block: 14px 30px;
+    }
+
+    .dsm-product-detail {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .dsm-product-detail__information {
+        position: static;
+    }
+
+    .dsm-product-gallery__main {
+        border-radius: 12px;
+    }
+
+    .dsm-product-gallery__thumbnails {
+        grid-template-columns:
+            repeat(4, minmax(0, 1fr));
+    }
+
+    .dsm-product-reservation {
+        grid-template-columns: 1fr;
+    }
+
 }

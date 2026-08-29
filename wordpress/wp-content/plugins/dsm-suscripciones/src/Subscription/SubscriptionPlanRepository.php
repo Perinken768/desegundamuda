@@ -251,6 +251,96 @@ final class SubscriptionPlanRepository
         return $features;
     }
 
+    public function updatePresentation(
+        int $planId,
+        string $name,
+        ?string $description
+    ): void {
+        global $wpdb;
+
+        if ($planId <= 0) {
+            throw new \RuntimeException(
+                'El identificador del plan no es válido.'
+            );
+        }
+
+        $plan =
+            $this->findById(
+                $planId
+            );
+
+        if ($plan === null) {
+            throw new \RuntimeException(
+                'No se encontró el plan.'
+            );
+        }
+
+        $name =
+            trim(
+                sanitize_text_field(
+                    $name
+                )
+            );
+
+        if ($name === '') {
+            throw new \RuntimeException(
+                'El nombre del plan es obligatorio.'
+            );
+        }
+
+        $description =
+            $description !== null
+                ? trim(
+                    sanitize_textarea_field(
+                        $description
+                    )
+                )
+                : null;
+
+        if ($description === '') {
+            $description = null;
+        }
+
+        $updated =
+            $wpdb->update(
+                $this->plansTable,
+                [
+                    'name' =>
+                        $name,
+
+                    'description' =>
+                        $description,
+
+                    'updated_at' =>
+                        current_time(
+                            'mysql',
+                            true
+                        ),
+                ],
+                [
+                    'id' =>
+                        $planId,
+                ],
+                [
+                    '%s',
+                    '%s',
+                    '%s',
+                ],
+                [
+                    '%d',
+                ]
+            );
+
+        if ($updated === false) {
+            throw new \RuntimeException(
+                sprintf(
+                    'No se pudo actualizar el plan: %s',
+                    $wpdb->last_error
+                )
+            );
+        }
+    }
+
     /**
      * @param mixed $rows
      *

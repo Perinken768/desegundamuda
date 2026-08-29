@@ -258,13 +258,32 @@ final class HomeThemeIntegration
                     }
 
                     /*
-                     * Todavía no existe ficha individual
-                     * de producto.
+                     * URL pública de la ficha individual
+                     * del producto.
                      *
-                     * Mientras tanto, enlazamos al escaparate
-                     * de la tienda.
+                     * /tienda/{tienda}/{producto}/
                      */
                     $publicUrl =
+                        home_url(
+                            '/tienda/'
+                            . rawurlencode(
+                                $store->getSlug()
+                            )
+                            . '/'
+                            . rawurlencode(
+                                $product->getSlug()
+                            )
+                            . '/'
+                        );
+
+                    /*
+                     * URL pública de la tienda.
+                     *
+                     * Se entrega también al tema para que
+                     * pueda utilizar el vendedor como filtro
+                     * independiente del enlace del producto.
+                     */
+                    $storeUrl =
                         home_url(
                             '/tienda/'
                             . rawurlencode(
@@ -327,6 +346,15 @@ final class HomeThemeIntegration
 
                         'seller' =>
                             $store->getName(),
+
+                        'store_id' =>
+                            $store->getId(),
+
+                        'store_slug' =>
+                            $store->getSlug(),
+
+                        'store_url' =>
+                            $storeUrl,
 
                         'category_id' =>
                             $product

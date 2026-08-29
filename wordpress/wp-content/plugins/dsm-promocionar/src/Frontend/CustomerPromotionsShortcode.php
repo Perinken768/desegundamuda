@@ -61,10 +61,74 @@ final class CustomerPromotionsShortcode
                     $customerId
                 );
 
-            $assignments =
-                $assignmentRepository->findByCustomer(
-                    $customerId
+            /*
+             * Las promociones activas se cargan completas porque
+             * constituyen un conjunto pequeño y temporal.
+             *
+             * El historial se pagina directamente en base de datos
+             * para evitar cargar indefinidamente todas las
+             * promociones antiguas del cliente.
+             */
+            $historyPerPage = 6;
+
+            $historyPage =
+                isset(
+                    $_GET[
+                        'promotion_history_page'
+                    ]
+                )
+                    ? max(
+                        1,
+                        absint(
+                            wp_unslash(
+                                $_GET[
+                                    'promotion_history_page'
+                                ]
+                            )
+                        )
+                    )
+                    : 1;
+
+            $historyTotal =
+                $assignmentRepository
+                    ->countHistoryByCustomer(
+                        $customerId
+                    );
+
+            $historyTotalPages =
+                max(
+                    1,
+                    (int) ceil(
+                        $historyTotal
+                        / $historyPerPage
+                    )
                 );
+
+            $historyPage =
+                min(
+                    $historyPage,
+                    $historyTotalPages
+                );
+
+            $historyOffset =
+                (
+                    $historyPage - 1
+                )
+                * $historyPerPage;
+
+            $activeAssignments =
+                $assignmentRepository
+                    ->findActiveByCustomer(
+                        $customerId
+                    );
+
+            $historyAssignments =
+                $assignmentRepository
+                    ->findHistoryByCustomer(
+                        $customerId,
+                        $historyPerPage,
+                        $historyOffset
+                    );
 
             $walletsById =
                 self::indexWallets(
@@ -72,22 +136,18 @@ final class CustomerPromotionsShortcode
                 );
 
             $activePromotions = [];
-            $history = [];
 
-            foreach ($assignments as $assignment) {
+            foreach (
+                $activeAssignments
+                as $assignment
+            ) {
                 $wallet =
                     $walletsById[
                         $assignment->getWalletId()
                     ]
                     ?? null;
 
-                $advertisement =
-                    self::resolveAdvertisement(
-                        $assignment
-                            ->getAdvertisementId()
-                    );
-
-                $item = [
+                $activePromotions[] = [
                     'assignment' =>
                         $assignment,
 
@@ -95,7 +155,10 @@ final class CustomerPromotionsShortcode
                         $wallet,
 
                     'advertisement' =>
-                        $advertisement,
+                        self::resolveAdvertisement(
+                            $assignment
+                                ->getAdvertisementId()
+                        ),
 
                     'live_consumed_seconds' =>
                         self::calculateLiveConsumedSeconds(
@@ -109,14 +172,43 @@ final class CustomerPromotionsShortcode
                             $wallet
                         ),
                 ];
+            }
 
-                if ($assignment->isActive()) {
-                    $activePromotions[] =
-                        $item;
-                } else {
-                    $history[] =
-                        $item;
-                }
+            $history = [];
+
+            foreach (
+                $historyAssignments
+                as $assignment
+            ) {
+                $wallet =
+                    $walletsById[
+                        $assignment->getWalletId()
+                    ]
+                    ?? null;
+
+                $history[] = [
+                    'assignment' =>
+                        $assignment,
+
+                    'wallet' =>
+                        $wallet,
+
+                    'advertisement' =>
+                        self::resolveAdvertisement(
+                            $assignment
+                                ->getAdvertisementId()
+                        ),
+
+                    'live_consumed_seconds' =>
+                        $assignment
+                            ->getConsumedSeconds(),
+
+                    'live_remaining_seconds' =>
+                        $wallet !== null
+                            ? $wallet
+                                ->getRemainingSeconds()
+                            : 0,
+                ];
             }
 
             $availableWallets =
@@ -146,6 +238,18 @@ final class CustomerPromotionsShortcode
 
                     'history' =>
                         $history,
+
+                    'historyPage' =>
+                        $historyPage,
+
+                    'historyPerPage' =>
+                        $historyPerPage,
+
+                    'historyTotal' =>
+                        $historyTotal,
+
+                    'historyTotalPages' =>
+                        $historyTotalPages,
                 ]
             );
         } catch (Throwable $exception) {

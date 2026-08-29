@@ -164,9 +164,29 @@ add_action(
             );
         }
 
+        /*
+         * =====================================================
+         * ÁREA DEL CLIENTE
+         * =====================================================
+         *
+         * account.css contiene el sistema visual común de las
+         * páginas privadas y comerciales del cliente.
+         */
         if (
             is_page(
-                'mi-cuenta'
+                [
+                    'mi-cuenta',
+                    'editar-perfil',
+                    'mis-anuncios',
+                    'publicar-anuncio',
+                    'editar-anuncio',
+                    'mis-favoritos',
+                    'favoritos',
+                    'mis-promociones',
+                    'suscripciones',
+                    'mi-publicidad',
+                    'mi-tienda',
+                ]
             )
         ) {
             wp_enqueue_style(
@@ -176,8 +196,36 @@ add_action(
                 [
                     'dsm-components',
                 ],
-                $version
+                (string) filemtime(
+                    get_template_directory()
+                    . '/assets/css/account.css'
+                )
             );
+
+            if (
+                is_page(
+                    'mis-promociones'
+                )
+            ) {
+                $promotionsScript =
+                    get_template_directory()
+                    . '/assets/js/account-promotions.js';
+
+                wp_enqueue_script(
+                    'dsm-account-promotions',
+                    get_template_directory_uri()
+                        . '/assets/js/account-promotions.js',
+                    [],
+                    is_file(
+                        $promotionsScript
+                    )
+                        ? (string) filemtime(
+                            $promotionsScript
+                        )
+                        : $version,
+                    true
+                );
+            }
         }
 
         wp_enqueue_script(

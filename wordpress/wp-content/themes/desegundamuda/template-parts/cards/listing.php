@@ -63,6 +63,14 @@ $seller =
         )
     );
 
+$storeUrl =
+    trim(
+        (string) (
+            $item['store_url']
+            ?? ''
+        )
+    );
+
 $isPromoted =
     !empty(
         $item['is_promoted']
@@ -84,10 +92,15 @@ if (
 <article class="dsm-listing-card">
 
     <a
-        class="dsm-listing-card__link"
+        class="dsm-listing-card__media-link"
         href="<?php
         echo esc_url(
             $url
+        );
+        ?>"
+        aria-label="<?php
+        echo esc_attr(
+            $title
         );
         ?>"
     >
@@ -105,7 +118,11 @@ if (
                         $imageUrl
                     );
                     ?>"
-                    alt=""
+                    alt="<?php
+                    echo esc_attr(
+                        $title
+                    );
+                    ?>"
                     loading="lazy"
                 >
 
@@ -165,73 +182,108 @@ if (
 
         </div>
 
-        <div class="dsm-listing-card__body">
+    </a>
 
-            <h3 class="dsm-listing-card__title">
+    <div class="dsm-listing-card__body">
+
+        <h3 class="dsm-listing-card__title">
+
+            <a
+                href="<?php
+                echo esc_url(
+                    $url
+                );
+                ?>"
+            >
                 <?php
                 echo esc_html(
                     $title
                 );
                 ?>
-            </h3>
+            </a>
 
-            <?php if (
-                $seller !== ''
-            ) : ?>
+        </h3>
 
-                <p class="dsm-listing-card__seller">
+        <?php if (
+            $seller !== ''
+        ) : ?>
+
+            <p class="dsm-listing-card__seller">
+
+                <?php if (
+                    $storeUrl !== ''
+                ) : ?>
+
+                    <a
+                        class="dsm-listing-card__seller-link"
+                        href="<?php
+                        echo esc_url(
+                            $storeUrl
+                        );
+                        ?>"
+                    >
+                        <?php
+                        echo esc_html(
+                            $seller
+                        );
+                        ?>
+                    </a>
+
+                <?php else : ?>
+
                     <?php
                     echo esc_html(
                         $seller
                     );
                     ?>
-                </p>
 
-            <?php endif; ?>
+                <?php endif; ?>
 
-            <?php if (
-                $price !== null
-            ) : ?>
+            </p>
 
-                <div class="dsm-listing-card__price">
+        <?php endif; ?>
 
-                    <strong>
+        <?php if (
+            $price !== null
+        ) : ?>
+
+            <div class="dsm-listing-card__price">
+
+                <strong>
+                    <?php
+                    echo esc_html(
+                        number_format_i18n(
+                            $price,
+                            2
+                        )
+                        . ' €'
+                    );
+                    ?>
+                </strong>
+
+                <?php if (
+                    $originalPrice !== null
+                    && $originalPrice > $price
+                ) : ?>
+
+                    <del>
                         <?php
                         echo esc_html(
                             number_format_i18n(
-                                $price,
+                                $originalPrice,
                                 2
                             )
                             . ' €'
                         );
                         ?>
-                    </strong>
+                    </del>
 
-                    <?php if (
-                        $originalPrice !== null
-                        && $originalPrice > $price
-                    ) : ?>
+                <?php endif; ?>
 
-                        <del>
-                            <?php
-                            echo esc_html(
-                                number_format_i18n(
-                                    $originalPrice,
-                                    2
-                                )
-                                . ' €'
-                            );
-                            ?>
-                        </del>
+            </div>
 
-                    <?php endif; ?>
+        <?php endif; ?>
 
-                </div>
-
-            <?php endif; ?>
-
-        </div>
-
-    </a>
+    </div>
 
 </article>

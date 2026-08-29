@@ -554,6 +554,137 @@ final class PromotionAssignmentRepository
     }
 
     /**
+     * @return array<int, PromotionAssignment>
+     */
+    public function findActiveByCustomer(
+        int $customerId
+    ): array {
+        global $wpdb;
+
+        if ($customerId <= 0) {
+            return [];
+        }
+
+        $rows =
+            $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT
+                        id,
+                        wallet_id,
+                        customer_id,
+                        advertisement_id,
+                        started_at,
+                        stopped_at,
+                        consumed_seconds,
+                        status,
+                        created_at,
+                        updated_at
+                    FROM {$this->tableName}
+                    WHERE customer_id = %d
+                      AND status = %s
+                    ORDER BY
+                        started_at DESC,
+                        id DESC",
+                    $customerId,
+                    PromotionAssignmentStatus::ACTIVE
+                ),
+                ARRAY_A
+            );
+
+        return $this->hydrateRows(
+            $rows
+        );
+    }
+
+    /**
+     * @return array<int, PromotionAssignment>
+     */
+    public function findHistoryByCustomer(
+        int $customerId,
+        int $limit,
+        int $offset = 0
+    ): array {
+        global $wpdb;
+
+        if ($customerId <= 0) {
+            return [];
+        }
+
+        $limit =
+            max(
+                1,
+                min(
+                    100,
+                    $limit
+                )
+            );
+
+        $offset =
+            max(
+                0,
+                $offset
+            );
+
+        $rows =
+            $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT
+                        id,
+                        wallet_id,
+                        customer_id,
+                        advertisement_id,
+                        started_at,
+                        stopped_at,
+                        consumed_seconds,
+                        status,
+                        created_at,
+                        updated_at
+                    FROM {$this->tableName}
+                    WHERE customer_id = %d
+                      AND status <> %s
+                    ORDER BY
+                        created_at DESC,
+                        id DESC
+                    LIMIT %d
+                    OFFSET %d",
+                    $customerId,
+                    PromotionAssignmentStatus::ACTIVE,
+                    $limit,
+                    $offset
+                ),
+                ARRAY_A
+            );
+
+        return $this->hydrateRows(
+            $rows
+        );
+    }
+
+    public function countHistoryByCustomer(
+        int $customerId
+    ): int {
+        global $wpdb;
+
+        if ($customerId <= 0) {
+            return 0;
+        }
+
+        return max(
+            0,
+            (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT COUNT(*)
+                    FROM {$this->tableName}
+                    WHERE customer_id = %d
+                      AND status <> %s",
+                    $customerId,
+                    PromotionAssignmentStatus::ACTIVE
+                )
+            )
+        );
+    }
+
+    /**
      * @param mixed $rows
      *
      * @return array<int, PromotionAssignment>

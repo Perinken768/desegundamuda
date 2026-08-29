@@ -57,6 +57,7 @@ use DSM\Anuncios\Frontend\CustomerAdvertisementActionController;
 use DSM\Anuncios\Frontend\CustomerAdvertisementsShortcode;
 use DSM\Anuncios\Frontend\HomeThemeIntegration;
 use DSM\Anuncios\Frontend\RelatedAdvertisementRepository;
+use DSM\Anuncios\Integration\CustomerAccountIntegration;
 use DSM\Anuncios\Support\Autoloader;
 
 Autoloader::register();
@@ -158,7 +159,8 @@ AdvertisementIntegration::register();
  */
 $advertisementFormIntegration =
     new AdvertisementFormIntegration(
-        $categoryRepository
+        $categoryRepository,
+        new \DSM\Anuncios\Advertisement\AdvertisementRepository()
     );
 
 $advertisementFormIntegration->register();
@@ -230,6 +232,14 @@ $advertisementFormController->register();
  * [dsm_customer_advertisements]
  */
 CustomerAdvertisementsShortcode::register();
+
+/*
+ * Integración con "Mi cuenta".
+ *
+ * Añade la tarjeta "Mis anuncios" al dashboard
+ * del cliente.
+ */
+CustomerAccountIntegration::register();
 
 /*
  * Acciones del propietario desde "Mis anuncios":

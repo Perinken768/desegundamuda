@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace DSM\Anuncios\Frontend;
 
+use DSM\Anuncios\Advertisement\Advertisement;
+use DSM\Anuncios\Advertisement\AdvertisementRepository;
+use DSM\Anuncios\Advertisement\AdvertisementStatus;
 use DSM\Anuncios\Category\Category;
 use DSM\Anuncios\Category\CategoryRepository;
 use Throwable;
@@ -31,7 +34,8 @@ if (!defined('ABSPATH')) {
 final class AdvertisementFormIntegration
 {
     public function __construct(
-        private readonly CategoryRepository $categoryRepository
+        private readonly CategoryRepository $categoryRepository,
+        private readonly AdvertisementRepository $advertisementRepository
     ) {
     }
 
@@ -56,6 +60,155 @@ final class AdvertisementFormIntegration
             10,
             1
         );
+
+        add_filter(
+            'dsm_customer_editable_advertisement',
+            [
+                $this,
+                'provideEditableAdvertisement',
+            ],
+            10,
+            3
+        );
+    }
+
+    /**
+     * Proporciona al formulario los datos del anuncio que
+     * pertenece al cliente autenticado y puede editarse.
+     *
+     * @param mixed $currentAdvertisement
+     *
+     * @return array<string, mixed>|null
+     */
+    public function provideEditableAdvertisement(
+        mixed $currentAdvertisement,
+        int $advertisementId,
+        int $customerId
+    ): ?array {
+        if (is_array($currentAdvertisement)) {
+            return $currentAdvertisement;
+        }
+
+        if (
+            $advertisementId <= 0
+            || $customerId <= 0
+        ) {
+            return null;
+        }
+
+        try {
+            $advertisement =
+                $this->advertisementRepository
+                    ->findById(
+                        $advertisementId
+                    );
+
+            if (!($advertisement instanceof Advertisement)) {
+                return null;
+            }
+
+            /*
+             * Nunca permitimos editar mediante este formulario
+             * un anuncio perteneciente a otro cliente.
+             */
+            if (
+                $advertisement->getCustomerId()
+                !== $customerId
+            ) {
+                return null;
+            }
+
+            /*
+             * La política de estados continúa centralizada
+             * en AdvertisementStatus.
+             */
+            if (
+                !AdvertisementStatus::canBeEditedByCustomer(
+                    $advertisement->getStatus()
+                )
+            ) {
+                return null;
+            }
+
+            return [
+                'id' =>
+                    $advertisement->getId(),
+
+                'customer_id' =>
+                    $advertisement->getCustomerId(),
+
+                'store_id' =>
+                    $advertisement->getStoreId(),
+
+                'category_id' =>
+                    $advertisement->getCategoryId(),
+
+                'area_id' =>
+                    $advertisement->getAreaId(),
+
+                'municipality_id' =>
+                    $advertisement->getMunicipalityId(),
+
+                'title' =>
+                    $advertisement->getTitle(),
+
+                'slug' =>
+                    $advertisement->getSlug(),
+
+                'description' =>
+                    $advertisement->getDescription(),
+
+                'brand' =>
+                    $advertisement->getBrand(),
+
+                'price' =>
+                    $advertisement->getPrice(),
+
+                'original_price' =>
+                    $advertisement->getOriginalPrice(),
+
+                'purchase_date' =>
+                    $advertisement->getPurchaseDate()
+                        ?->format('Y-m-d'),
+
+                'condition_code' =>
+                    $advertisement->getConditionCode(),
+
+                'status' =>
+                    $advertisement->getStatus(),
+
+                'rejection_reason' =>
+                    $advertisement->getRejectionReason(),
+
+                'reserved_at' =>
+                    $advertisement->getReservedAt()
+                        ?->format('Y-m-d H:i:s'),
+
+                'published_at' =>
+                    $advertisement->getPublishedAt()
+                        ?->format('Y-m-d H:i:s'),
+
+                'closed_at' =>
+                    $advertisement->getClosedAt()
+                        ?->format('Y-m-d H:i:s'),
+
+                'created_at' =>
+                    $advertisement->getCreatedAt()
+                        ->format('Y-m-d H:i:s'),
+
+                'updated_at' =>
+                    $advertisement->getUpdatedAt()
+                        ->format('Y-m-d H:i:s'),
+            ];
+        } catch (Throwable $exception) {
+            error_log(
+                '[DSM Anuncios] No se pudo cargar '
+                . 'el anuncio para edición: '
+                . $exception->getMessage()
+            );
+
+            return null;
+        }
     }
 
     /**

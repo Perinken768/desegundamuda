@@ -38,6 +38,7 @@ require_once DSM_SUSCRIPCIONES_PATH
     . 'src/Support/Autoloader.php';
 
 use DSM\Suscripciones\Admin\SubscriptionGrantPage;
+use DSM\Suscripciones\Admin\SubscriptionPlansPage;
 use DSM\Suscripciones\Admin\SubscriptionsPage;
 use DSM\Suscripciones\Database\Installer;
 use DSM\Suscripciones\Frontend\SubscriptionPlansShortcode;
@@ -60,6 +61,7 @@ CustomerEntitlementIntegration::register();
  * Administración.
  */
 SubscriptionsPage::register();
+SubscriptionPlansPage::register();
 SubscriptionGrantPage::register();
 
 /*

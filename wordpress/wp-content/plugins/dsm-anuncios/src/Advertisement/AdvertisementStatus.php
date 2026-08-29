@@ -89,6 +89,7 @@ final class AdvertisementStatus
             [
                 self::DRAFT,
                 self::REJECTED,
+                self::ACTIVE,
             ],
             true
         );
@@ -102,18 +103,16 @@ final class AdvertisementStatus
         string $status
     ): bool {
         return in_array(
-            $status,
+            sanitize_key($status),
             [
                 self::DRAFT,
                 self::REJECTED,
+                self::ACTIVE,
             ],
             true
         );
     }
 
-    /**
-     * Indica si administración puede publicar el anuncio.
-     */
     public static function canBePublished(
         string $status
     ): bool {

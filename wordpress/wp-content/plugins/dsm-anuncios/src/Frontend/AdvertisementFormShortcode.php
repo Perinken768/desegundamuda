@@ -148,6 +148,40 @@ final class AdvertisementFormShortcode
                     self::SHORTCODE
                 );
 
+            /*
+             * La misma página WordPress se utiliza para
+             * editar cualquier anuncio del cliente:
+             *
+             * /editar-anuncio/?advertisement_id=123
+             *
+             * El atributo del shortcode sigue teniendo
+             * prioridad si se ha indicado expresamente.
+             */
+            if (
+                (int) (
+                    $attributes[
+                        'advertisement_id'
+                    ]
+                    ?? 0
+                ) <= 0
+                && isset(
+                    $_GET[
+                        'advertisement_id'
+                    ]
+                )
+            ) {
+                $attributes[
+                    'advertisement_id'
+                ] =
+                    absint(
+                        wp_unslash(
+                            (string) $_GET[
+                                'advertisement_id'
+                            ]
+                        )
+                    );
+            }
+
             $currentCustomer =
                 self::resolveCurrentCustomerContext();
 

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use DSM\Suscripciones\Admin\SubscriptionPlansPage;
 use DSM\Suscripciones\Frontend\SubscriptionPurchaseController;
 use DSM\Suscripciones\Subscription\Subscription;
 use DSM\Suscripciones\Subscription\SubscriptionPlan;
@@ -18,6 +19,9 @@ if (!defined('ABSPATH')) {
  * @var string $status
  * @var string $error
  */
+
+$pageCopy =
+    SubscriptionPlansPage::getPageCopy();
 
 $intervalLabels = [
     'day' =>
@@ -41,21 +45,25 @@ $intervalLabels = [
 
         <h1>
             <?php
-            esc_html_e(
-                'Planes y suscripciones',
-                'dsm-suscripciones'
+            echo esc_html(
+                $pageCopy['title']
             );
             ?>
         </h1>
 
-        <p>
-            <?php
-            esc_html_e(
-                'Elige las funcionalidades que necesitas. Cada servicio puede contratarse de forma independiente.',
-                'dsm-suscripciones'
-            );
-            ?>
-        </p>
+        <?php if (
+            $pageCopy['description'] !== ''
+        ) : ?>
+
+            <p>
+                <?php
+                echo esc_html(
+                    $pageCopy['description']
+                );
+                ?>
+            </p>
+
+        <?php endif; ?>
 
     </header>
 
@@ -111,6 +119,27 @@ $intervalLabels = [
             <?php foreach ($plans as $plan) : ?>
 
                 <?php
+                $planCopy =
+                    SubscriptionPlansPage::getPlanCopy(
+                        $plan->getId()
+                    );
+
+                $commercialBenefits =
+                    is_array(
+                        $planCopy['benefits']
+                        ?? null
+                    )
+                        ? $planCopy['benefits']
+                        : [];
+
+                $customCtaLabel =
+                    trim(
+                        (string) (
+                            $planCopy['cta_label']
+                            ?? ''
+                        )
+                    );
+
                 $activeSubscription =
                     $activeSubscriptionsByPlan[
                         $plan->getId()
@@ -198,7 +227,32 @@ $intervalLabels = [
 
                     </p>
 
-                    <?php if ($features !== []) : ?>
+                    <?php if (
+                        $commercialBenefits !== []
+                    ) : ?>
+
+                        <ul>
+
+                            <?php foreach (
+                                $commercialBenefits
+                                as $benefit
+                            ) : ?>
+
+                                <li>
+                                    <?php
+                                    echo esc_html(
+                                        (string) $benefit
+                                    );
+                                    ?>
+                                </li>
+
+                            <?php endforeach; ?>
+
+                        </ul>
+
+                    <?php elseif (
+                        $features !== []
+                    ) : ?>
 
                         <ul>
 
@@ -245,6 +299,7 @@ $intervalLabels = [
 
                             <?php endif; ?>
 
+
                             <?php if (
                                 !empty(
                                     $features['advertising']
@@ -261,6 +316,7 @@ $intervalLabels = [
                                 </li>
 
                             <?php endif; ?>
+
 
                             <?php if (
                                 !empty(
@@ -282,6 +338,7 @@ $intervalLabels = [
                         </ul>
 
                     <?php endif; ?>
+
 
                     <?php if ($plan->isFree()) : ?>
 
@@ -434,23 +491,37 @@ $intervalLabels = [
                                     dsm-button--primary
                                 "
                             >
-                                <?php
-                                printf(
-                                    esc_html__(
-                                        'Contratar por %1$s %2$s',
-                                        'dsm-suscripciones'
-                                    ),
-                                    esc_html(
-                                        number_format_i18n(
-                                            $plan->getPrice(),
-                                            2
+                                <?php if (
+                                    $customCtaLabel !== ''
+                                ) : ?>
+
+                                    <?php
+                                    echo esc_html(
+                                        $customCtaLabel
+                                    );
+                                    ?>
+
+                                <?php else : ?>
+
+                                    <?php
+                                    printf(
+                                        esc_html__(
+                                            'Contratar por %1$s %2$s',
+                                            'dsm-suscripciones'
+                                        ),
+                                        esc_html(
+                                            number_format_i18n(
+                                                $plan->getPrice(),
+                                                2
+                                            )
+                                        ),
+                                        esc_html(
+                                            $plan->getCurrency()
                                         )
-                                    ),
-                                    esc_html(
-                                        $plan->getCurrency()
-                                    )
-                                );
-                                ?>
+                                    );
+                                    ?>
+
+                                <?php endif; ?>
                             </button>
 
                         </form>

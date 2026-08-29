@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace DSM\Multitienda\Frontend;
 
+use DSM\Catalogo\Image\ProductImageRepository;
 use DSM\Catalogo\Product\ProductRepository;
 use DSM\Catalogo\Product\ProductStatus;
 use DSM\Catalogo\Variant\ProductVariantRepository;
@@ -16,8 +17,11 @@ if (!defined('ABSPATH')) {
 
 final class PublicStoreController
 {
-    private const QUERY_VAR =
+    private const STORE_QUERY_VAR =
         'dsm_multistore_slug';
+
+    private const PRODUCT_QUERY_VAR =
+        'dsm_multistore_product_slug';
 
     public static function register(): void
     {
@@ -48,10 +52,30 @@ final class PublicStoreController
 
     public static function registerRewriteRules(): void
     {
+        /*
+         * Ficha individual:
+         *
+         * /tienda/{tienda}/{producto}/
+         */
+        add_rewrite_rule(
+            '^tienda/([^/]+)/([^/]+)/?$',
+            'index.php?'
+                . self::STORE_QUERY_VAR
+                . '=$matches[1]&'
+                . self::PRODUCT_QUERY_VAR
+                . '=$matches[2]',
+            'top'
+        );
+
+        /*
+         * Escaparate:
+         *
+         * /tienda/{tienda}/
+         */
         add_rewrite_rule(
             '^tienda/([^/]+)/?$',
             'index.php?'
-                . self::QUERY_VAR
+                . self::STORE_QUERY_VAR
                 . '=$matches[1]',
             'top'
         );
@@ -65,15 +89,23 @@ final class PublicStoreController
     public static function registerQueryVars(
         array $queryVars
     ): array {
-        if (
-            !in_array(
-                self::QUERY_VAR,
-                $queryVars,
-                true
-            )
+        foreach (
+            [
+                self::STORE_QUERY_VAR,
+                self::PRODUCT_QUERY_VAR,
+            ]
+            as $queryVar
         ) {
-            $queryVars[] =
-                self::QUERY_VAR;
+            if (
+                !in_array(
+                    $queryVar,
+                    $queryVars,
+                    true
+                )
+            ) {
+                $queryVars[] =
+                    $queryVar;
+            }
         }
 
         return $queryVars;
@@ -81,21 +113,21 @@ final class PublicStoreController
 
     public static function renderPublicStore(): void
     {
-        $slug =
+        $storeSlug =
             get_query_var(
-                self::QUERY_VAR
+                self::STORE_QUERY_VAR
             );
 
-        if (!is_string($slug)) {
+        if (!is_string($storeSlug)) {
             return;
         }
 
-        $slug =
+        $storeSlug =
             sanitize_title(
-                $slug
+                $storeSlug
             );
 
-        if ($slug === '') {
+        if ($storeSlug === '') {
             return;
         }
 
@@ -104,12 +136,9 @@ final class PublicStoreController
 
         $store =
             $storeRepository->findBySlug(
-                $slug
+                $storeSlug
             );
 
-        /*
-         * Solo ACTIVE es visible públicamente.
-         */
         if (
             $store === null
             || !$store->isActive()
@@ -117,12 +146,33 @@ final class PublicStoreController
             self::render404();
         }
 
-        /*
-         * =====================================================
-         * PRODUCTOS ACTIVOS
-         * =====================================================
-         */
+        $productSlug =
+            get_query_var(
+                self::PRODUCT_QUERY_VAR
+            );
 
+        $productSlug =
+            is_string($productSlug)
+                ? sanitize_title(
+                    $productSlug
+                )
+                : '';
+
+        if ($productSlug !== '') {
+            self::renderProduct(
+                $store,
+                $productSlug
+            );
+        }
+
+        self::renderStore(
+            $store
+        );
+    }
+
+    private static function renderStore(
+        object $store
+    ): never {
         $productRepository =
             new ProductRepository();
 
@@ -141,16 +191,14 @@ final class PublicStoreController
                     ProductStatus::ACTIVE
             );
 
-        /*
-         * =====================================================
-         * VARIANTES
-         * =====================================================
-         */
-
         $variantRepository =
             new ProductVariantRepository();
 
+        $imageRepository =
+            new ProductImageRepository();
+
         $variantsByProduct = [];
+        $coverImagesByProduct = [];
 
         foreach ($products as $product) {
             $variants =
@@ -163,42 +211,84 @@ final class PublicStoreController
             $variantsByProduct[
                 $product->getId()
             ] =
-                array_values(
-                    array_filter(
-                        $variants,
-                        static function (
-                            $variant
-                        ): bool {
-                            return
-                                !$variant
-                                    ->isArchived()
-                                && $variant
-                                    ->isActive()
-                                && (
-                                    !$variant
-                                        ->tracksStock()
-                                    || $variant
-                                        ->getAvailableStock()
-                                        > 0
-                                );
-                        }
-                    )
+                self::filterAvailableVariants(
+                    $variants
                 );
+
+            $coverImagesByProduct[
+                $product->getId()
+            ] =
+                $imageRepository
+                    ->findCoverByProductId(
+                        $product->getId()
+                    );
         }
 
-        /*
-         * =====================================================
-         * COMPRADOR ACTUAL
-         * =====================================================
-         */
+        self::renderTemplate(
+            'store.php',
+            compact(
+                'store',
+                'products',
+                'variantsByProduct',
+                'coverImagesByProduct'
+            )
+        );
+    }
 
+    private static function renderProduct(
+        object $store,
+        string $productSlug
+    ): never {
+        $productRepository =
+            new ProductRepository();
+
+        $product =
+            $productRepository->findBySlug(
+                $store->getId(),
+                $productSlug
+            );
+
+        if (
+            $product === null
+            || !$product->isActive()
+        ) {
+            self::render404();
+        }
+
+        $variantRepository =
+            new ProductVariantRepository();
+
+        $variants =
+            self::filterAvailableVariants(
+                $variantRepository
+                    ->findByProduct(
+                        $product->getId(),
+                        true
+                    )
+            );
+
+        $imageRepository =
+            new ProductImageRepository();
+
+        $images =
+            $imageRepository->findByProductId(
+                $product->getId()
+            );
+
+        $coverImage =
+            $imageRepository
+                ->findCoverByProductId(
+                    $product->getId()
+                );
+
+        /*
+         * Comprador actual.
+         */
         $customerContext =
             CustomerContext::current();
 
         $buyerCustomerId =
-            is_array(
-                $customerContext
-            )
+            is_array($customerContext)
                 ? (int) (
                     $customerContext['id']
                     ?? 0
@@ -209,12 +299,6 @@ final class PublicStoreController
             $buyerCustomerId > 0
             && $buyerCustomerId
                 === $store->getCustomerId();
-
-        /*
-         * =====================================================
-         * CONTACTO WHATSAPP DEL COMPRADOR
-         * =====================================================
-         */
 
         $buyerHasWhatsappContact =
             false;
@@ -256,18 +340,8 @@ final class PublicStoreController
                 && !$buyerWhatsappDisabled;
         }
 
-        /*
-         * =====================================================
-         * AVISOS DE RESERVA
-         * =====================================================
-         */
-
         $reservationStatus =
-            isset(
-                $_GET[
-                    'reservation_status'
-                ]
-            )
+            isset($_GET['reservation_status'])
                 ? sanitize_key(
                     wp_unslash(
                         (string) $_GET[
@@ -278,11 +352,7 @@ final class PublicStoreController
                 : '';
 
         $reservationError =
-            isset(
-                $_GET[
-                    'reservation_error'
-                ]
-            )
+            isset($_GET['reservation_error'])
                 ? sanitize_text_field(
                     wp_unslash(
                         (string) $_GET[
@@ -292,14 +362,69 @@ final class PublicStoreController
                 )
                 : '';
 
+        self::renderTemplate(
+            'product.php',
+            compact(
+                'store',
+                'product',
+                'variants',
+                'images',
+                'coverImage',
+                'buyerCustomerId',
+                'isOwner',
+                'buyerHasWhatsappContact',
+                'buyerWhatsappMissingPhone',
+                'buyerWhatsappDisabled',
+                'reservationStatus',
+                'reservationError'
+            )
+        );
+    }
+
+    /**
+     * @param array<int, object> $variants
+     *
+     * @return array<int, object>
+     */
+    private static function filterAvailableVariants(
+        array $variants
+    ): array {
+        return array_values(
+            array_filter(
+                $variants,
+                static function (
+                    object $variant
+                ): bool {
+                    return
+                        !$variant->isArchived()
+                        && $variant->isActive()
+                        && (
+                            !$variant->tracksStock()
+                            || $variant
+                                ->getAvailableStock()
+                                > 0
+                        );
+                }
+            )
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $variables
+     */
+    private static function renderTemplate(
+        string $templateName,
+        array $variables
+    ): never {
         $template =
             DSM_MULTITIENDA_PATH
-            . 'templates/public/store.php';
+            . 'templates/public/'
+            . $templateName;
 
         if (!is_file($template)) {
             wp_die(
                 esc_html__(
-                    'No se encontró la plantilla pública de la tienda.',
+                    'No se encontró la plantilla pública solicitada.',
                     'dsm-multitienda'
                 ),
                 esc_html__(
@@ -313,9 +438,12 @@ final class PublicStoreController
             );
         }
 
-        status_header(
-            200
+        extract(
+            $variables,
+            EXTR_SKIP
         );
+
+        status_header(200);
 
         nocache_headers();
 
@@ -336,9 +464,7 @@ final class PublicStoreController
             $wp_query->set_404();
         }
 
-        status_header(
-            404
-        );
+        status_header(404);
 
         nocache_headers();
 
@@ -357,11 +483,11 @@ final class PublicStoreController
 
         wp_die(
             esc_html__(
-                'La tienda solicitada no está disponible.',
+                'La tienda o producto solicitado no está disponible.',
                 'dsm-multitienda'
             ),
             esc_html__(
-                'Tienda no disponible',
+                'Contenido no disponible',
                 'dsm-multitienda'
             ),
             [

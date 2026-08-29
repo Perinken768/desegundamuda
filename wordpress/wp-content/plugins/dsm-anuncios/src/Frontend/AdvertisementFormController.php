@@ -6,6 +6,7 @@ namespace DSM\Anuncios\Frontend;
 
 use DSM\Anuncios\Advertisement\Advertisement;
 use DSM\Anuncios\Advertisement\AdvertisementRepository;
+use DSM\Anuncios\Advertisement\AdvertisementStatus;
 use DSM\Anuncios\Application\CreateAdvertisement;
 use DSM\Anuncios\Application\SubmitAdvertisementForReview;
 use DSM\Anuncios\Application\UpdateAdvertisement;
@@ -232,10 +233,23 @@ final class AdvertisementFormController
                 $advertisement
             );
 
-            if (
-                $intent
-                === self::INTENT_REVIEW
-            ) {
+            /*
+             * Un anuncio que ya estaba publicado no puede
+             * modificarse silenciosamente y continuar activo.
+             *
+             * Cualquier edición de un anuncio ACTIVE obliga
+             * a pasar nuevamente por moderación.
+             */
+            $mustSubmitForReview =
+                $intent === self::INTENT_REVIEW
+                || (
+                    $advertisementId > 0
+                    && sanitize_key(
+                        $advertisement->getStatus()
+                    ) === AdvertisementStatus::ACTIVE
+                );
+
+            if ($mustSubmitForReview) {
                 $this->submitAdvertisementForReview
                     ->execute(
                         $customerId,
