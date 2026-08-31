@@ -912,7 +912,8 @@ final class ProductRepository
         int $storeId,
         int $limit = 100,
         int $offset = 0,
-        ?string $status = null
+        ?string $status = null,
+        ?string $search = null
     ): array {
         global $wpdb;
 
@@ -929,6 +930,11 @@ final class ProductRepository
             0,
             $offset
         );
+
+        $search =
+            trim(
+                (string) $search
+            );
 
         $parameters = [
             $storeId,
@@ -947,6 +953,27 @@ final class ProductRepository
             ";
 
             $parameters[] = $status;
+        }
+
+        if ($search !== '') {
+            $like =
+                '%'
+                . $wpdb->esc_like(
+                    $search
+                )
+                . '%';
+
+            $where .= "
+                AND (
+                    name LIKE %s
+                    OR base_sku LIKE %s
+                    OR internal_reference LIKE %s
+                )
+            ";
+
+            $parameters[] = $like;
+            $parameters[] = $like;
+            $parameters[] = $like;
         }
 
         $parameters[] = $limit;
@@ -997,7 +1024,8 @@ final class ProductRepository
 
     public function countByStore(
         int $storeId,
-        ?string $status = null
+        ?string $status = null,
+        ?string $search = null
     ): int {
         global $wpdb;
 
@@ -1005,29 +1033,60 @@ final class ProductRepository
             return 0;
         }
 
+        $search =
+            trim(
+                (string) $search
+            );
+
+        $parameters = [
+            $storeId,
+        ];
+
+        $where = "
+            WHERE store_id = %d
+        ";
+
         if (
             $status !== null
             && ProductStatus::isValid($status)
         ) {
-            return (int) $wpdb->get_var(
-                $wpdb->prepare(
-                    "SELECT COUNT(*)
-                    FROM {$this->tableName}
-                    WHERE store_id = %d
-                      AND status = %s",
-                    $storeId,
-                    $status
-                )
-            );
+            $where .= "
+                AND status = %s
+            ";
+
+            $parameters[] = $status;
         }
 
+        if ($search !== '') {
+            $like =
+                '%'
+                . $wpdb->esc_like(
+                    $search
+                )
+                . '%';
+
+            $where .= "
+                AND (
+                    name LIKE %s
+                    OR base_sku LIKE %s
+                    OR internal_reference LIKE %s
+                )
+            ";
+
+            $parameters[] = $like;
+            $parameters[] = $like;
+            $parameters[] = $like;
+        }
+
+        $query = $wpdb->prepare(
+            "SELECT COUNT(*)
+            FROM {$this->tableName}
+            {$where}",
+            ...$parameters
+        );
+
         return (int) $wpdb->get_var(
-            $wpdb->prepare(
-                "SELECT COUNT(*)
-                FROM {$this->tableName}
-                WHERE store_id = %d",
-                $storeId
-            )
+            $query
         );
     }
 

@@ -9,22 +9,64 @@ if (!defined('ABSPATH')) {
 }
 
 /*
- * Variables proporcionadas por MyStoreShortcode:
+ * Variables:
  *
- * $reservations
+ * $pendingReservations
+ * $historyReservations
+ *
  * $reservationProducts
  * $reservationVariants
  * $reservationBuyers
+ *
  * $reservationStatus
  * $reservationError
+ *
+ * $reservationPerPage
+ *
+ * $pendingReservationCount
+ * $pendingReservationPage
+ * $pendingReservationTotalPages
+ * $pendingReservationOffset
+ *
+ * $historyReservationCount
+ * $historyReservationPage
+ * $historyReservationTotalPages
+ * $historyReservationOffset
+ * $historyReservationFilter
  */
 
 $statusLabels = [
-    'active'    => 'Activa',
-    'released'  => 'Liberada',
-    'completed' => 'Completada',
-    'cancelled' => 'Cancelada',
-    'expired'   => 'Caducada',
+    'active' =>
+        'Activa',
+
+    'released' =>
+        'Liberada',
+
+    'completed' =>
+        'Completada',
+
+    'cancelled' =>
+        'Cancelada',
+
+    'expired' =>
+        'Caducada',
+];
+
+$statusClasses = [
+    'active' =>
+        'active',
+
+    'released' =>
+        'released',
+
+    'completed' =>
+        'completed',
+
+    'cancelled' =>
+        'cancelled',
+
+    'expired' =>
+        'expired',
 ];
 
 $focusedReservationId =
@@ -36,297 +78,407 @@ $focusedReservationId =
         )
         : 0;
 
-$focusedReservationExists =
-    false;
-
-if ($focusedReservationId > 0) {
-    foreach ($reservations as $reservation) {
-        if (
-            $reservation->getId()
-            === $focusedReservationId
-        ) {
-            $focusedReservationExists =
-                true;
-
-            break;
-        }
-    }
-}
 
 /*
- * Si hemos llegado desde un correo de reserva,
- * colocamos esa reserva la primera.
- *
- * No ocultamos las demás.
+ * ==========================================================
+ * URL BASE
+ * ==========================================================
  */
-if ($focusedReservationExists) {
-    usort(
-        $reservations,
-        static function (
-            $left,
-            $right
-        ) use (
-            $focusedReservationId
-        ): int {
-            $leftFocused =
-                $left->getId()
-                === $focusedReservationId;
 
-            $rightFocused =
-                $right->getId()
-                === $focusedReservationId;
-
-            if ($leftFocused === $rightFocused) {
-                return 0;
-            }
-
-            return $leftFocused
-                ? -1
-                : 1;
-        }
+$baseReservationsUrl =
+    add_query_arg(
+        [
+            'store_section' =>
+                'reservations',
+        ],
+        home_url(
+            '/mi-tienda/'
+        )
     );
-}
+
+
+/*
+ * ==========================================================
+ * HELPERS
+ * ==========================================================
+ */
+
+$resolveReservationData =
+    static function (
+        $reservation
+    ) use (
+        $reservationProducts,
+        $reservationVariants,
+        $reservationBuyers
+    ): array {
+        $productId =
+            $reservation->getProductId();
+
+        $variantId =
+            $reservation->getVariantId();
+
+        $buyerCustomerId =
+            $reservation
+                ->getBuyerCustomerId();
+
+        $product =
+            $reservationProducts[
+                $productId
+            ]
+            ?? null;
+
+        $variant =
+            $reservationVariants[
+                $variantId
+            ]
+            ?? null;
+
+        $buyer =
+            $buyerCustomerId !== null
+                ? (
+                    $reservationBuyers[
+                        $buyerCustomerId
+                    ]
+                    ?? null
+                )
+                : null;
+
+
+        $productName =
+            $product !== null
+                ? $product->getName()
+                : (
+                    'Producto #'
+                    . $productId
+                );
+
+
+        $sku = '';
+
+        if ($variant !== null) {
+            $sku =
+                trim(
+                    (string)
+                    $variant->getSku()
+                );
+        }
+
+        $variantName =
+            $sku !== ''
+                ? $sku
+                : (
+                    'Variante #'
+                    . $variantId
+                );
+
+
+        $buyerName = '';
+        $buyerEmail = '';
+
+        if (is_array($buyer)) {
+            $buyerName =
+                trim(
+                    (string) (
+                        $buyer[
+                            'display_name'
+                        ]
+                        ?? ''
+                    )
+                );
+
+            $buyerEmail =
+                trim(
+                    (string) (
+                        $buyer['email']
+                        ?? ''
+                    )
+                );
+        }
+
+        if ($buyerName === '') {
+            $buyerName =
+                $buyerEmail !== ''
+                    ? $buyerEmail
+                    : (
+                        $buyerCustomerId !== null
+                            ? (
+                                'Cliente #'
+                                . $buyerCustomerId
+                            )
+                            : 'Cliente'
+                    );
+        }
+
+
+        $reservedAt =
+            $reservation
+                ->getReservedAt();
+
+        $reservedAtText =
+            get_date_from_gmt(
+                $reservedAt->format(
+                    'Y-m-d H:i:s'
+                ),
+                'd/m/Y H:i'
+            );
+
+
+        return [
+            'product_name' =>
+                $productName,
+
+            'variant_name' =>
+                $variantName,
+
+            'buyer_name' =>
+                $buyerName,
+
+            'buyer_email' =>
+                $buyerEmail,
+
+            'reserved_at' =>
+                $reservedAtText,
+        ];
+    };
+
+
+$buildPageUrl =
+    static function (
+        string $pageArgument,
+        int $page,
+        string $historyFilter = ''
+    ) use (
+        $baseReservationsUrl
+    ): string {
+        $arguments = [
+            $pageArgument =>
+                $page,
+        ];
+
+        if ($historyFilter !== '') {
+            $arguments[
+                'reservation_history_status'
+            ] =
+                $historyFilter;
+        }
+
+        return add_query_arg(
+            $arguments,
+            $baseReservationsUrl
+        );
+    };
 
 ?>
 
 <section class="dsm-store-reservations">
 
-    <article class="dsm-card">
 
-        <h2>Reservas</h2>
+    <!-- =====================================================
+         CABECERA
+         ===================================================== -->
 
-        <p>
-            Gestiona las reservas realizadas
-            por los clientes de tu tienda.
-        </p>
+    <div class="dsm-store-reservations__header">
 
-        <?php if (
-            $focusedReservationExists
-        ) : ?>
+        <div>
 
-            <div
-                class="
-                    dsm-account-notice
-                    dsm-account-notice--success
-                "
-            >
-                <strong>
-                    Gestionando reserva
-                    #<?php
-                    echo esc_html(
-                        (string)
-                        $focusedReservationId
-                    );
-                    ?>
-                </strong>
-
-                <br>
-
-                Has accedido directamente a esta reserva.
-                Puedes completar la venta o liberarla
-                desde sus acciones.
-
-                <p style="margin-bottom:0;">
-                    <a
-                        class="button"
-                        href="<?php
-                        echo esc_url(
-                            add_query_arg(
-                                [
-                                    'store_section' =>
-                                        'reservations',
-                                ],
-                                home_url(
-                                    '/mi-tienda/'
-                                )
-                            )
-                        );
-                        ?>"
-                    >
-                        Ver todas las reservas
-                    </a>
-                </p>
-            </div>
-
-        <?php endif; ?>
-
-        <?php if (
-            $reservationStatus === 'completed'
-        ) : ?>
-
-            <div
-                class="
-                    dsm-account-notice
-                    dsm-account-notice--success
-                "
-            >
-                La venta se completó correctamente.
-            </div>
-
-        <?php elseif (
-            $reservationStatus === 'released'
-        ) : ?>
-
-            <div
-                class="
-                    dsm-account-notice
-                    dsm-account-notice--success
-                "
-            >
-                La reserva se liberó correctamente.
-            </div>
-
-        <?php elseif (
-            $reservationStatus === 'error'
-            && $reservationError !== ''
-        ) : ?>
-
-            <div
-                class="
-                    dsm-account-notice
-                    dsm-account-notice--error
-                "
-            >
-                <?php
-                echo esc_html(
-                    $reservationError
-                );
-                ?>
-            </div>
-
-        <?php endif; ?>
-
-        <?php if ($reservations === []) : ?>
+            <h2>
+                Reservas
+            </h2>
 
             <p>
-                Todavía no hay reservas
-                para esta tienda.
+                Gestiona las reservas realizadas
+                por los clientes de tu tienda.
             </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         AVISOS
+         ===================================================== -->
+
+    <?php if (
+        $reservationStatus === 'completed'
+    ) : ?>
+
+        <div
+            class="
+                dsm-account-notice
+                dsm-account-notice--success
+            "
+        >
+            La venta se completó correctamente.
+        </div>
+
+    <?php elseif (
+        $reservationStatus === 'released'
+    ) : ?>
+
+        <div
+            class="
+                dsm-account-notice
+                dsm-account-notice--success
+            "
+        >
+            La reserva se liberó correctamente.
+        </div>
+
+    <?php elseif (
+        $reservationStatus === 'error'
+        && $reservationError !== ''
+    ) : ?>
+
+        <div
+            class="
+                dsm-account-notice
+                dsm-account-notice--error
+            "
+        >
+            <?php
+            echo esc_html(
+                $reservationError
+            );
+            ?>
+        </div>
+
+    <?php endif; ?>
+
+
+    <!-- =====================================================
+         PENDIENTES
+         ===================================================== -->
+
+    <article
+        id="dsm-reservations-pending"
+        class="
+            dsm-card
+            dsm-reservation-panel
+        "
+    >
+
+        <header class="dsm-reservation-panel__header">
+
+            <div>
+
+                <h3>
+                    Pendientes de gestionar
+                </h3>
+
+                <p>
+                    Reservas activas que necesitan
+                    una acción por parte de la tienda.
+                </p>
+
+            </div>
+
+
+            <span class="dsm-reservation-panel__counter">
+
+                <?php
+                echo esc_html(
+                    (string)
+                    $pendingReservationCount
+                );
+                ?>
+
+                <?php
+                echo $pendingReservationCount === 1
+                    ? 'reserva'
+                    : 'reservas';
+                ?>
+
+            </span>
+
+        </header>
+
+
+        <?php if (
+            $pendingReservations === []
+        ) : ?>
+
+            <div class="dsm-reservation-empty">
+
+                <strong>
+                    No tienes reservas pendientes.
+                </strong>
+
+                <span>
+                    Las nuevas reservas aparecerán aquí
+                    para poder completarlas o liberarlas.
+                </span>
+
+            </div>
 
         <?php else : ?>
 
-            <div class="dsm-admin-table-scroll">
+            <div class="dsm-reservation-table-scroll">
 
-                <table class="widefat striped">
+                <table class="dsm-reservation-table">
 
                     <thead>
+
                         <tr>
                             <th>Reserva</th>
                             <th>Producto</th>
                             <th>Variante</th>
                             <th>Cliente</th>
-                            <th>Cantidad</th>
+                            <th class="is-centered">
+                                Cantidad
+                            </th>
                             <th>Fecha</th>
                             <th>Estado</th>
                             <th>Acciones</th>
                         </tr>
+
                     </thead>
+
 
                     <tbody>
 
                         <?php foreach (
-                            $reservations
+                            $pendingReservations
                             as $reservation
                         ) : ?>
 
                             <?php
+
                             $reservationId =
-                                $reservation->getId();
-
-                            $productId =
                                 $reservation
-                                    ->getProductId();
+                                    ->getId();
 
-                            $variantId =
-                                $reservation
-                                    ->getVariantId();
-
-                            $buyerCustomerId =
-                                $reservation
-                                    ->getBuyerCustomerId();
-
-                            $product =
-                                $reservationProducts[
-                                    $productId
-                                ]
-                                ?? null;
-
-                            $variant =
-                                $reservationVariants[
-                                    $variantId
-                                ]
-                                ?? null;
-
-                            $buyer =
-                                $buyerCustomerId !== null
-                                    ? (
-                                        $reservationBuyers[
-                                            $buyerCustomerId
-                                        ]
-                                        ?? null
-                                    )
-                                    : null;
+                            $data =
+                                $resolveReservationData(
+                                    $reservation
+                                );
 
                             $status =
                                 $reservation
                                     ->getStatus();
 
-                            $buyerName =
-                                '';
+                            $focused =
+                                $focusedReservationId > 0
+                                && $reservationId
+                                    === $focusedReservationId;
 
-                            $buyerEmail =
-                                '';
-
-                            if (is_array($buyer)) {
-                                $buyerName =
-                                    trim(
-                                        (string) (
-                                            $buyer[
-                                                'display_name'
-                                            ]
-                                            ?? ''
-                                        )
-                                    );
-
-                                $buyerEmail =
-                                    trim(
-                                        (string) (
-                                            $buyer['email']
-                                            ?? ''
-                                        )
-                                    );
-                            }
-
-                            if ($buyerName === '') {
-                                $buyerName =
-                                    $buyerEmail !== ''
-                                        ? $buyerEmail
-                                        : (
-                                            $buyerCustomerId
-                                            !== null
-                                                ? (
-                                                    'Cliente #'
-                                                    . $buyerCustomerId
-                                                )
-                                                : 'Cliente'
-                                        );
-                            }
                             ?>
 
                             <tr
-                                <?php if (
-                                    $focusedReservationExists
-                                    && $reservationId
-                                        === $focusedReservationId
-                                ) : ?>
-                                    style="
-                                        outline:3px solid currentColor;
-                                        outline-offset:-3px;
-                                    "
-                                <?php endif; ?>
+                                class="<?php
+                                echo esc_attr(
+                                    $focused
+                                        ? 'is-focused'
+                                        : ''
+                                );
+                                ?>"
                             >
 
-                                <td>
+                                <td
+                                    class="
+                                        dsm-reservation-table__id
+                                    "
+                                >
                                     <strong>
                                         #<?php
                                         echo esc_html(
@@ -337,62 +489,70 @@ if ($focusedReservationExists) {
                                     </strong>
                                 </td>
 
-                                <td>
+
+                                <td
+                                    class="
+                                        dsm-reservation-table__product
+                                    "
+                                >
                                     <?php
                                     echo esc_html(
-                                        $product !== null
-                                            ? $product->getName()
-                                            : (
-                                                'Producto #'
-                                                . $productId
-                                            )
+                                        $data[
+                                            'product_name'
+                                        ]
                                     );
                                     ?>
                                 </td>
 
-                                <td>
-                                    <?php
-                                    $sku =
-                                        $variant !== null
-                                            ? trim(
-                                                (string)
-                                                $variant->getSku()
-                                            )
-                                            : '';
 
+                                <td
+                                    class="
+                                        dsm-reservation-table__variant
+                                    "
+                                >
+                                    <?php
                                     echo esc_html(
-                                        $sku !== ''
-                                            ? $sku
-                                            : (
-                                                'Variante #'
-                                                . $variantId
-                                            )
+                                        $data[
+                                            'variant_name'
+                                        ]
                                     );
                                     ?>
                                 </td>
 
-                                <td>
+
+                                <td
+                                    class="
+                                        dsm-reservation-table__customer
+                                    "
+                                >
 
                                     <strong>
                                         <?php
                                         echo esc_html(
-                                            $buyerName
+                                            $data[
+                                                'buyer_name'
+                                            ]
                                         );
                                         ?>
                                     </strong>
 
                                     <?php if (
-                                        $buyerEmail !== ''
-                                        && $buyerEmail
-                                            !== $buyerName
+                                        $data[
+                                            'buyer_email'
+                                        ] !== ''
+                                        && $data[
+                                            'buyer_email'
+                                        ] !== $data[
+                                            'buyer_name'
+                                        ]
                                     ) : ?>
-
-                                        <br>
 
                                         <small>
                                             <?php
                                             echo esc_html(
-                                                $buyerEmail
+                                                $data[
+                                                    'buyer_email'
+                                                ]
                                             );
                                             ?>
                                         </small>
@@ -401,7 +561,13 @@ if ($focusedReservationExists) {
 
                                 </td>
 
-                                <td>
+
+                                <td
+                                    class="
+                                        is-centered
+                                        dsm-reservation-table__quantity
+                                    "
+                                >
                                     <?php
                                     echo esc_html(
                                         (string)
@@ -411,187 +577,203 @@ if ($focusedReservationExists) {
                                     ?>
                                 </td>
 
-                                <td>
-                                    <?php
-                                    $reservedAt =
-                                        $reservation
-                                            ->getReservedAt();
 
+                                <td
+                                    class="
+                                        dsm-reservation-table__date
+                                    "
+                                >
+                                    <?php
                                     echo esc_html(
-                                        get_date_from_gmt(
-                                            $reservedAt->format(
-                                                'Y-m-d H:i:s'
-                                            ),
-                                            'd/m/Y H:i'
-                                        )
+                                        $data[
+                                            'reserved_at'
+                                        ]
                                     );
                                     ?>
                                 </td>
 
+
                                 <td>
-                                    <?php
-                                    echo esc_html(
-                                        $statusLabels[$status]
-                                        ?? ucfirst($status)
-                                    );
-                                    ?>
+
+                                    <span
+                                        class="<?php
+                                        echo esc_attr(
+                                            'dsm-reservation-status '
+                                            . 'dsm-reservation-status--'
+                                            . (
+                                                $statusClasses[
+                                                    $status
+                                                ]
+                                                ?? 'inactive'
+                                            )
+                                        );
+                                        ?>"
+                                    >
+                                        <?php
+                                        echo esc_html(
+                                            $statusLabels[
+                                                $status
+                                            ]
+                                            ?? ucfirst(
+                                                $status
+                                            )
+                                        );
+                                        ?>
+                                    </span>
+
                                 </td>
 
+
                                 <td>
 
-                                    <?php if (
-                                        $reservation
-                                            ->canBeCompleted()
-                                        || $reservation
-                                            ->canBeReleased()
-                                    ) : ?>
+                                    <div
+                                        class="
+                                            dsm-reservation-actions
+                                        "
+                                    >
 
-                                        <div
-                                            class="
-                                                dsm-admin-actions
-                                            "
-                                        >
+                                        <?php if (
+                                            $reservation
+                                                ->canBeCompleted()
+                                        ) : ?>
 
-                                            <?php if (
-                                                $reservation
-                                                    ->canBeCompleted()
-                                            ) : ?>
-
-                                                <form
-                                                    method="post"
-                                                    action="<?php
-                                                    echo esc_url(
-                                                        admin_url(
-                                                            'admin-post.php'
-                                                        )
-                                                    );
-                                                    ?>"
-                                                    onsubmit="return confirm(
+                                            <form
+                                                method="post"
+                                                action="<?php
+                                                echo esc_url(
+                                                    admin_url(
+                                                        'admin-post.php'
+                                                    )
+                                                );
+                                                ?>"
+                                                onsubmit="
+                                                    return confirm(
                                                         '¿Confirmar que esta reserva se ha vendido?'
-                                                    );"
-                                                >
-
-                                                    <input
-                                                        type="hidden"
-                                                        name="action"
-                                                        value="<?php
-                                                        echo esc_attr(
-                                                            StoreReservationController::
-                                                                COMPLETE_ACTION
-                                                        );
-                                                        ?>"
-                                                    >
-
-                                                    <input
-                                                        type="hidden"
-                                                        name="reservation_id"
-                                                        value="<?php
-                                                        echo esc_attr(
-                                                            (string)
-                                                            $reservationId
-                                                        );
-                                                        ?>"
-                                                    >
-
-                                                    <?php
-                                                    wp_nonce_field(
-                                                        StoreReservationController::
-                                                            getNonceAction(
-                                                                StoreReservationController::
-                                                                    COMPLETE_ACTION,
-                                                                $reservationId
-                                                            ),
-                                                        StoreReservationController::
-                                                            NONCE_FIELD
                                                     );
-                                                    ?>
+                                                "
+                                            >
 
-                                                    <button
-                                                        type="submit"
-                                                        class="
-                                                            button
-                                                            button-primary
-                                                        "
-                                                    >
-                                                        Completar venta
-                                                    </button>
-
-                                                </form>
-
-                                            <?php endif; ?>
-
-                                            <?php if (
-                                                $reservation
-                                                    ->canBeReleased()
-                                            ) : ?>
-
-                                                <form
-                                                    method="post"
-                                                    action="<?php
-                                                    echo esc_url(
-                                                        admin_url(
-                                                            'admin-post.php'
-                                                        )
+                                                <input
+                                                    type="hidden"
+                                                    name="action"
+                                                    value="<?php
+                                                    echo esc_attr(
+                                                        StoreReservationController::
+                                                            COMPLETE_ACTION
                                                     );
                                                     ?>"
-                                                    onsubmit="return confirm(
-                                                        '¿Liberar esta reserva y devolver las unidades al stock disponible?'
-                                                    );"
                                                 >
 
-                                                    <input
-                                                        type="hidden"
-                                                        name="action"
-                                                        value="<?php
-                                                        echo esc_attr(
-                                                            StoreReservationController::
-                                                                RELEASE_ACTION
-                                                        );
-                                                        ?>"
-                                                    >
-
-                                                    <input
-                                                        type="hidden"
-                                                        name="reservation_id"
-                                                        value="<?php
-                                                        echo esc_attr(
-                                                            (string)
-                                                            $reservationId
-                                                        );
-                                                        ?>"
-                                                    >
-
-                                                    <?php
-                                                    wp_nonce_field(
-                                                        StoreReservationController::
-                                                            getNonceAction(
-                                                                StoreReservationController::
-                                                                    RELEASE_ACTION,
-                                                                $reservationId
-                                                            ),
-                                                        StoreReservationController::
-                                                            NONCE_FIELD
+                                                <input
+                                                    type="hidden"
+                                                    name="reservation_id"
+                                                    value="<?php
+                                                    echo esc_attr(
+                                                        (string)
+                                                        $reservationId
                                                     );
-                                                    ?>
+                                                    ?>"
+                                                >
 
-                                                    <button
-                                                        type="submit"
-                                                        class="button"
-                                                    >
-                                                        Liberar reserva
-                                                    </button>
+                                                <?php
+                                                wp_nonce_field(
+                                                    StoreReservationController::
+                                                        getNonceAction(
+                                                            StoreReservationController::
+                                                                COMPLETE_ACTION,
+                                                            $reservationId
+                                                        ),
+                                                    StoreReservationController::
+                                                        NONCE_FIELD
+                                                );
+                                                ?>
 
-                                                </form>
+                                                <button
+                                                    type="submit"
+                                                    class="
+                                                        dsm-reservation-action
+                                                        dsm-reservation-action--complete
+                                                    "
+                                                >
+                                                    Completar venta
+                                                </button>
 
-                                            <?php endif; ?>
+                                            </form>
 
-                                        </div>
+                                        <?php endif; ?>
 
-                                    <?php else : ?>
 
-                                        —
+                                        <?php if (
+                                            $reservation
+                                                ->canBeReleased()
+                                        ) : ?>
 
-                                    <?php endif; ?>
+                                            <form
+                                                method="post"
+                                                action="<?php
+                                                echo esc_url(
+                                                    admin_url(
+                                                        'admin-post.php'
+                                                    )
+                                                );
+                                                ?>"
+                                                onsubmit="
+                                                    return confirm(
+                                                        '¿Liberar esta reserva y devolver las unidades al stock disponible?'
+                                                    );
+                                                "
+                                            >
+
+                                                <input
+                                                    type="hidden"
+                                                    name="action"
+                                                    value="<?php
+                                                    echo esc_attr(
+                                                        StoreReservationController::
+                                                            RELEASE_ACTION
+                                                    );
+                                                    ?>"
+                                                >
+
+                                                <input
+                                                    type="hidden"
+                                                    name="reservation_id"
+                                                    value="<?php
+                                                    echo esc_attr(
+                                                        (string)
+                                                        $reservationId
+                                                    );
+                                                    ?>"
+                                                >
+
+                                                <?php
+                                                wp_nonce_field(
+                                                    StoreReservationController::
+                                                        getNonceAction(
+                                                            StoreReservationController::
+                                                                RELEASE_ACTION,
+                                                            $reservationId
+                                                        ),
+                                                    StoreReservationController::
+                                                        NONCE_FIELD
+                                                );
+                                                ?>
+
+                                                <button
+                                                    type="submit"
+                                                    class="
+                                                        dsm-reservation-action
+                                                        dsm-reservation-action--release
+                                                    "
+                                                >
+                                                    Liberar reserva
+                                                </button>
+
+                                            </form>
+
+                                        <?php endif; ?>
+
+                                    </div>
 
                                 </td>
 
@@ -604,6 +786,650 @@ if ($focusedReservationExists) {
                 </table>
 
             </div>
+
+
+            <?php if (
+                $pendingReservationTotalPages > 1
+            ) : ?>
+
+                <nav
+                    class="dsm-reservation-pagination"
+                    aria-label="
+                        Páginas de reservas pendientes
+                    "
+                >
+
+                    <?php
+
+                    $pendingStart =
+                        max(
+                            1,
+                            $pendingReservationPage
+                            - 2
+                        );
+
+                    $pendingEnd =
+                        min(
+                            $pendingReservationTotalPages,
+                            $pendingReservationPage
+                            + 2
+                        );
+
+                    ?>
+
+
+                    <?php if (
+                        $pendingReservationPage > 1
+                    ) : ?>
+
+                        <a
+                            href="<?php
+                            echo esc_url(
+                                $buildPageUrl(
+                                    'reservation_pending_page',
+                                    $pendingReservationPage
+                                    - 1,
+                                    $historyReservationFilter
+                                )
+                                . '#dsm-reservations-pending'
+                            );
+                            ?>"
+                        >
+                            ‹
+                        </a>
+
+                    <?php endif; ?>
+
+
+                    <?php for (
+                        $page = $pendingStart;
+                        $page <= $pendingEnd;
+                        $page++
+                    ) : ?>
+
+                        <?php if (
+                            $page
+                            === $pendingReservationPage
+                        ) : ?>
+
+                            <span
+                                class="is-current"
+                                aria-current="page"
+                            >
+                                <?php
+                                echo esc_html(
+                                    (string)
+                                    $page
+                                );
+                                ?>
+                            </span>
+
+                        <?php else : ?>
+
+                            <a
+                                href="<?php
+                                echo esc_url(
+                                    $buildPageUrl(
+                                        'reservation_pending_page',
+                                        $page,
+                                        $historyReservationFilter
+                                    )
+                                    . '#dsm-reservations-pending'
+                                );
+                                ?>"
+                            >
+                                <?php
+                                echo esc_html(
+                                    (string)
+                                    $page
+                                );
+                                ?>
+                            </a>
+
+                        <?php endif; ?>
+
+                    <?php endfor; ?>
+
+
+                    <?php if (
+                        $pendingReservationPage
+                        < $pendingReservationTotalPages
+                    ) : ?>
+
+                        <a
+                            href="<?php
+                            echo esc_url(
+                                $buildPageUrl(
+                                    'reservation_pending_page',
+                                    $pendingReservationPage
+                                    + 1,
+                                    $historyReservationFilter
+                                )
+                                . '#dsm-reservations-pending'
+                            );
+                            ?>"
+                        >
+                            ›
+                        </a>
+
+                    <?php endif; ?>
+
+                </nav>
+
+            <?php endif; ?>
+
+        <?php endif; ?>
+
+    </article>
+
+
+    <!-- =====================================================
+         HISTORICO
+         ===================================================== -->
+
+    <article
+        id="dsm-reservations-history"
+        class="
+            dsm-card
+            dsm-reservation-panel
+        "
+    >
+
+        <header class="dsm-reservation-panel__header">
+
+            <div>
+
+                <h3>
+                    Histórico de reservas
+                </h3>
+
+                <p>
+                    Consulta las ventas completadas
+                    y las reservas liberadas.
+                </p>
+
+            </div>
+
+
+            <span class="dsm-reservation-panel__counter">
+
+                <?php
+                echo esc_html(
+                    (string)
+                    $historyReservationCount
+                );
+                ?>
+
+                <?php
+                echo $historyReservationCount === 1
+                    ? 'registro'
+                    : 'registros';
+                ?>
+
+            </span>
+
+        </header>
+
+
+        <!-- FILTROS HISTORICO -->
+
+        <nav
+            class="dsm-reservation-history-filter"
+            aria-label="
+                Filtrar histórico de reservas
+            "
+        >
+
+            <?php
+
+            $historyFilters = [
+                '' =>
+                    'Todas',
+
+                'completed' =>
+                    'Completadas',
+
+                'released' =>
+                    'Liberadas',
+            ];
+
+            ?>
+
+            <?php foreach (
+                $historyFilters
+                as $filterValue => $filterLabel
+            ) : ?>
+
+                <?php
+
+                $filterUrl =
+                    add_query_arg(
+                        array_filter(
+                            [
+                                'store_section' =>
+                                    'reservations',
+
+                                'reservation_history_status' =>
+                                    $filterValue,
+                            ],
+                            static fn (
+                                mixed $value
+                            ): bool =>
+                                $value !== ''
+                        ),
+                        home_url(
+                            '/mi-tienda/'
+                        )
+                    )
+                    . '#dsm-reservations-history';
+
+                $filterActive =
+                    $historyReservationFilter
+                    === $filterValue;
+
+                ?>
+
+                <a
+                    href="<?php
+                    echo esc_url(
+                        $filterUrl
+                    );
+                    ?>"
+                    class="<?php
+                    echo esc_attr(
+                        'dsm-reservation-history-filter__item'
+                        . (
+                            $filterActive
+                                ? ' is-active'
+                                : ''
+                        )
+                    );
+                    ?>"
+                    <?php if (
+                        $filterActive
+                    ) : ?>
+                        aria-current="page"
+                    <?php endif; ?>
+                >
+                    <?php
+                    echo esc_html(
+                        $filterLabel
+                    );
+                    ?>
+                </a>
+
+            <?php endforeach; ?>
+
+        </nav>
+
+
+        <?php if (
+            $historyReservations === []
+        ) : ?>
+
+            <div class="dsm-reservation-empty">
+
+                <strong>
+                    No hay reservas en este histórico.
+                </strong>
+
+                <span>
+                    Prueba con otro filtro de estado.
+                </span>
+
+            </div>
+
+        <?php else : ?>
+
+            <div class="dsm-reservation-table-scroll">
+
+                <table class="dsm-reservation-table">
+
+                    <thead>
+
+                        <tr>
+                            <th>Reserva</th>
+                            <th>Producto</th>
+                            <th>Variante</th>
+                            <th>Cliente</th>
+                            <th class="is-centered">
+                                Cantidad
+                            </th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        <?php foreach (
+                            $historyReservations
+                            as $reservation
+                        ) : ?>
+
+                            <?php
+
+                            $reservationId =
+                                $reservation
+                                    ->getId();
+
+                            $data =
+                                $resolveReservationData(
+                                    $reservation
+                                );
+
+                            $status =
+                                $reservation
+                                    ->getStatus();
+
+                            $focused =
+                                $focusedReservationId > 0
+                                && $reservationId
+                                    === $focusedReservationId;
+
+                            ?>
+
+                            <tr
+                                class="<?php
+                                echo esc_attr(
+                                    $focused
+                                        ? 'is-focused'
+                                        : ''
+                                );
+                                ?>"
+                            >
+
+                                <td
+                                    class="
+                                        dsm-reservation-table__id
+                                    "
+                                >
+                                    <strong>
+                                        #<?php
+                                        echo esc_html(
+                                            (string)
+                                            $reservationId
+                                        );
+                                        ?>
+                                    </strong>
+                                </td>
+
+
+                                <td
+                                    class="
+                                        dsm-reservation-table__product
+                                    "
+                                >
+                                    <?php
+                                    echo esc_html(
+                                        $data[
+                                            'product_name'
+                                        ]
+                                    );
+                                    ?>
+                                </td>
+
+
+                                <td
+                                    class="
+                                        dsm-reservation-table__variant
+                                    "
+                                >
+                                    <?php
+                                    echo esc_html(
+                                        $data[
+                                            'variant_name'
+                                        ]
+                                    );
+                                    ?>
+                                </td>
+
+
+                                <td
+                                    class="
+                                        dsm-reservation-table__customer
+                                    "
+                                >
+
+                                    <strong>
+                                        <?php
+                                        echo esc_html(
+                                            $data[
+                                                'buyer_name'
+                                            ]
+                                        );
+                                        ?>
+                                    </strong>
+
+                                    <?php if (
+                                        $data[
+                                            'buyer_email'
+                                        ] !== ''
+                                        && $data[
+                                            'buyer_email'
+                                        ] !== $data[
+                                            'buyer_name'
+                                        ]
+                                    ) : ?>
+
+                                        <small>
+                                            <?php
+                                            echo esc_html(
+                                                $data[
+                                                    'buyer_email'
+                                                ]
+                                            );
+                                            ?>
+                                        </small>
+
+                                    <?php endif; ?>
+
+                                </td>
+
+
+                                <td
+                                    class="
+                                        is-centered
+                                        dsm-reservation-table__quantity
+                                    "
+                                >
+                                    <?php
+                                    echo esc_html(
+                                        (string)
+                                        $reservation
+                                            ->getQuantity()
+                                    );
+                                    ?>
+                                </td>
+
+
+                                <td
+                                    class="
+                                        dsm-reservation-table__date
+                                    "
+                                >
+                                    <?php
+                                    echo esc_html(
+                                        $data[
+                                            'reserved_at'
+                                        ]
+                                    );
+                                    ?>
+                                </td>
+
+
+                                <td>
+
+                                    <span
+                                        class="<?php
+                                        echo esc_attr(
+                                            'dsm-reservation-status '
+                                            . 'dsm-reservation-status--'
+                                            . (
+                                                $statusClasses[
+                                                    $status
+                                                ]
+                                                ?? 'inactive'
+                                            )
+                                        );
+                                        ?>"
+                                    >
+                                        <?php
+                                        echo esc_html(
+                                            $statusLabels[
+                                                $status
+                                            ]
+                                            ?? ucfirst(
+                                                $status
+                                            )
+                                        );
+                                        ?>
+                                    </span>
+
+                                </td>
+
+                            </tr>
+
+                        <?php endforeach; ?>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+            <?php if (
+                $historyReservationTotalPages > 1
+            ) : ?>
+
+                <nav
+                    class="dsm-reservation-pagination"
+                    aria-label="
+                        Páginas del histórico de reservas
+                    "
+                >
+
+                    <?php
+
+                    $historyStart =
+                        max(
+                            1,
+                            $historyReservationPage
+                            - 2
+                        );
+
+                    $historyEnd =
+                        min(
+                            $historyReservationTotalPages,
+                            $historyReservationPage
+                            + 2
+                        );
+
+                    ?>
+
+
+                    <?php if (
+                        $historyReservationPage > 1
+                    ) : ?>
+
+                        <a
+                            href="<?php
+                            echo esc_url(
+                                $buildPageUrl(
+                                    'reservation_history_page',
+                                    $historyReservationPage
+                                    - 1,
+                                    $historyReservationFilter
+                                )
+                                . '#dsm-reservations-history'
+                            );
+                            ?>"
+                        >
+                            ‹
+                        </a>
+
+                    <?php endif; ?>
+
+
+                    <?php for (
+                        $page = $historyStart;
+                        $page <= $historyEnd;
+                        $page++
+                    ) : ?>
+
+                        <?php if (
+                            $page
+                            === $historyReservationPage
+                        ) : ?>
+
+                            <span
+                                class="is-current"
+                                aria-current="page"
+                            >
+                                <?php
+                                echo esc_html(
+                                    (string)
+                                    $page
+                                );
+                                ?>
+                            </span>
+
+                        <?php else : ?>
+
+                            <a
+                                href="<?php
+                                echo esc_url(
+                                    $buildPageUrl(
+                                        'reservation_history_page',
+                                        $page,
+                                        $historyReservationFilter
+                                    )
+                                    . '#dsm-reservations-history'
+                                );
+                                ?>"
+                            >
+                                <?php
+                                echo esc_html(
+                                    (string)
+                                    $page
+                                );
+                                ?>
+                            </a>
+
+                        <?php endif; ?>
+
+                    <?php endfor; ?>
+
+
+                    <?php if (
+                        $historyReservationPage
+                        < $historyReservationTotalPages
+                    ) : ?>
+
+                        <a
+                            href="<?php
+                            echo esc_url(
+                                $buildPageUrl(
+                                    'reservation_history_page',
+                                    $historyReservationPage
+                                    + 1,
+                                    $historyReservationFilter
+                                )
+                                . '#dsm-reservations-history'
+                            );
+                            ?>"
+                        >
+                            ›
+                        </a>
+
+                    <?php endif; ?>
+
+                </nav>
+
+            <?php endif; ?>
 
         <?php endif; ?>
 

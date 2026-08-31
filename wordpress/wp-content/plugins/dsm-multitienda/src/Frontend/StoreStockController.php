@@ -141,6 +141,7 @@ final class StoreStockController
 
             self::redirect(
                 $productId,
+                $variantId,
                 'replenished'
             );
         } catch (Throwable $exception) {
@@ -254,6 +255,7 @@ final class StoreStockController
 
             self::redirect(
                 $productId,
+                $variantId,
                 'adjusted'
             );
         } catch (Throwable $exception) {
@@ -456,6 +458,7 @@ final class StoreStockController
 
     private static function redirect(
         int $productId,
+        int $variantId,
         string $notice
     ): never {
         wp_safe_redirect(
@@ -467,6 +470,9 @@ final class StoreStockController
                     'product_id' =>
                         $productId,
 
+                    'variant_id' =>
+                        $variantId,
+
                     'stock_notice' =>
                         $notice,
                 ],
@@ -474,6 +480,7 @@ final class StoreStockController
                     '/mi-tienda/'
                 )
             )
+            . '#dsm-product-variants'
         );
 
         exit;
@@ -493,6 +500,17 @@ final class StoreStockController
                 )
                 : 0;
 
+        $variantId =
+            isset($_POST['variant_id'])
+                ? absint(
+                    wp_unslash(
+                        (string) $_POST[
+                            'variant_id'
+                        ]
+                    )
+                )
+                : 0;
+
         wp_safe_redirect(
             add_query_arg(
                 [
@@ -501,6 +519,9 @@ final class StoreStockController
 
                     'product_id' =>
                         $productId,
+
+                    'variant_id' =>
+                        $variantId,
 
                     'stock_notice' =>
                         'error',
@@ -512,6 +533,7 @@ final class StoreStockController
                     '/mi-tienda/'
                 )
             )
+            . '#dsm-product-variants'
         );
 
         exit;

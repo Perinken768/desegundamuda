@@ -15,6 +15,11 @@ if (!defined('ABSPATH')) {
  * @var int $productCount
  * @var string $productStatusNotice
  * @var string $productStatusError
+ * @var string $productSearch
+ * @var int $productPage
+ * @var int $productPerPage
+ * @var int $productTotalPages
+ * @var int $productOffset
  */
 
 ?>
@@ -68,19 +73,80 @@ if (!defined('ABSPATH')) {
 
     <?php endif; ?>
 
-    <p>
-        <strong>
-            Productos registrados:
-        </strong>
+    <div class="dsm-store-products__toolbar">
 
-        <?php
-        echo esc_html(
-            (string) $productCount
-        );
-        ?>
-    </p>
+        <form
+            class="dsm-store-products__search"
+            method="get"
+            action="<?php
+            echo esc_url(
+                home_url(
+                    '/mi-tienda/'
+                )
+            );
+            ?>"
+        >
 
-    <p>
+            <input
+                type="hidden"
+                name="store_section"
+                value="products"
+            >
+
+            <label
+                class="screen-reader-text"
+                for="dsm-product-search"
+            >
+                Buscar productos
+            </label>
+
+            <input
+                id="dsm-product-search"
+                type="search"
+                name="product_search"
+                value="<?php
+                echo esc_attr(
+                    $productSearch
+                );
+                ?>"
+                placeholder="Buscar por nombre, SKU o referencia..."
+            >
+
+            <button
+                type="submit"
+                class="
+                    dsm-button
+                    dsm-button--secondary
+                "
+            >
+                Buscar
+            </button>
+
+            <?php if (
+                $productSearch !== ''
+            ) : ?>
+
+                <a
+                    class="dsm-store-products__clear"
+                    href="<?php
+                    echo esc_url(
+                        add_query_arg(
+                            'store_section',
+                            'products',
+                            home_url(
+                                '/mi-tienda/'
+                            )
+                        )
+                    );
+                    ?>"
+                >
+                    Limpiar
+                </a>
+
+            <?php endif; ?>
+
+        </form>
+
         <a
             class="
                 dsm-button
@@ -102,7 +168,70 @@ if (!defined('ABSPATH')) {
         >
             Nuevo producto
         </a>
-    </p>
+
+    </div>
+
+    <div class="dsm-store-products__summary">
+
+        <?php if (
+            $productCount > 0
+        ) : ?>
+
+            <?php
+
+            $productFirst =
+                $productOffset
+                + 1;
+
+            $productLast =
+                min(
+                    $productOffset
+                    + count(
+                        $products
+                    ),
+                    $productCount
+                );
+
+            ?>
+
+            <strong>
+                <?php
+                echo esc_html(
+                    sprintf(
+                        'Mostrando %d–%d de %d productos',
+                        $productFirst,
+                        $productLast,
+                        $productCount
+                    )
+                );
+                ?>
+            </strong>
+
+            <?php if (
+                $productSearch !== ''
+            ) : ?>
+
+                <span>
+                    para “<?php
+                    echo esc_html(
+                        $productSearch
+                    );
+                    ?>”
+                </span>
+
+            <?php endif; ?>
+
+        <?php elseif (
+            $productSearch !== ''
+        ) : ?>
+
+            <strong>
+                No se encontraron productos.
+            </strong>
+
+        <?php endif; ?>
+
+    </div>
 
     <?php if ($products === []) : ?>
 
@@ -539,5 +668,157 @@ if (!defined('ABSPATH')) {
         </div>
 
     <?php endif; ?>
+
+
+    <?php if (
+        $productTotalPages > 1
+    ) : ?>
+
+        <nav
+            class="dsm-store-products__pagination"
+            aria-label="Páginas de productos"
+        >
+
+            <?php
+
+            $paginationBaseArgs = [
+                'store_section' =>
+                    'products',
+            ];
+
+            if (
+                $productSearch !== ''
+            ) {
+                $paginationBaseArgs[
+                    'product_search'
+                ] =
+                    $productSearch;
+            }
+
+            ?>
+
+            <?php if (
+                $productPage > 1
+            ) : ?>
+
+                <a
+                    href="<?php
+                    echo esc_url(
+                        add_query_arg(
+                            array_merge(
+                                $paginationBaseArgs,
+                                [
+                                    'product_page' =>
+                                        $productPage
+                                        - 1,
+                                ]
+                            ),
+                            home_url(
+                                '/mi-tienda/'
+                            )
+                        )
+                    );
+                    ?>"
+                >
+                    ‹
+                </a>
+
+            <?php endif; ?>
+
+            <?php
+
+            $pageStart =
+                max(
+                    1,
+                    $productPage - 2
+                );
+
+            $pageEnd =
+                min(
+                    $productTotalPages,
+                    $productPage + 2
+                );
+
+            for (
+                $pageNumber = $pageStart;
+                $pageNumber <= $pageEnd;
+                $pageNumber++
+            ) :
+
+                ?>
+
+                <a
+                    class="<?php
+                    echo $pageNumber ===
+                        $productPage
+                            ? 'is-current'
+                            : '';
+                    ?>"
+                    href="<?php
+                    echo esc_url(
+                        add_query_arg(
+                            array_merge(
+                                $paginationBaseArgs,
+                                [
+                                    'product_page' =>
+                                        $pageNumber,
+                                ]
+                            ),
+                            home_url(
+                                '/mi-tienda/'
+                            )
+                        )
+                    );
+                    ?>"
+                    <?php if (
+                        $pageNumber ===
+                        $productPage
+                    ) : ?>
+                        aria-current="page"
+                    <?php endif; ?>
+                >
+                    <?php
+                    echo esc_html(
+                        (string)
+                        $pageNumber
+                    );
+                    ?>
+                </a>
+
+            <?php endfor; ?>
+
+            <?php if (
+                $productPage <
+                $productTotalPages
+            ) : ?>
+
+                <a
+                    href="<?php
+                    echo esc_url(
+                        add_query_arg(
+                            array_merge(
+                                $paginationBaseArgs,
+                                [
+                                    'product_page' =>
+                                        $productPage
+                                        + 1,
+                                ]
+                            ),
+                            home_url(
+                                '/mi-tienda/'
+                            )
+                        )
+                    );
+                    ?>"
+                >
+                    ›
+                </a>
+
+            <?php endif; ?>
+
+        </nav>
+
+    <?php endif; ?>
+
 
 </section>

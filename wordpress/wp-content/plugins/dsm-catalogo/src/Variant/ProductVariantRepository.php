@@ -1083,6 +1083,405 @@ final class ProductVariantRepository
     }
 
     /**
+     * Devuelve las filas del inventario de una tienda.
+     *
+     * Una variante genera una fila.
+     * Un producto sin variantes genera también una fila.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function findInventoryByStore(
+        int $storeId,
+        int $limit = 20,
+        int $offset = 0,
+        ?string $search = null,
+        ?string $stockStatus = null
+    ): array {
+        global $wpdb;
+
+        if ($storeId <= 0) {
+            return [];
+        }
+
+        $productsTable =
+            $wpdb->prefix
+            . 'dsm_products';
+
+        $limit = max(
+            1,
+            min(
+                250,
+                $limit
+            )
+        );
+
+        $offset = max(
+            0,
+            $offset
+        );
+
+        $search =
+            trim(
+                (string) $search
+            );
+
+        $allowedStatuses = [
+            'available',
+            'low_stock',
+            'out_of_stock',
+            'inactive',
+        ];
+
+        if (
+            $stockStatus === null
+            || !in_array(
+                $stockStatus,
+                $allowedStatuses,
+                true
+            )
+        ) {
+            $stockStatus = '';
+        }
+
+        $parameters = [
+            $storeId,
+        ];
+
+        $where = "
+            WHERE products.store_id = %d
+        ";
+
+        if ($search !== '') {
+            $like =
+                '%'
+                . $wpdb->esc_like(
+                    $search
+                )
+                . '%';
+
+            $where .= "
+                AND (
+                    products.name LIKE %s
+                    OR products.base_sku LIKE %s
+                    OR products.internal_reference LIKE %s
+                    OR variants.sku LIKE %s
+                    OR variants.size_value LIKE %s
+                    OR variants.color_value LIKE %s
+                )
+            ";
+
+            $parameters[] = $like;
+            $parameters[] = $like;
+            $parameters[] = $like;
+            $parameters[] = $like;
+            $parameters[] = $like;
+            $parameters[] = $like;
+        }
+
+        if ($stockStatus === 'inactive') {
+            $where .= "
+                AND variants.id IS NOT NULL
+                AND variants.is_active = 0
+            ";
+        } elseif (
+            $stockStatus === 'out_of_stock'
+        ) {
+            $where .= "
+                AND variants.id IS NOT NULL
+                AND variants.is_active = 1
+                AND variants.track_stock = 1
+                AND (
+                    variants.stock_quantity
+                    - variants.stock_reserved
+                ) <= 0
+            ";
+        } elseif (
+            $stockStatus === 'low_stock'
+        ) {
+            $where .= "
+                AND variants.id IS NOT NULL
+                AND variants.is_active = 1
+                AND variants.track_stock = 1
+                AND (
+                    variants.stock_quantity
+                    - variants.stock_reserved
+                ) > 0
+                AND variants.low_stock_threshold
+                    IS NOT NULL
+                AND (
+                    variants.stock_quantity
+                    - variants.stock_reserved
+                ) <= variants.low_stock_threshold
+            ";
+        } elseif (
+            $stockStatus === 'available'
+        ) {
+            $where .= "
+                AND variants.id IS NOT NULL
+                AND variants.is_active = 1
+                AND (
+                    variants.track_stock = 0
+                    OR (
+                        (
+                            variants.stock_quantity
+                            - variants.stock_reserved
+                        ) > 0
+                        AND (
+                            variants.low_stock_threshold
+                                IS NULL
+                            OR (
+                                variants.stock_quantity
+                                - variants.stock_reserved
+                            ) > variants.low_stock_threshold
+                        )
+                    )
+                )
+            ";
+        }
+
+        $parameters[] =
+            $limit;
+
+        $parameters[] =
+            $offset;
+
+        $query =
+            $wpdb->prepare(
+                "SELECT
+                    products.id
+                        AS product_id,
+
+                    products.name
+                        AS product_name,
+
+                    products.internal_reference
+                        AS internal_reference,
+
+                    products.base_sku
+                        AS base_sku,
+
+                    variants.id
+                        AS variant_id,
+
+                    variants.sku
+                        AS sku,
+
+                    variants.size_value
+                        AS size_value,
+
+                    variants.color_value
+                        AS color_value,
+
+                    variants.stock_quantity
+                        AS stock_quantity,
+
+                    variants.stock_reserved
+                        AS stock_reserved,
+
+                    variants.low_stock_threshold
+                        AS low_stock_threshold,
+
+                    variants.track_stock
+                        AS track_stock,
+
+                    variants.is_active
+                        AS is_active
+
+                FROM {$productsTable}
+                    AS products
+
+                LEFT JOIN {$this->tableName}
+                    AS variants
+                    ON variants.product_id =
+                        products.id
+                    AND variants.archived_at
+                        IS NULL
+
+                {$where}
+
+                ORDER BY
+                    products.name ASC,
+                    products.id ASC,
+                    variants.is_default DESC,
+                    variants.sort_order ASC,
+                    variants.id ASC
+
+                LIMIT %d
+                OFFSET %d",
+                ...$parameters
+            );
+
+        $rows =
+            $wpdb->get_results(
+                $query,
+                ARRAY_A
+            );
+
+        return is_array($rows)
+            ? $rows
+            : [];
+    }
+
+    public function countInventoryByStore(
+        int $storeId,
+        ?string $search = null,
+        ?string $stockStatus = null
+    ): int {
+        global $wpdb;
+
+        if ($storeId <= 0) {
+            return 0;
+        }
+
+        $productsTable =
+            $wpdb->prefix
+            . 'dsm_products';
+
+        $search =
+            trim(
+                (string) $search
+            );
+
+        $allowedStatuses = [
+            'available',
+            'low_stock',
+            'out_of_stock',
+            'inactive',
+        ];
+
+        if (
+            $stockStatus === null
+            || !in_array(
+                $stockStatus,
+                $allowedStatuses,
+                true
+            )
+        ) {
+            $stockStatus = '';
+        }
+
+        $parameters = [
+            $storeId,
+        ];
+
+        $where = "
+            WHERE products.store_id = %d
+        ";
+
+        if ($search !== '') {
+            $like =
+                '%'
+                . $wpdb->esc_like(
+                    $search
+                )
+                . '%';
+
+            $where .= "
+                AND (
+                    products.name LIKE %s
+                    OR products.base_sku LIKE %s
+                    OR products.internal_reference LIKE %s
+                    OR variants.sku LIKE %s
+                    OR variants.size_value LIKE %s
+                    OR variants.color_value LIKE %s
+                )
+            ";
+
+            $parameters[] = $like;
+            $parameters[] = $like;
+            $parameters[] = $like;
+            $parameters[] = $like;
+            $parameters[] = $like;
+            $parameters[] = $like;
+        }
+
+        if ($stockStatus === 'inactive') {
+            $where .= "
+                AND variants.id IS NOT NULL
+                AND variants.is_active = 0
+            ";
+        } elseif (
+            $stockStatus === 'out_of_stock'
+        ) {
+            $where .= "
+                AND variants.id IS NOT NULL
+                AND variants.is_active = 1
+                AND variants.track_stock = 1
+                AND (
+                    variants.stock_quantity
+                    - variants.stock_reserved
+                ) <= 0
+            ";
+        } elseif (
+            $stockStatus === 'low_stock'
+        ) {
+            $where .= "
+                AND variants.id IS NOT NULL
+                AND variants.is_active = 1
+                AND variants.track_stock = 1
+                AND (
+                    variants.stock_quantity
+                    - variants.stock_reserved
+                ) > 0
+                AND variants.low_stock_threshold
+                    IS NOT NULL
+                AND (
+                    variants.stock_quantity
+                    - variants.stock_reserved
+                ) <= variants.low_stock_threshold
+            ";
+        } elseif (
+            $stockStatus === 'available'
+        ) {
+            $where .= "
+                AND variants.id IS NOT NULL
+                AND variants.is_active = 1
+                AND (
+                    variants.track_stock = 0
+                    OR (
+                        (
+                            variants.stock_quantity
+                            - variants.stock_reserved
+                        ) > 0
+                        AND (
+                            variants.low_stock_threshold
+                                IS NULL
+                            OR (
+                                variants.stock_quantity
+                                - variants.stock_reserved
+                            ) > variants.low_stock_threshold
+                        )
+                    )
+                )
+            ";
+        }
+
+        $query =
+            $wpdb->prepare(
+                "SELECT COUNT(*)
+
+                FROM {$productsTable}
+                    AS products
+
+                LEFT JOIN {$this->tableName}
+                    AS variants
+                    ON variants.product_id =
+                        products.id
+                    AND variants.archived_at
+                        IS NULL
+
+                {$where}",
+                ...$parameters
+            );
+
+        return (int)
+            $wpdb->get_var(
+                $query
+            );
+    }
+
+
+    /**
      * @return array<int, ProductVariant>
      */
     public function findByProduct(

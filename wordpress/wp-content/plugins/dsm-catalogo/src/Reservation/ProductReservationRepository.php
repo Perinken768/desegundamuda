@@ -459,6 +459,192 @@ final class ProductReservationRepository
     }
 
     /**
+     * @param array<int, string> $statuses
+     *
+     * @return array<int, ProductReservation>
+     */
+    public function findByStoreStatuses(
+        int $storeId,
+        array $statuses,
+        int $limit = 100,
+        int $offset = 0
+    ): array {
+        global $wpdb;
+
+        if ($storeId <= 0) {
+            return [];
+        }
+
+        $statuses =
+            array_values(
+                array_unique(
+                    array_filter(
+                        array_map(
+                            static fn (
+                                mixed $status
+                            ): string =>
+                                sanitize_key(
+                                    (string) $status
+                                ),
+                            $statuses
+                        ),
+                        static fn (
+                            string $status
+                        ): bool =>
+                            ProductReservationStatus::
+                                isValid(
+                                    $status
+                                )
+                    )
+                )
+            );
+
+        if ($statuses === []) {
+            return [];
+        }
+
+        $limit = max(
+            1,
+            min(
+                500,
+                $limit
+            )
+        );
+
+        $offset = max(
+            0,
+            $offset
+        );
+
+        $statusPlaceholders =
+            implode(
+                ', ',
+                array_fill(
+                    0,
+                    count($statuses),
+                    '%s'
+                )
+            );
+
+        $parameters = [
+            $storeId,
+            ...$statuses,
+            $limit,
+            $offset,
+        ];
+
+        $query =
+            $wpdb->prepare(
+                "SELECT
+                    id,
+                    product_id,
+                    variant_id,
+                    store_id,
+                    seller_customer_id,
+                    buyer_customer_id,
+                    conversation_id,
+                    external_contact,
+                    quantity,
+                    status,
+                    reserved_at,
+                    released_at,
+                    completed_at,
+                    cancelled_at,
+                    expired_at,
+                    expires_at,
+                    created_at,
+                    updated_at
+                FROM {$this->tableName}
+                WHERE store_id = %d
+                  AND status IN (
+                      {$statusPlaceholders}
+                  )
+                ORDER BY
+                    reserved_at DESC,
+                    id DESC
+                LIMIT %d
+                OFFSET %d",
+                ...$parameters
+            );
+
+        $rows =
+            $wpdb->get_results(
+                $query,
+                ARRAY_A
+            );
+
+        return $this->hydrateRows(
+            $rows
+        );
+    }
+
+    /**
+     * @param array<int, string> $statuses
+     */
+    public function countByStoreStatuses(
+        int $storeId,
+        array $statuses
+    ): int {
+        global $wpdb;
+
+        if ($storeId <= 0) {
+            return 0;
+        }
+
+        $statuses =
+            array_values(
+                array_unique(
+                    array_filter(
+                        array_map(
+                            static fn (
+                                mixed $status
+                            ): string =>
+                                sanitize_key(
+                                    (string) $status
+                                ),
+                            $statuses
+                        ),
+                        static fn (
+                            string $status
+                        ): bool =>
+                            ProductReservationStatus::
+                                isValid(
+                                    $status
+                                )
+                    )
+                )
+            );
+
+        if ($statuses === []) {
+            return 0;
+        }
+
+        $statusPlaceholders =
+            implode(
+                ', ',
+                array_fill(
+                    0,
+                    count($statuses),
+                    '%s'
+                )
+            );
+
+        return (int) $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*)
+                FROM {$this->tableName}
+                WHERE store_id = %d
+                  AND status IN (
+                      {$statusPlaceholders}
+                  )",
+                $storeId,
+                ...$statuses
+            )
+        );
+    }
+
+
+    /**
      * @return array<int, ProductReservation>
      */
     public function findActiveByVariant(

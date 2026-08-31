@@ -597,99 +597,65 @@ if (!defined('ABSPATH')) {
                 aria-label="Panel Multitienda"
             >
 
-                <a
-                    href="<?php
-                    echo esc_url(
-                        home_url(
-                            '/mi-tienda/'
-                        )
-                    );
-                    ?>"
-                >
-                    Resumen
-                </a>
+                <?php
 
-                &nbsp;|&nbsp;
+                $erpSections = [
+                    '' => 'Resumen',
+                    'products' => 'Productos',
+                    'inventory' => 'Inventario',
+                    'reservations' => 'Reservas',
+                    'movements' => 'Movimientos',
+                ];
 
-                <a
-                    href="<?php
-                    echo esc_url(
-                        add_query_arg(
-                            [
-                                'store_section' =>
-                                    'products',
-                            ],
-                            home_url(
+                foreach (
+                    $erpSections
+                    as $sectionKey => $sectionLabel
+                ) :
+
+                    $sectionUrl =
+                        $sectionKey === ''
+                            ? home_url(
                                 '/mi-tienda/'
                             )
-                        )
-                    );
-                    ?>"
-                >
-                    Productos
-                </a>
+                            : add_query_arg(
+                                'store_section',
+                                $sectionKey,
+                                home_url(
+                                    '/mi-tienda/'
+                                )
+                            );
 
-                &nbsp;|&nbsp;
+                    $isActive =
+                        $sectionKey === ''
+                            ? $storeSection === ''
+                            : $storeSection ===
+                                $sectionKey;
 
-                <a
-                    href="<?php
-                    echo esc_url(
-                        add_query_arg(
-                            [
-                                'store_section' =>
-                                    'inventory',
-                            ],
-                            home_url(
-                                '/mi-tienda/'
-                            )
-                        )
-                    );
-                    ?>"
-                >
-                    Inventario
-                </a>
+                    ?>
 
-                &nbsp;|&nbsp;
+                    <a
+                        class="dsm-multistore-erp-nav__item<?php
+                        echo $isActive
+                            ? ' is-active'
+                            : '';
+                        ?>"
+                        href="<?php
+                        echo esc_url(
+                            $sectionUrl
+                        );
+                        ?>"
+                        <?php if ($isActive) : ?>
+                            aria-current="page"
+                        <?php endif; ?>
+                    >
+                        <?php
+                        echo esc_html(
+                            $sectionLabel
+                        );
+                        ?>
+                    </a>
 
-                <a
-                    href="<?php
-                    echo esc_url(
-                        add_query_arg(
-                            [
-                                'store_section' =>
-                                    'reservations',
-                            ],
-                            home_url(
-                                '/mi-tienda/'
-                            )
-                        )
-                    );
-                    ?>"
-                >
-                    Reservas
-                </a>
-
-                &nbsp;|&nbsp;
-
-                <a
-                    href="<?php
-                    echo esc_url(
-                        add_query_arg(
-                            [
-                                'store_section' =>
-                                    'movements',
-                            ],
-                            home_url(
-                                '/mi-tienda/'
-                            )
-                        )
-                    );
-                    ?>"
-                >
-                    Movimientos
-                </a>
-
-
+                <?php endforeach; ?>
 
             </nav>
 
@@ -787,60 +753,6 @@ if (!defined('ABSPATH')) {
             }
             ?>
 
-            <p>
-                <a
-                    href="<?php
-                    echo esc_url(
-                        add_query_arg(
-                            [
-                                'store_section' =>
-                                    'products',
-                            ],
-                            home_url(
-                                '/mi-tienda/'
-                            )
-                        )
-                    );
-                    ?>"
-                >
-                    ← Volver a productos
-                </a>
-            </p>
-
-            <article class="dsm-card">
-
-                <h2>
-                    Editar producto
-                </h2>
-
-                <p>
-                    La edición de productos será
-                    integrada con DSM Catálogo
-                    en el siguiente bloque.
-                </p>
-
-                <p>
-                    <a
-                        href="<?php
-                        echo esc_url(
-                            add_query_arg(
-                                [
-                                    'store_section' =>
-                                        'products',
-                                ],
-                                home_url(
-                                    '/mi-tienda/'
-                                )
-                            )
-                        );
-                        ?>"
-                    >
-                        ← Volver a productos
-                    </a>
-                </p>
-
-            </article>
-
         <?php elseif (
             $storeSection === 'inventory'
         ) : ?>
@@ -910,13 +822,23 @@ if (!defined('ABSPATH')) {
                  RESUMEN / PERFIL DE TIENDA
             =============================================== -->
 
-            <article class="dsm-card">
+            <article class="dsm-card dsm-store-profile">
 
-                <h2>
-                    Datos de la tienda
-                </h2>
+                <div class="dsm-store-profile__header">
+
+                    <h2>
+                        Datos de la tienda
+                    </h2>
+
+                    <p>
+                        Configura la información pública
+                        y la identidad de tu tienda.
+                    </p>
+
+                </div>
 
                 <form
+                    class="dsm-store-profile__form"
                     method="post"
                     enctype="multipart/form-data"
                     action="<?php
@@ -950,393 +872,418 @@ if (!defined('ABSPATH')) {
                     );
                     ?>
 
-                    <p>
-                        <label>
-                            <strong>
+                    <div class="dsm-store-profile__grid">
+
+                        <div class="dsm-store-profile__field">
+
+                            <label for="dsm-store-name">
                                 Nombre
-                            </strong>
-                        </label>
+                            </label>
 
-                        <br>
+                            <input
+                                id="dsm-store-name"
+                                type="text"
+                                name="name"
+                                value="<?php
+                                echo esc_attr(
+                                    $store->getName()
+                                );
+                                ?>"
+                                required
+                            >
 
-                        <input
-                            type="text"
-                            name="name"
-                            value="<?php
-                            echo esc_attr(
-                                $store->getName()
-                            );
-                            ?>"
-                            class="regular-text"
-                            required
-                        >
-                    </p>
+                        </div>
 
-                    <p>
-                        <label>
-                            <strong>
+                        <div class="dsm-store-profile__field">
+
+                            <label for="dsm-store-slug">
                                 Slug
-                            </strong>
-                        </label>
+                            </label>
 
-                        <br>
+                            <input
+                                id="dsm-store-slug"
+                                type="text"
+                                name="slug"
+                                value="<?php
+                                echo esc_attr(
+                                    $store->getSlug()
+                                );
+                                ?>"
+                                required
+                            >
 
-                        <input
-                            type="text"
-                            name="slug"
-                            value="<?php
-                            echo esc_attr(
-                                $store->getSlug()
-                            );
-                            ?>"
-                            class="regular-text"
-                            required
-                        >
-                    </p>
+                        </div>
 
-                    <p>
-                        <label>
-                            <strong>
-                                Logo
-                            </strong>
-                        </label>
-
-                        <br>
-
-                        <input
-                            type="file"
-                            name="store_logo"
-                            accept="
-                                image/jpeg,
-                                image/png,
-                                image/webp
+                        <div
+                            class="
+                                dsm-store-profile__field
+                                dsm-store-profile__field--full
                             "
                         >
 
-                        <br>
+                            <label for="dsm-store-logo">
+                                Logo
+                            </label>
 
-                        <small>
-                            JPG, PNG o WEBP.
-                            Máximo 5 MB.
-                        </small>
-                    </p>
-
-                    <?php if (
-                        $store->getLogoAttachmentId()
-                        !== null
-                    ) : ?>
-
-                        <p>
-                            <label>
+                            <div class="dsm-store-profile__upload">
 
                                 <input
-                                    type="checkbox"
-                                    name="remove_logo"
-                                    value="1"
+                                    id="dsm-store-logo"
+                                    type="file"
+                                    name="store_logo"
+                                    accept="
+                                        image/jpeg,
+                                        image/png,
+                                        image/webp
+                                    "
                                 >
 
-                                Eliminar logo actual
+                                <small>
+                                    JPG, PNG o WEBP.
+                                    Máximo 5 MB.
+                                </small>
 
-                            </label>
-                        </p>
+                            </div>
 
-                    <?php endif; ?>
+                            <?php if (
+                                $store->getLogoAttachmentId()
+                                !== null
+                            ) : ?>
 
-                    <p>
-                        <label>
-                            <strong>
+                                <label
+                                    class="
+                                        dsm-store-profile__remove-logo
+                                    "
+                                >
+
+                                    <input
+                                        type="checkbox"
+                                        name="remove_logo"
+                                        value="1"
+                                    >
+
+                                    <span>
+                                        Eliminar logo actual
+                                    </span>
+
+                                </label>
+
+                            <?php endif; ?>
+
+                        </div>
+
+                        <div
+                            class="
+                                dsm-store-profile__field
+                                dsm-store-profile__field--full
+                            "
+                        >
+
+                            <label for="dsm-store-description">
                                 Descripción
-                            </strong>
-                        </label>
+                            </label>
 
-                        <br>
+                            <textarea
+                                id="dsm-store-description"
+                                name="description"
+                                rows="6"
+                            ><?php
+                            echo esc_textarea(
+                                $store->getDescription()
+                                ?? ''
+                            );
+                            ?></textarea>
 
-                        <textarea
-                            name="description"
-                            rows="6"
-                            class="large-text"
-                        ><?php
-                        echo esc_textarea(
-                            $store->getDescription()
-                            ?? ''
-                        );
-                        ?></textarea>
-                    </p>
+                        </div>
 
-                    <p>
-                        <label>
-                            <strong>
+                        <div class="dsm-store-profile__field">
+
+                            <label for="dsm-store-island">
                                 Isla
-                            </strong>
-                        </label>
+                            </label>
 
-                        <br>
+                            <input
+                                id="dsm-store-island"
+                                type="text"
+                                name="island"
+                                value="<?php
+                                echo esc_attr(
+                                    $store->getIsland()
+                                    ?? ''
+                                );
+                                ?>"
+                            >
 
-                        <input
-                            type="text"
-                            name="island"
-                            value="<?php
-                            echo esc_attr(
-                                $store->getIsland()
-                                ?? ''
-                            );
-                            ?>"
-                            class="regular-text"
-                        >
-                    </p>
+                        </div>
 
-                    <p>
-                        <label>
-                            <strong>
+                        <div class="dsm-store-profile__field">
+
+                            <label for="dsm-store-location">
                                 Ubicación
-                            </strong>
-                        </label>
+                            </label>
 
-                        <br>
+                            <input
+                                id="dsm-store-location"
+                                type="text"
+                                name="location_text"
+                                value="<?php
+                                echo esc_attr(
+                                    $store->getLocationText()
+                                    ?? ''
+                                );
+                                ?>"
+                            >
 
-                        <input
-                            type="text"
-                            name="location_text"
-                            value="<?php
-                            echo esc_attr(
-                                $store->getLocationText()
-                                ?? ''
-                            );
-                            ?>"
-                            class="regular-text"
+                        </div>
+
+                    </div>
+
+                    <div class="dsm-store-profile__actions">
+
+                        <button
+                            type="submit"
+                            class="
+                                dsm-button
+                                dsm-button--primary
+                            "
                         >
-                    </p>
+                            Guardar cambios
+                        </button>
 
-                    <button
-                        type="submit"
-                        class="
-                            dsm-button
-                            dsm-button--primary
-                        "
-                    >
-                        Guardar cambios
-                    </button>
+                    </div>
 
                 </form>
 
             </article>
 
-            <article class="dsm-card">
+            <article class="dsm-card dsm-store-dashboard">
 
                 <h2>
                     Resumen ERP
                 </h2>
 
-                <div
-                    style="
-                        display:grid;
-                        grid-template-columns:
-                            repeat(
-                                auto-fit,
-                                minmax(160px, 1fr)
-                            );
-                        gap:16px;
-                        margin:20px 0;
-                    "
-                >
+                <?php
 
-                    <div class="dsm-card">
-                        <small>Productos</small>
+                $storeBaseUrl =
+                    home_url(
+                        '/mi-tienda/'
+                    );
 
-                        <div
-                            style="
-                                font-size:2rem;
-                                font-weight:700;
-                            "
-                        >
+                $productsUrl =
+                    add_query_arg(
+                        'store_section',
+                        'products',
+                        $storeBaseUrl
+                    );
+
+                $inventoryUrl =
+                    add_query_arg(
+                        'store_section',
+                        'inventory',
+                        $storeBaseUrl
+                    );
+
+                $reservationsUrl =
+                    add_query_arg(
+                        'store_section',
+                        'reservations',
+                        $storeBaseUrl
+                    );
+
+                ?>
+
+                <div class="dsm-store-dashboard__grid">
+
+                    <a
+                        class="dsm-store-dashboard__card"
+                        href="<?php
+                        echo esc_url(
+                            $productsUrl
+                        );
+                        ?>"
+                    >
+                        <span class="dsm-store-dashboard__label">
+                            Productos
+                        </span>
+
+                        <strong class="dsm-store-dashboard__value">
                             <?php
                             echo esc_html(
                                 (string)
                                 $dashboardProductCount
                             );
                             ?>
-                        </div>
-                    </div>
+                        </strong>
 
-                    <div class="dsm-card">
-                        <small>Variantes</small>
+                        <span class="dsm-store-dashboard__link">
+                            Ver productos
+                            <span aria-hidden="true">→</span>
+                        </span>
+                    </a>
 
-                        <div
-                            style="
-                                font-size:2rem;
-                                font-weight:700;
-                            "
-                        >
+                    <a
+                        class="dsm-store-dashboard__card"
+                        href="<?php
+                        echo esc_url(
+                            $productsUrl
+                        );
+                        ?>"
+                    >
+                        <span class="dsm-store-dashboard__label">
+                            Variantes
+                        </span>
+
+                        <strong class="dsm-store-dashboard__value">
                             <?php
                             echo esc_html(
                                 (string)
                                 $dashboardVariantCount
                             );
                             ?>
-                        </div>
-                    </div>
+                        </strong>
 
-                    <div class="dsm-card">
-                        <small>Stock físico</small>
+                        <span class="dsm-store-dashboard__link">
+                            Ver variantes
+                            <span aria-hidden="true">→</span>
+                        </span>
+                    </a>
 
-                        <div
-                            style="
-                                font-size:2rem;
-                                font-weight:700;
-                            "
-                        >
+                    <a
+                        class="dsm-store-dashboard__card"
+                        href="<?php
+                        echo esc_url(
+                            $inventoryUrl
+                        );
+                        ?>"
+                    >
+                        <span class="dsm-store-dashboard__label">
+                            Stock físico
+                        </span>
+
+                        <strong class="dsm-store-dashboard__value">
                             <?php
                             echo esc_html(
                                 (string)
                                 $dashboardPhysicalStock
                             );
                             ?>
-                        </div>
-                    </div>
+                        </strong>
 
-                    <div class="dsm-card">
-                        <small>Stock reservado</small>
+                        <span class="dsm-store-dashboard__link">
+                            Ver inventario
+                            <span aria-hidden="true">→</span>
+                        </span>
+                    </a>
 
-                        <div
-                            style="
-                                font-size:2rem;
-                                font-weight:700;
-                            "
-                        >
+                    <a
+                        class="dsm-store-dashboard__card"
+                        href="<?php
+                        echo esc_url(
+                            $inventoryUrl
+                        );
+                        ?>"
+                    >
+                        <span class="dsm-store-dashboard__label">
+                            Stock reservado
+                        </span>
+
+                        <strong class="dsm-store-dashboard__value">
                             <?php
                             echo esc_html(
                                 (string)
                                 $dashboardReservedStock
                             );
                             ?>
-                        </div>
-                    </div>
+                        </strong>
 
-                    <div class="dsm-card">
-                        <small>Stock disponible</small>
+                        <span class="dsm-store-dashboard__link">
+                            Ver inventario
+                            <span aria-hidden="true">→</span>
+                        </span>
+                    </a>
 
-                        <div
-                            style="
-                                font-size:2rem;
-                                font-weight:700;
-                            "
-                        >
+                    <a
+                        class="dsm-store-dashboard__card"
+                        href="<?php
+                        echo esc_url(
+                            $inventoryUrl
+                        );
+                        ?>"
+                    >
+                        <span class="dsm-store-dashboard__label">
+                            Stock disponible
+                        </span>
+
+                        <strong class="dsm-store-dashboard__value">
                             <?php
                             echo esc_html(
                                 (string)
                                 $dashboardAvailableStock
                             );
                             ?>
-                        </div>
-                    </div>
+                        </strong>
 
-                    <div class="dsm-card">
-                        <small>Reservas activas</small>
+                        <span class="dsm-store-dashboard__link">
+                            Ver inventario
+                            <span aria-hidden="true">→</span>
+                        </span>
+                    </a>
 
-                        <div
-                            style="
-                                font-size:2rem;
-                                font-weight:700;
-                            "
-                        >
+                    <a
+                        class="dsm-store-dashboard__card"
+                        href="<?php
+                        echo esc_url(
+                            $reservationsUrl
+                        );
+                        ?>"
+                    >
+                        <span class="dsm-store-dashboard__label">
+                            Reservas activas
+                        </span>
+
+                        <strong class="dsm-store-dashboard__value">
                             <?php
                             echo esc_html(
                                 (string)
                                 $dashboardActiveReservations
                             );
                             ?>
-                        </div>
-                    </div>
+                        </strong>
 
-                    <div class="dsm-card">
-                        <small>Ventas completadas</small>
+                        <span class="dsm-store-dashboard__link">
+                            Ver reservas
+                            <span aria-hidden="true">→</span>
+                        </span>
+                    </a>
 
-                        <div
-                            style="
-                                font-size:2rem;
-                                font-weight:700;
-                            "
-                        >
+                    <a
+                        class="dsm-store-dashboard__card"
+                        href="<?php
+                        echo esc_url(
+                            $reservationsUrl
+                        );
+                        ?>"
+                    >
+                        <span class="dsm-store-dashboard__label">
+                            Ventas completadas
+                        </span>
+
+                        <strong class="dsm-store-dashboard__value">
                             <?php
                             echo esc_html(
                                 (string)
                                 $dashboardCompletedReservations
                             );
                             ?>
-                        </div>
-                    </div>
+                        </strong>
+
+                        <span class="dsm-store-dashboard__link">
+                            Ver ventas
+                            <span aria-hidden="true">→</span>
+                        </span>
+                    </a>
 
                 </div>
-
-                <p>
-                    <a
-                        class="dsm-button"
-                        href="<?php
-                        echo esc_url(
-                            add_query_arg(
-                                'store_section',
-                                'products',
-                                home_url(
-                                    '/mi-tienda/'
-                                )
-                            )
-                        );
-                        ?>"
-                    >
-                        Productos
-                    </a>
-
-                    <a
-                        class="dsm-button"
-                        href="<?php
-                        echo esc_url(
-                            add_query_arg(
-                                'store_section',
-                                'inventory',
-                                home_url(
-                                    '/mi-tienda/'
-                                )
-                            )
-                        );
-                        ?>"
-                    >
-                        Inventario
-                    </a>
-
-                    <a
-                        class="dsm-button"
-                        href="<?php
-                        echo esc_url(
-                            add_query_arg(
-                                'store_section',
-                                'reservations',
-                                home_url(
-                                    '/mi-tienda/'
-                                )
-                            )
-                        );
-                        ?>"
-                    >
-                        Reservas
-                    </a>
-
-                    <a
-                        class="dsm-button"
-                        href="<?php
-                        echo esc_url(
-                            add_query_arg(
-                                'store_section',
-                                'movements',
-                                home_url(
-                                    '/mi-tienda/'
-                                )
-                            )
-                        );
-                        ?>"
-                    >
-                        Movimientos
-                    </a>
-                </p>
 
             </article>
 

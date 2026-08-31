@@ -431,6 +431,7 @@ final class StoreProductVariantController
                     '/mi-tienda/'
                 )
             )
+            . '#dsm-product-variants'
         );
 
         exit;

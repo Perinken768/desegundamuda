@@ -7,8 +7,10 @@ namespace DSM\Multitienda\Frontend;
 use DSM\Catalogo\Brand\BrandRepository;
 use DSM\Catalogo\Image\ProductImageRepository;
 use DSM\Catalogo\Inventory\StockMovementRepository;
+use DSM\Catalogo\Inventory\StockMovementType;
 use DSM\Catalogo\Product\ProductRepository;
 use DSM\Catalogo\Reservation\ProductReservationRepository;
+use DSM\Catalogo\Reservation\ProductReservationStatus;
 use DSM\Catalogo\Support\CategoryContext;
 use DSM\Catalogo\Variant\ProductVariantRepository;
 use DSM\Clientes\Customer\CustomerRepository;
@@ -355,6 +357,45 @@ final class MyStoreShortcode
 
             $stockMovements = [];
 
+            $movementPerPage = 20;
+            $movementCount = 0;
+            $movementPage = 1;
+            $movementTotalPages = 1;
+            $movementOffset = 0;
+
+            $movementSearch =
+                isset($_GET['movement_search'])
+                    ? sanitize_text_field(
+                        wp_unslash(
+                            (string)
+                            $_GET[
+                                'movement_search'
+                            ]
+                        )
+                    )
+                    : '';
+
+            $movementTypeFilter =
+                isset($_GET['movement_type'])
+                    ? sanitize_key(
+                        wp_unslash(
+                            (string)
+                            $_GET[
+                                'movement_type'
+                            ]
+                        )
+                    )
+                    : '';
+
+            if (
+                $movementTypeFilter !== ''
+                && !StockMovementType::isValid(
+                    $movementTypeFilter
+                )
+            ) {
+                $movementTypeFilter = '';
+            }
+
             /*
              * product_id => Product|null
              */
@@ -372,6 +413,52 @@ final class MyStoreShortcode
              */
 
             $reservations = [];
+
+            $pendingReservations = [];
+            $historyReservations = [];
+
+            $reservationPerPage = 15;
+
+            $pendingReservationCount = 0;
+            $pendingReservationPage = 1;
+            $pendingReservationTotalPages = 1;
+            $pendingReservationOffset = 0;
+
+            $historyReservationCount = 0;
+            $historyReservationPage = 1;
+            $historyReservationTotalPages = 1;
+            $historyReservationOffset = 0;
+
+            $historyReservationFilter =
+                isset(
+                    $_GET[
+                        'reservation_history_status'
+                    ]
+                )
+                    ? sanitize_key(
+                        wp_unslash(
+                            (string) $_GET[
+                                'reservation_history_status'
+                            ]
+                        )
+                    )
+                    : '';
+
+            if (
+                !in_array(
+                    $historyReservationFilter,
+                    [
+                        '',
+                        ProductReservationStatus::
+                            COMPLETED,
+                        ProductReservationStatus::
+                            RELEASED,
+                    ],
+                    true
+                )
+            ) {
+                $historyReservationFilter = '';
+            }
 
             /*
              * Índices auxiliares utilizados por la plantilla.
@@ -591,16 +678,94 @@ final class MyStoreShortcode
                     $storeSection
                     === 'products'
                 ) {
-                    $products =
-                        $catalogService
-                            ->getProductsForCustomer(
-                                $customerId
-                            );
+                    $productPerPage =
+                        20;
+
+                    $productSearch =
+                        isset(
+                            $_GET[
+                                'product_search'
+                            ]
+                        )
+                            ? sanitize_text_field(
+                                wp_unslash(
+                                    (string) $_GET[
+                                        'product_search'
+                                    ]
+                                )
+                            )
+                            : '';
+
+                    $productPage =
+                        isset(
+                            $_GET[
+                                'product_page'
+                            ]
+                        )
+                            ? max(
+                                1,
+                                absint(
+                                    wp_unslash(
+                                        (string) $_GET[
+                                            'product_page'
+                                        ]
+                                    )
+                                )
+                            )
+                            : 1;
 
                     $productCount =
                         $catalogService
                             ->countProductsForCustomer(
-                                $customerId
+                                customerId:
+                                    $customerId,
+
+                                status:
+                                    null,
+
+                                search:
+                                    $productSearch
+                            );
+
+                    $productTotalPages =
+                        max(
+                            1,
+                            (int) ceil(
+                                $productCount
+                                / $productPerPage
+                            )
+                        );
+
+                    $productPage =
+                        min(
+                            $productPage,
+                            $productTotalPages
+                        );
+
+                    $productOffset =
+                        (
+                            $productPage
+                            - 1
+                        )
+                        * $productPerPage;
+
+                    $products =
+                        $catalogService
+                            ->getProductsForCustomer(
+                                customerId:
+                                    $customerId,
+
+                                limit:
+                                    $productPerPage,
+
+                                offset:
+                                    $productOffset,
+
+                                status:
+                                    null,
+
+                                search:
+                                    $productSearch
                             );
                 }
 
@@ -702,47 +867,132 @@ final class MyStoreShortcode
                     $storeSection
                     === 'inventory'
                 ) {
-                    $productRepository =
-                        new ProductRepository();
-
                     $variantRepository =
                         new ProductVariantRepository();
 
-                    /*
-                     * null:
-                     * mostramos productos de cualquier estado
-                     * dentro del ERP.
-                     */
-                    $inventoryProducts =
-                        $productRepository
-                            ->findByStore(
+                    $inventoryPerPage =
+                        20;
+
+                    $inventorySearch =
+                        isset(
+                            $_GET[
+                                'inventory_search'
+                            ]
+                        )
+                            ? sanitize_text_field(
+                                wp_unslash(
+                                    (string) $_GET[
+                                        'inventory_search'
+                                    ]
+                                )
+                            )
+                            : '';
+
+                    $inventoryStatus =
+                        isset(
+                            $_GET[
+                                'inventory_status'
+                            ]
+                        )
+                            ? sanitize_key(
+                                wp_unslash(
+                                    (string) $_GET[
+                                        'inventory_status'
+                                    ]
+                                )
+                            )
+                            : '';
+
+                    $allowedInventoryStatuses = [
+                        '',
+                        'available',
+                        'low_stock',
+                        'out_of_stock',
+                        'inactive',
+                    ];
+
+                    if (
+                        !in_array(
+                            $inventoryStatus,
+                            $allowedInventoryStatuses,
+                            true
+                        )
+                    ) {
+                        $inventoryStatus =
+                            '';
+                    }
+
+                    $inventoryPage =
+                        isset(
+                            $_GET[
+                                'inventory_page'
+                            ]
+                        )
+                            ? max(
+                                1,
+                                absint(
+                                    wp_unslash(
+                                        (string) $_GET[
+                                            'inventory_page'
+                                        ]
+                                    )
+                                )
+                            )
+                            : 1;
+
+                    $inventoryCount =
+                        $variantRepository
+                            ->countInventoryByStore(
+                                storeId:
+                                    $store->getId(),
+
+                                search:
+                                    $inventorySearch,
+
+                                stockStatus:
+                                    $inventoryStatus
+                            );
+
+                    $inventoryTotalPages =
+                        max(
+                            1,
+                            (int) ceil(
+                                $inventoryCount
+                                / $inventoryPerPage
+                            )
+                        );
+
+                    $inventoryPage =
+                        min(
+                            $inventoryPage,
+                            $inventoryTotalPages
+                        );
+
+                    $inventoryOffset =
+                        (
+                            $inventoryPage
+                            - 1
+                        )
+                        * $inventoryPerPage;
+
+                    $inventoryRows =
+                        $variantRepository
+                            ->findInventoryByStore(
                                 storeId:
                                     $store->getId(),
 
                                 limit:
-                                    250,
+                                    $inventoryPerPage,
 
                                 offset:
-                                    0,
+                                    $inventoryOffset,
 
-                                status:
-                                    null
+                                search:
+                                    $inventorySearch,
+
+                                stockStatus:
+                                    $inventoryStatus
                             );
-
-                    foreach (
-                        $inventoryProducts
-                        as $inventoryProduct
-                    ) {
-                        $inventoryVariants[
-                            $inventoryProduct->getId()
-                        ] =
-                            $variantRepository
-                                ->findByProduct(
-                                    $inventoryProduct
-                                        ->getId(),
-                                    false
-                                );
-                    }
                 }
 
                 /*
@@ -764,21 +1014,90 @@ final class MyStoreShortcode
                     $variantRepository =
                         new ProductVariantRepository();
 
+                    $movementPage =
+                        isset(
+                            $_GET[
+                                'movement_page'
+                            ]
+                        )
+                            ? max(
+                                1,
+                                absint(
+                                    wp_unslash(
+                                        (string)
+                                        $_GET[
+                                            'movement_page'
+                                        ]
+                                    )
+                                )
+                            )
+                            : 1;
+
+
+                    $movementCount =
+                        $movementRepository
+                            ->countStoreHistory(
+                                storeId:
+                                    $store->getId(),
+
+                                movementType:
+                                    $movementTypeFilter
+                                    !== ''
+                                        ? $movementTypeFilter
+                                        : null,
+
+                                search:
+                                    $movementSearch
+                            );
+
+
+                    $movementTotalPages =
+                        max(
+                            1,
+                            (int) ceil(
+                                $movementCount
+                                / $movementPerPage
+                            )
+                        );
+
+
+                    $movementPage =
+                        min(
+                            $movementPage,
+                            $movementTotalPages
+                        );
+
+
+                    $movementOffset =
+                        (
+                            $movementPage
+                            - 1
+                        )
+                        * $movementPerPage;
+
+
                     $stockMovements =
                         $movementRepository
-                            ->findByStore(
+                            ->findStoreHistory(
                                 storeId:
                                     $store->getId(),
 
                                 limit:
-                                    250,
+                                    $movementPerPage,
 
                                 offset:
-                                    0,
+                                    $movementOffset,
 
                                 movementType:
-                                    null
+                                    $movementTypeFilter
+                                    !== ''
+                                        ? $movementTypeFilter
+                                        : null,
+
+                                search:
+                                    $movementSearch
                             );
+
 
                     foreach (
                         $stockMovements
@@ -850,27 +1169,193 @@ final class MyStoreShortcode
                         new CustomerProfileRepository();
 
                     /*
-                     * Recuperamos las reservas pertenecientes
-                     * exclusivamente a esta tienda.
-                     *
-                     * status = null:
-                     * queremos ver tanto activas como cerradas.
+                     * ==========================================
+                     * PENDIENTES DE GESTIONAR
+                     * ==========================================
                      */
-                    $reservations =
+
+                    $pendingReservationPage =
+                        isset(
+                            $_GET[
+                                'reservation_pending_page'
+                            ]
+                        )
+                            ? max(
+                                1,
+                                absint(
+                                    wp_unslash(
+                                        $_GET[
+                                            'reservation_pending_page'
+                                        ]
+                                    )
+                                )
+                            )
+                            : 1;
+
+                    $pendingReservationCount =
                         $reservationRepository
-                            ->findByStore(
+                            ->countByStoreStatuses(
                                 storeId:
                                     $store->getId(),
 
+                                statuses: [
+                                    ProductReservationStatus::
+                                        ACTIVE,
+                                ]
+                            );
+
+                    $pendingReservationTotalPages =
+                        max(
+                            1,
+                            (int) ceil(
+                                $pendingReservationCount
+                                / $reservationPerPage
+                            )
+                        );
+
+                    $pendingReservationPage =
+                        min(
+                            $pendingReservationPage,
+                            $pendingReservationTotalPages
+                        );
+
+                    $pendingReservationOffset =
+                        (
+                            $pendingReservationPage
+                            - 1
+                        )
+                        * $reservationPerPage;
+
+                    $pendingReservations =
+                        $reservationRepository
+                            ->findByStoreStatuses(
+                                storeId:
+                                    $store->getId(),
+
+                                statuses: [
+                                    ProductReservationStatus::
+                                        ACTIVE,
+                                ],
+
                                 limit:
-                                    250,
+                                    $reservationPerPage,
 
                                 offset:
-                                    0,
-
-                                status:
-                                    null
+                                    $pendingReservationOffset
                             );
+
+
+                    /*
+                     * ==========================================
+                     * HISTORICO
+                     * ==========================================
+                     */
+
+                    $historyReservationPage =
+                        isset(
+                            $_GET[
+                                'reservation_history_page'
+                            ]
+                        )
+                            ? max(
+                                1,
+                                absint(
+                                    wp_unslash(
+                                        $_GET[
+                                            'reservation_history_page'
+                                        ]
+                                    )
+                                )
+                            )
+                            : 1;
+
+                    if (
+                        $historyReservationFilter
+                        === ProductReservationStatus::
+                            COMPLETED
+                    ) {
+                        $historyStatuses = [
+                            ProductReservationStatus::
+                                COMPLETED,
+                        ];
+                    } elseif (
+                        $historyReservationFilter
+                        === ProductReservationStatus::
+                            RELEASED
+                    ) {
+                        $historyStatuses = [
+                            ProductReservationStatus::
+                                RELEASED,
+                        ];
+                    } else {
+                        $historyStatuses = [
+                            ProductReservationStatus::
+                                COMPLETED,
+
+                            ProductReservationStatus::
+                                RELEASED,
+                        ];
+                    }
+
+                    $historyReservationCount =
+                        $reservationRepository
+                            ->countByStoreStatuses(
+                                storeId:
+                                    $store->getId(),
+
+                                statuses:
+                                    $historyStatuses
+                            );
+
+                    $historyReservationTotalPages =
+                        max(
+                            1,
+                            (int) ceil(
+                                $historyReservationCount
+                                / $reservationPerPage
+                            )
+                        );
+
+                    $historyReservationPage =
+                        min(
+                            $historyReservationPage,
+                            $historyReservationTotalPages
+                        );
+
+                    $historyReservationOffset =
+                        (
+                            $historyReservationPage
+                            - 1
+                        )
+                        * $reservationPerPage;
+
+                    $historyReservations =
+                        $reservationRepository
+                            ->findByStoreStatuses(
+                                storeId:
+                                    $store->getId(),
+
+                                statuses:
+                                    $historyStatuses,
+
+                                limit:
+                                    $reservationPerPage,
+
+                                offset:
+                                    $historyReservationOffset
+                            );
+
+
+                    /*
+                     * La colección combinada solo se utiliza
+                     * para resolver productos, variantes y
+                     * compradores de las dos tablas.
+                     */
+                    $reservations =
+                        array_merge(
+                            $pendingReservations,
+                            $historyReservations
+                        );
 
                     foreach (
                         $reservations

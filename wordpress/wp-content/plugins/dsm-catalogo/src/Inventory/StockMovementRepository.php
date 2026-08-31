@@ -529,6 +529,284 @@ final class StockMovementRepository
     }
 
     /**
+     * Histórico paginado de movimientos de una tienda.
+     *
+     * @return array<int, StockMovement>
+     */
+    public function findStoreHistory(
+        int $storeId,
+        int $limit = 20,
+        int $offset = 0,
+        ?string $movementType = null,
+        ?string $search = null
+    ): array {
+        global $wpdb;
+
+        if ($storeId <= 0) {
+            return [];
+        }
+
+        $limit = max(
+            1,
+            min(
+                200,
+                $limit
+            )
+        );
+
+        $offset = max(
+            0,
+            $offset
+        );
+
+        $movementType =
+            $movementType !== null
+                ? sanitize_key(
+                    $movementType
+                )
+                : null;
+
+        $search =
+            trim(
+                (string) $search
+            );
+
+        $productTable =
+            $wpdb->prefix
+            . 'dsm_products';
+
+        $variantTable =
+            $wpdb->prefix
+            . 'dsm_product_variants';
+
+        $where = "
+            WHERE m.store_id = %d
+        ";
+
+        $parameters = [
+            $storeId,
+        ];
+
+
+        if (
+            $movementType !== null
+            && $movementType !== ''
+            && StockMovementType::isValid(
+                $movementType
+            )
+        ) {
+            $where .= "
+                AND m.movement_type = %s
+            ";
+
+            $parameters[] =
+                $movementType;
+        }
+
+
+        if ($search !== '') {
+            $like =
+                '%'
+                . $wpdb->esc_like(
+                    $search
+                )
+                . '%';
+
+            $where .= "
+                AND (
+                    p.name LIKE %s
+                    OR p.base_sku LIKE %s
+                    OR p.internal_reference LIKE %s
+                    OR v.sku LIKE %s
+                    OR m.reference_type LIKE %s
+                    OR CAST(
+                        m.reference_id AS CHAR
+                    ) LIKE %s
+                    OR CONCAT(
+                        COALESCE(
+                            m.reference_type,
+                            ''
+                        ),
+                        ' #',
+                        COALESCE(
+                            m.reference_id,
+                            ''
+                        )
+                    ) LIKE %s
+                    OR m.notes LIKE %s
+                )
+            ";
+
+            for ($i = 0; $i < 8; $i++) {
+                $parameters[] = $like;
+            }
+        }
+
+
+        $parameters[] =
+            $limit;
+
+        $parameters[] =
+            $offset;
+
+
+        $query =
+            $wpdb->prepare(
+                "SELECT
+                    m.id,
+                    m.product_id,
+                    m.variant_id,
+                    m.store_id,
+                    m.movement_type,
+                    m.quantity_delta,
+                    m.reserved_delta,
+                    m.stock_quantity_before,
+                    m.stock_quantity_after,
+                    m.stock_reserved_before,
+                    m.stock_reserved_after,
+                    m.reference_type,
+                    m.reference_id,
+                    m.customer_id,
+                    m.user_id,
+                    m.notes,
+                    m.created_at
+                FROM {$this->tableName} m
+                LEFT JOIN {$productTable} p
+                    ON p.id = m.product_id
+                LEFT JOIN {$variantTable} v
+                    ON v.id = m.variant_id
+                {$where}
+                ORDER BY
+                    m.created_at DESC,
+                    m.id DESC
+                LIMIT %d
+                OFFSET %d",
+                ...$parameters
+            );
+
+        $rows =
+            $wpdb->get_results(
+                $query,
+                ARRAY_A
+            );
+
+        return $this->hydrateRows(
+            $rows
+        );
+    }
+
+
+    public function countStoreHistory(
+        int $storeId,
+        ?string $movementType = null,
+        ?string $search = null
+    ): int {
+        global $wpdb;
+
+        if ($storeId <= 0) {
+            return 0;
+        }
+
+        $movementType =
+            $movementType !== null
+                ? sanitize_key(
+                    $movementType
+                )
+                : null;
+
+        $search =
+            trim(
+                (string) $search
+            );
+
+        $productTable =
+            $wpdb->prefix
+            . 'dsm_products';
+
+        $variantTable =
+            $wpdb->prefix
+            . 'dsm_product_variants';
+
+        $where = "
+            WHERE m.store_id = %d
+        ";
+
+        $parameters = [
+            $storeId,
+        ];
+
+
+        if (
+            $movementType !== null
+            && $movementType !== ''
+            && StockMovementType::isValid(
+                $movementType
+            )
+        ) {
+            $where .= "
+                AND m.movement_type = %s
+            ";
+
+            $parameters[] =
+                $movementType;
+        }
+
+
+        if ($search !== '') {
+            $like =
+                '%'
+                . $wpdb->esc_like(
+                    $search
+                )
+                . '%';
+
+            $where .= "
+                AND (
+                    p.name LIKE %s
+                    OR p.base_sku LIKE %s
+                    OR p.internal_reference LIKE %s
+                    OR v.sku LIKE %s
+                    OR m.reference_type LIKE %s
+                    OR CAST(
+                        m.reference_id AS CHAR
+                    ) LIKE %s
+                    OR CONCAT(
+                        COALESCE(
+                            m.reference_type,
+                            ''
+                        ),
+                        ' #',
+                        COALESCE(
+                            m.reference_id,
+                            ''
+                        )
+                    ) LIKE %s
+                    OR m.notes LIKE %s
+                )
+            ";
+
+            for ($i = 0; $i < 8; $i++) {
+                $parameters[] = $like;
+            }
+        }
+
+
+        return (int) $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*)
+                FROM {$this->tableName} m
+                LEFT JOIN {$productTable} p
+                    ON p.id = m.product_id
+                LEFT JOIN {$variantTable} v
+                    ON v.id = m.variant_id
+                {$where}",
+                ...$parameters
+            )
+        );
+    }
+
+
+    /**
      * @return array<int, StockMovement>
      */
     public function findByReference(

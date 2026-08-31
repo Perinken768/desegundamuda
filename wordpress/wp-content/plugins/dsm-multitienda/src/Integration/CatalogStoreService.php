@@ -65,7 +65,8 @@ final class CatalogStoreService
         int $customerId,
         int $limit = 250,
         int $offset = 0,
-        ?string $status = null
+        ?string $status = null,
+        ?string $search = null
     ): array {
         $store =
             $this->requireStoreForCustomer(
@@ -83,7 +84,10 @@ final class CatalogStoreService
                 $offset,
 
             status:
-                $status
+                $status,
+
+            search:
+                $search
         );
     }
 
@@ -94,7 +98,8 @@ final class CatalogStoreService
         int $storeId,
         int $limit = 250,
         int $offset = 0,
-        ?string $status = null
+        ?string $status = null,
+        ?string $search = null
     ): array {
         if ($storeId <= 0) {
             throw new RuntimeException(
@@ -129,13 +134,17 @@ final class CatalogStoreService
                     $offset,
 
                 status:
-                    $status
+                    $status,
+
+                search:
+                    $search
             );
     }
 
     public function countProductsForCustomer(
         int $customerId,
-        ?string $status = null
+        ?string $status = null,
+        ?string $search = null
     ): int {
         $store =
             $this->requireStoreForCustomer(
@@ -147,13 +156,17 @@ final class CatalogStoreService
                 $store->getId(),
 
             status:
-                $status
+                $status,
+
+            search:
+                $search
         );
     }
 
     public function countProductsForStore(
         int $storeId,
-        ?string $status = null
+        ?string $status = null,
+        ?string $search = null
     ): int {
         if ($storeId <= 0) {
             throw new RuntimeException(
@@ -167,7 +180,10 @@ final class CatalogStoreService
                     $storeId,
 
                 status:
-                    $status
+                    $status,
+
+                search:
+                    $search
             );
     }
 
