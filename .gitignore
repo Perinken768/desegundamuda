@@ -65,3 +65,22 @@ phpinfo.txt
 # Dependencias Composer - DSM Pagos
 wordpress/wp-content/plugins/dsm-pagos/vendor/
 *.bak*
+
+# ============================================================
+# DSM - Secretos y certificados
+# ============================================================
+secure/
+*.p12
+*.pfx
+*.pem
+*.key
+
+# ============================================================
+# DSM Facturacion - ficheros generados
+# ============================================================
+storage/dsm-facturacion/
+
+# ============================================================
+# Dependencias Composer generadas
+# ============================================================
+wordpress/wp-content/plugins/dsm-facturacion/vendor/

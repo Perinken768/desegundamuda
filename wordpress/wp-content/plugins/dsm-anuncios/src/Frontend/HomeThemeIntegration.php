@@ -227,26 +227,60 @@ final class HomeThemeIntegration
                 );
         }
 
+        /*
+         * Precio mínimo.
+         *
+         * Si el parámetro existe pero está vacío,
+         * significa que no existe límite mínimo.
+         *
+         * No debemos convertir una cadena vacía
+         * directamente a float porque PHP la
+         * convertiría en 0.0.
+         */
         if (
             isset($_GET['dsm_min_price'])
         ) {
-            $filters['min_price'] =
-                (float) wp_unslash(
-                    (string) $_GET[
-                        'dsm_min_price'
-                    ]
+            $minPriceRaw =
+                trim(
+                    (string) wp_unslash(
+                        $_GET[
+                            'dsm_min_price'
+                        ]
+                    )
                 );
+
+            if ($minPriceRaw !== '') {
+                $filters['min_price'] =
+                    (float) $minPriceRaw;
+            }
         }
 
+        /*
+         * Precio máximo.
+         *
+         * Una cadena vacía significa "sin límite".
+         *
+         * Esto es especialmente importante porque
+         * convertir '' a float daría 0.0 y haría
+         * que desaparecieran todos los anuncios
+         * cuyo precio fuera superior a cero.
+         */
         if (
             isset($_GET['dsm_max_price'])
         ) {
-            $filters['max_price'] =
-                (float) wp_unslash(
-                    (string) $_GET[
-                        'dsm_max_price'
-                    ]
+            $maxPriceRaw =
+                trim(
+                    (string) wp_unslash(
+                        $_GET[
+                            'dsm_max_price'
+                        ]
+                    )
                 );
+
+            if ($maxPriceRaw !== '') {
+                $filters['max_price'] =
+                    (float) $maxPriceRaw;
+            }
         }
 
         if (

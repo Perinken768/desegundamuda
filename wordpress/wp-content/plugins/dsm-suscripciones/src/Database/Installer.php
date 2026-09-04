@@ -102,6 +102,11 @@ final class Installer
                 DSM_SUSCRIPCIONES_PATH
                 . 'database/migrations/'
                 . '002-create-subscriptions.php',
+
+            3 =>
+                DSM_SUSCRIPCIONES_PATH
+                . 'database/migrations/'
+                . '003-add-recurring-subscriptions.php',
         ];
     }
 

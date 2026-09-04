@@ -215,3 +215,175 @@ document.addEventListener(
         );
     }
 );
+
+
+/* DSM STORE CAROUSEL */
+
+document.addEventListener(
+    'DOMContentLoaded',
+    () => {
+        const carousels =
+            document.querySelectorAll(
+                '[data-dsm-store-carousel]'
+            );
+
+        carousels.forEach(
+            (carousel) => {
+                const track =
+                    carousel.querySelector(
+                        '[data-dsm-store-track]'
+                    );
+
+                const previousButton =
+                    carousel.querySelector(
+                        '[data-dsm-store-previous]'
+                    );
+
+                const nextButton =
+                    carousel.querySelector(
+                        '[data-dsm-store-next]'
+                    );
+
+                if (
+                    !track
+                    || !previousButton
+                    || !nextButton
+                ) {
+                    return;
+                }
+
+                const getStep =
+                    () => {
+                        const card =
+                            track.querySelector(
+                                '.dsm-home-store-card'
+                            );
+
+                        if (!card) {
+                            return track.clientWidth;
+                        }
+
+                        const styles =
+                            window.getComputedStyle(
+                                track
+                            );
+
+                        const gap =
+                            Number.parseFloat(
+                                styles.columnGap
+                                || styles.gap
+                                || '0'
+                            )
+                            || 0;
+
+                        return (
+                            card.getBoundingClientRect()
+                                .width
+                            + gap
+                        );
+                    };
+
+                const updateButtons =
+                    () => {
+                        const maximumScroll =
+                            Math.max(
+                                0,
+                                track.scrollWidth
+                                - track.clientWidth
+                            );
+
+                        /*
+                         * Margen pequeño para evitar
+                         * problemas de redondeo de píxeles.
+                         */
+                        previousButton.disabled =
+                            track.scrollLeft <= 2;
+
+                        nextButton.disabled =
+                            track.scrollLeft
+                            >= maximumScroll - 2;
+
+                        const hasOverflow =
+                            maximumScroll > 4;
+
+                        previousButton.hidden =
+                            !hasOverflow;
+
+                        nextButton.hidden =
+                            !hasOverflow;
+                    };
+
+                previousButton.addEventListener(
+                    'click',
+                    () => {
+                        track.scrollBy(
+                            {
+                                left:
+                                    -getStep(),
+                                behavior:
+                                    'smooth',
+                            }
+                        );
+                    }
+                );
+
+                nextButton.addEventListener(
+                    'click',
+                    () => {
+                        track.scrollBy(
+                            {
+                                left:
+                                    getStep(),
+                                behavior:
+                                    'smooth',
+                            }
+                        );
+                    }
+                );
+
+                let ticking = false;
+
+                track.addEventListener(
+                    'scroll',
+                    () => {
+                        if (ticking) {
+                            return;
+                        }
+
+                        ticking = true;
+
+                        window.requestAnimationFrame(
+                            () => {
+                                updateButtons();
+                                ticking = false;
+                            }
+                        );
+                    },
+                    {
+                        passive: true,
+                    }
+                );
+
+                window.addEventListener(
+                    'resize',
+                    updateButtons
+                );
+
+                updateButtons();
+
+                /*
+                 * Recalculamos una vez cargadas
+                 * las imágenes de los logos.
+                 */
+                window.addEventListener(
+                    'load',
+                    updateButtons,
+                    {
+                        once: true,
+                    }
+                );
+            }
+        );
+    }
+);
+

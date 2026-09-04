@@ -1,0 +1,14 @@
+{
+    "name": "desegundamuda/dsm-facturacion",
+    "description": "Facturación de los servicios cobrados por DeSegundaMuda.",
+    "type": "wordpress-plugin",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.3",
+        "dompdf/dompdf": "^3.1"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
+}

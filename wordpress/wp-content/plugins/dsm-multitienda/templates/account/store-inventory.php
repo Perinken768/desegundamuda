@@ -145,6 +145,18 @@ if (!defined('ABSPATH')) {
                     </option>
 
                     <option
+                        value="reserved"
+                        <?php
+                        selected(
+                            $inventoryStatus,
+                            'reserved'
+                        );
+                        ?>
+                    >
+                        Con reservas
+                    </option>
+
+                    <option
                         value="inactive"
                         <?php
                         selected(

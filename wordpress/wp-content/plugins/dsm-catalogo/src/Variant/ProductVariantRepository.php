@@ -1129,6 +1129,7 @@ final class ProductVariantRepository
             'available',
             'low_stock',
             'out_of_stock',
+            'reserved',
             'inactive',
         ];
 
@@ -1178,7 +1179,14 @@ final class ProductVariantRepository
             $parameters[] = $like;
         }
 
-        if ($stockStatus === 'inactive') {
+        if ($stockStatus === 'reserved') {
+            $where .= "
+                AND variants.id IS NOT NULL
+                AND variants.is_active = 1
+                AND variants.track_stock = 1
+                AND variants.stock_reserved > 0
+            ";
+        } elseif ($stockStatus === 'inactive') {
             $where .= "
                 AND variants.id IS NOT NULL
                 AND variants.is_active = 0
@@ -1346,6 +1354,7 @@ final class ProductVariantRepository
             'available',
             'low_stock',
             'out_of_stock',
+            'reserved',
             'inactive',
         ];
 
@@ -1395,7 +1404,14 @@ final class ProductVariantRepository
             $parameters[] = $like;
         }
 
-        if ($stockStatus === 'inactive') {
+        if ($stockStatus === 'reserved') {
+            $where .= "
+                AND variants.id IS NOT NULL
+                AND variants.is_active = 1
+                AND variants.track_stock = 1
+                AND variants.stock_reserved > 0
+            ";
+        } elseif ($stockStatus === 'inactive') {
             $where .= "
                 AND variants.id IS NOT NULL
                 AND variants.is_active = 0

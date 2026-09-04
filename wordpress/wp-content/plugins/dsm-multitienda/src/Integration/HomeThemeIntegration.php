@@ -27,6 +27,20 @@ final class HomeThemeIntegration
             20,
             2
         );
+
+        /*
+         * Directorio de tiendas activas disponible
+         * para la portada del tema.
+         */
+        add_filter(
+            'dsm_theme_home_stores',
+            [
+                self::class,
+                'provideStores',
+            ],
+            20,
+            2
+        );
     }
 
     /**
@@ -83,21 +97,49 @@ final class HomeThemeIntegration
             /*
              * Isla efectiva de portada.
              *
-             * El tema nos entrega tanto ID como nombre.
-             * Las tiendas actuales almacenan el nombre
-             * territorial, por ejemplo "Gran Canaria".
+             * Si dsm_area existe expresamente en la URL:
+             *
+             * - dsm_area = 0 significa TODAS LAS ISLAS.
+             * - dsm_area > 0 utiliza el área resuelta por el tema.
+             *
+             * Si no existe dsm_area, respetamos el contexto
+             * territorial que pueda proceder del perfil/cookie.
              */
-            $requestedAreaName =
-                trim(
-                    sanitize_text_field(
-                        (string) (
-                            $context[
-                                'area_name'
-                            ]
-                            ?? ''
+            $requestedAreaId =
+                array_key_exists(
+                    'dsm_area',
+                    $_GET
+                )
+                    ? max(
+                        0,
+                        absint(
+                            wp_unslash(
+                                (string) $_GET[
+                                    'dsm_area'
+                                ]
+                            )
                         )
                     )
-                );
+                    : null;
+
+            $requestedAreaName = '';
+
+            if (
+                $requestedAreaId === null
+                || $requestedAreaId > 0
+            ) {
+                $requestedAreaName =
+                    trim(
+                        sanitize_text_field(
+                            (string) (
+                                $context[
+                                    'area_name'
+                                ]
+                                ?? ''
+                            )
+                        )
+                    );
+            }
 
             $requestedCategoryId =
                 isset($_GET['dsm_category'])
@@ -123,22 +165,48 @@ final class HomeThemeIntegration
                     )
                     : '';
 
-            $minPrice =
+            /*
+             * Precio mínimo.
+             *
+             * Un parámetro presente pero vacío no debe convertirse
+             * en 0.0, sino interpretarse como "sin límite".
+             */
+            $minPriceRaw =
                 isset($_GET['dsm_min_price'])
-                    ? (float) wp_unslash(
-                        (string) $_GET[
-                            'dsm_min_price'
-                        ]
+                    ? trim(
+                        (string) wp_unslash(
+                            $_GET[
+                                'dsm_min_price'
+                            ]
+                        )
                     )
+                    : '';
+
+            $minPrice =
+                $minPriceRaw !== ''
+                    ? (float) $minPriceRaw
                     : null;
 
-            $maxPrice =
+            /*
+             * Precio máximo.
+             *
+             * Igual que el mínimo: una cadena vacía significa
+             * que no existe límite máximo.
+             */
+            $maxPriceRaw =
                 isset($_GET['dsm_max_price'])
-                    ? (float) wp_unslash(
-                        (string) $_GET[
-                            'dsm_max_price'
-                        ]
+                    ? trim(
+                        (string) wp_unslash(
+                            $_GET[
+                                'dsm_max_price'
+                            ]
+                        )
                     )
+                    : '';
+
+            $maxPrice =
+                $maxPriceRaw !== ''
+                    ? (float) $maxPriceRaw
                     : null;
 
             foreach ($stores as $store) {
@@ -381,6 +449,173 @@ final class HomeThemeIntegration
             error_log(
                 '[DSM Multitienda] No se pudieron '
                 . 'resolver los productos de portada: '
+                . $exception->getMessage()
+            );
+
+            return $items;
+        }
+    }
+
+    /**
+     * Proporciona al tema las tiendas activas.
+     *
+     * @param mixed                $currentStores
+     * @param array<string, mixed> $context
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function provideStores(
+        mixed $currentStores,
+        array $context = []
+    ): array {
+        $items =
+            is_array($currentStores)
+                ? $currentStores
+                : [];
+
+        try {
+            $storeRepository =
+                new StoreRepository();
+
+            $stores =
+                $storeRepository->findActive(
+                    250,
+                    0
+                );
+
+            /*
+             * dsm_area = 0 significa expresamente
+             * "Todas las islas".
+             */
+            $requestedAreaId =
+                array_key_exists(
+                    'dsm_area',
+                    $_GET
+                )
+                    ? max(
+                        0,
+                        absint(
+                            wp_unslash(
+                                (string) $_GET[
+                                    'dsm_area'
+                                ]
+                            )
+                        )
+                    )
+                    : null;
+
+            $requestedAreaName = '';
+
+            if (
+                $requestedAreaId === null
+                || $requestedAreaId > 0
+            ) {
+                $requestedAreaName =
+                    trim(
+                        sanitize_text_field(
+                            (string) (
+                                $context[
+                                    'area_name'
+                                ]
+                                ?? ''
+                            )
+                        )
+                    );
+            }
+
+            foreach ($stores as $store) {
+                $storeIsland =
+                    trim(
+                        (string) (
+                            $store->getIsland()
+                            ?? ''
+                        )
+                    );
+
+                /*
+                 * Si existe una isla seleccionada,
+                 * solo mostramos tiendas de esa isla.
+                 */
+                if (
+                    $requestedAreaName !== ''
+                    && (
+                        $storeIsland === ''
+                        || mb_strtolower(
+                            $storeIsland
+                        ) !== mb_strtolower(
+                            $requestedAreaName
+                        )
+                    )
+                ) {
+                    continue;
+                }
+
+                $logoUrl = '';
+
+                $logoAttachmentId =
+                    $store->getLogoAttachmentId();
+
+                if ($logoAttachmentId !== null) {
+                    $resolvedLogoUrl =
+                        wp_get_attachment_image_url(
+                            $logoAttachmentId,
+                            'medium'
+                        );
+
+                    if (
+                        is_string(
+                            $resolvedLogoUrl
+                        )
+                    ) {
+                        $logoUrl =
+                            $resolvedLogoUrl;
+                    }
+                }
+
+                $items[] = [
+                    'id' =>
+                        $store->getId(),
+
+                    'name' =>
+                        $store->getName(),
+
+                    'slug' =>
+                        $store->getSlug(),
+
+                    'description' =>
+                        (string) (
+                            $store->getDescription()
+                            ?? ''
+                        ),
+
+                    'island' =>
+                        $storeIsland,
+
+                    'location' =>
+                        (string) (
+                            $store->getLocationText()
+                            ?? ''
+                        ),
+
+                    'logo_url' =>
+                        $logoUrl,
+
+                    'url' =>
+                        home_url(
+                            '/tienda/'
+                            . rawurlencode(
+                                $store->getSlug()
+                            )
+                            . '/'
+                        ),
+                ];
+            }
+
+            return $items;
+        } catch (Throwable $exception) {
+            error_log(
+                '[DSM Multitienda] No se pudieron '
+                . 'resolver las tiendas de portada: '
                 . $exception->getMessage()
             );
 

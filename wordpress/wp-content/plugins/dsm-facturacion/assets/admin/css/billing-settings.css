@@ -1,0 +1,78 @@
+.dsm-billing-admin {
+    max-width: 1300px;
+}
+
+.dsm-billing-admin__intro {
+    max-width: 850px;
+    margin-bottom: 24px;
+    color: #50575e;
+    font-size: 14px;
+}
+
+.dsm-billing-admin__grid {
+    display: grid;
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0, 1fr)
+        );
+    gap: 20px;
+    align-items: start;
+}
+
+.dsm-billing-card {
+    min-width: 0;
+    padding: 22px 24px;
+    background: #fff;
+    border: 1px solid #dcdcde;
+    border-radius: 6px;
+    box-shadow:
+        0 1px 1px
+        rgba(0, 0, 0, 0.04);
+}
+
+.dsm-billing-card h2 {
+    margin-top: 0;
+    margin-bottom: 18px;
+}
+
+.dsm-billing-card .form-table {
+    margin-top: 0;
+}
+
+.dsm-billing-card input.regular-text,
+.dsm-billing-card textarea {
+    width: 100%;
+    max-width: 100%;
+}
+
+.dsm-billing-logo-preview {
+    display: flex;
+    align-items: center;
+    min-height: 90px;
+    margin-bottom: 12px;
+}
+
+.dsm-billing-logo-preview img {
+    display: block;
+    max-width: 260px;
+    max-height: 100px;
+    width: auto;
+    height: auto;
+}
+
+#dsm-billing-remove-logo {
+    margin-left: 6px;
+}
+
+@media screen and (max-width: 1100px) {
+    .dsm-billing-admin__grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media screen and (max-width: 782px) {
+    .dsm-billing-card {
+        padding: 18px;
+    }
+}

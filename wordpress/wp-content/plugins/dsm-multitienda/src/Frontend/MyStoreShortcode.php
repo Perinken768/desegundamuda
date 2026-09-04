@@ -908,6 +908,7 @@ final class MyStoreShortcode
                         'available',
                         'low_stock',
                         'out_of_stock',
+                        'reserved',
                         'inactive',
                     ];
 

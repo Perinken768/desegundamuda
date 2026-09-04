@@ -1,0 +1,307 @@
+.dsm-invoices {
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 42px 24px 64px;
+}
+
+.dsm-invoices__header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 28px;
+    margin-bottom: 28px;
+}
+
+.dsm-invoices__eyebrow {
+    margin: 0 0 6px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.65;
+}
+
+.dsm-invoices__title {
+    margin: 0;
+    font-size: clamp(30px, 4vw, 42px);
+    line-height: 1.1;
+}
+
+.dsm-invoices__description {
+    max-width: 680px;
+    margin: 12px 0 0;
+    font-size: 16px;
+    line-height: 1.6;
+    opacity: 0.76;
+}
+
+.dsm-invoices__billing-button {
+    flex: 0 0 auto;
+}
+
+.dsm-invoices__card {
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid rgba(20, 20, 20, 0.10);
+    border-radius: 18px;
+    box-shadow: 0 8px 28px rgba(20, 20, 20, 0.05);
+}
+
+.dsm-invoices__card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 24px 26px 20px;
+    border-bottom: 1px solid rgba(20, 20, 20, 0.08);
+}
+
+.dsm-invoices__card-header h2 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.dsm-invoices__card-header p {
+    margin: 5px 0 0;
+    font-size: 14px;
+    opacity: 0.65;
+}
+
+.dsm-invoices__table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.dsm-invoices__table {
+    width: 100%;
+    min-width: 900px;
+    margin: 0;
+    border-collapse: collapse;
+}
+
+.dsm-invoices__table th,
+.dsm-invoices__table td {
+    padding: 17px 16px;
+    vertical-align: middle;
+    text-align: left;
+}
+
+.dsm-invoices__table th:first-child,
+.dsm-invoices__table td:first-child {
+    padding-left: 26px;
+}
+
+.dsm-invoices__table th:last-child,
+.dsm-invoices__table td:last-child {
+    padding-right: 26px;
+}
+
+.dsm-invoices__table thead th {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    background: rgba(20, 20, 20, 0.025);
+    border-bottom: 1px solid rgba(20, 20, 20, 0.09);
+}
+
+.dsm-invoices__table tbody td {
+    font-size: 14px;
+    border-bottom: 1px solid rgba(20, 20, 20, 0.07);
+}
+
+.dsm-invoices__table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.dsm-invoices__table tbody tr:hover {
+    background: rgba(20, 20, 20, 0.018);
+}
+
+.dsm-invoices__invoice-number {
+    white-space: nowrap;
+}
+
+.dsm-invoices__concept {
+    min-width: 220px;
+}
+
+.dsm-invoices__number {
+    text-align: right !important;
+    white-space: nowrap;
+}
+
+.dsm-invoices__actions-heading,
+.dsm-invoices__actions {
+    text-align: right !important;
+}
+
+.dsm-invoices__download {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 132px;
+    white-space: nowrap;
+}
+
+.dsm-invoices__empty {
+    padding: 64px 24px;
+    text-align: center;
+}
+
+.dsm-invoices__empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 62px;
+    height: 62px;
+    margin: 0 auto 20px;
+    border-radius: 16px;
+    background: rgba(20, 20, 20, 0.06);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.dsm-invoices__empty h2 {
+    margin: 0 0 10px;
+    font-size: 22px;
+}
+
+.dsm-invoices__empty p {
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.6;
+    opacity: 0.68;
+}
+
+.dsm-invoices__pagination {
+    padding: 22px 26px 26px;
+    border-top: 1px solid rgba(20, 20, 20, 0.08);
+}
+
+.dsm-invoices__pagination .page-numbers {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.dsm-invoices__pagination .page-numbers li {
+    margin: 0;
+}
+
+.dsm-invoices__pagination .page-numbers a,
+.dsm-invoices__pagination .page-numbers span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid rgba(20, 20, 20, 0.12);
+    border-radius: 10px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 650;
+}
+
+.dsm-invoices__pagination .page-numbers a:hover {
+    border-color: rgba(20, 20, 20, 0.32);
+}
+
+.dsm-invoices__pagination .page-numbers .current {
+    background: #171717;
+    border-color: #171717;
+    color: #fff;
+}
+
+@media (max-width: 760px) {
+    .dsm-invoices {
+        padding: 28px 16px 44px;
+    }
+
+    .dsm-invoices__header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .dsm-invoices__billing-button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .dsm-invoices__card {
+        border-radius: 14px;
+    }
+
+    .dsm-invoices__card-header {
+        padding: 20px;
+    }
+
+    .dsm-invoices__table {
+        min-width: 0;
+    }
+
+    .dsm-invoices__table thead {
+        display: none;
+    }
+
+    .dsm-invoices__table,
+    .dsm-invoices__table tbody,
+    .dsm-invoices__table tr,
+    .dsm-invoices__table td {
+        display: block;
+        width: 100%;
+    }
+
+    .dsm-invoices__table tr {
+        padding: 18px 20px;
+        border-bottom: 1px solid rgba(20, 20, 20, 0.09);
+    }
+
+    .dsm-invoices__table tbody tr:last-child {
+        border-bottom: 0;
+    }
+
+    .dsm-invoices__table td,
+    .dsm-invoices__table td:first-child,
+    .dsm-invoices__table td:last-child {
+        display: grid;
+        grid-template-columns: 105px 1fr;
+        gap: 14px;
+        padding: 6px 0;
+        border: 0;
+        text-align: right !important;
+    }
+
+    .dsm-invoices__table td::before {
+        content: attr(data-label);
+        text-align: left;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        opacity: 0.60;
+    }
+
+    .dsm-invoices__concept {
+        min-width: 0;
+    }
+
+    .dsm-invoices__actions {
+        margin-top: 8px;
+    }
+
+    .dsm-invoices__download {
+        width: 100%;
+    }
+
+    .dsm-invoices__pagination {
+        padding: 18px 20px 22px;
+    }
+}

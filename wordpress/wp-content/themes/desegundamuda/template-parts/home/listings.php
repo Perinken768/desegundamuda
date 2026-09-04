@@ -292,6 +292,300 @@ $baseUrl =
         </nav>
 
         <?php
+        /*
+         * Directorio de tiendas.
+         *
+         * Solo se solicita cuando el visitante está
+         * expresamente en la pestaña Tiendas.
+         */
+        $homeStores = [];
+
+        if ($contentType === 'tiendas') {
+            $homeStores =
+                apply_filters(
+                    'dsm_theme_home_stores',
+                    [],
+                    [
+                        'area_id' =>
+                            (int) (
+                                $locationContext[
+                                    'area_id'
+                                ]
+                                ?? 0
+                            ),
+
+                        'area_name' =>
+                            (string) (
+                                $locationContext[
+                                    'area_name'
+                                ]
+                                ?? ''
+                            ),
+                    ]
+                );
+
+            if (!is_array($homeStores)) {
+                $homeStores = [];
+            }
+        }
+        ?>
+
+        <?php if (
+            $contentType === 'tiendas'
+            && $homeStores !== []
+        ) : ?>
+
+            <div
+                class="dsm-home-stores"
+                data-dsm-store-carousel
+            >
+
+                <div class="dsm-home-stores__header">
+
+                    <div class="dsm-home-stores__heading">
+
+                        <h3>
+                            Tiendas activas
+                        </h3>
+
+                        <p>
+                            Descubre nuestras tiendas
+                            y entra directamente
+                            en su catálogo.
+                        </p>
+
+                    </div>
+
+                    <div
+                        class="dsm-home-stores__controls"
+                        aria-label="Navegar por las tiendas"
+                    >
+
+                        <button
+                            type="button"
+                            class="
+                                dsm-home-stores__arrow
+                                dsm-home-stores__arrow--previous
+                            "
+                            data-dsm-store-previous
+                            aria-label="Tiendas anteriores"
+                        >
+                            <span aria-hidden="true">
+                                ←
+                            </span>
+                        </button>
+
+                        <button
+                            type="button"
+                            class="
+                                dsm-home-stores__arrow
+                                dsm-home-stores__arrow--next
+                            "
+                            data-dsm-store-next
+                            aria-label="Tiendas siguientes"
+                        >
+                            <span aria-hidden="true">
+                                →
+                            </span>
+                        </button>
+
+                    </div>
+
+                </div>
+
+                <div class="dsm-home-stores__viewport">
+
+                    <div
+                        class="dsm-home-stores__track"
+                        data-dsm-store-track
+                    >
+
+                    <?php foreach (
+                        $homeStores
+                        as $homeStore
+                    ) : ?>
+
+                        <?php
+                        if (!is_array($homeStore)) {
+                            continue;
+                        }
+
+                        $storeName =
+                            trim(
+                                (string) (
+                                    $homeStore['name']
+                                    ?? ''
+                                )
+                            );
+
+                        $storeUrl =
+                            trim(
+                                (string) (
+                                    $homeStore['url']
+                                    ?? ''
+                                )
+                            );
+
+                        $storeLogo =
+                            trim(
+                                (string) (
+                                    $homeStore[
+                                        'logo_url'
+                                    ]
+                                    ?? ''
+                                )
+                            );
+
+                        $storeIsland =
+                            trim(
+                                (string) (
+                                    $homeStore['island']
+                                    ?? ''
+                                )
+                            );
+
+                        $storeLocation =
+                            trim(
+                                (string) (
+                                    $homeStore[
+                                        'location'
+                                    ]
+                                    ?? ''
+                                )
+                            );
+
+                        if (
+                            $storeName === ''
+                            || $storeUrl === ''
+                        ) {
+                            continue;
+                        }
+                        ?>
+
+                        <article
+                            class="dsm-home-store-card"
+                        >
+
+                            <a
+                                class="
+                                    dsm-home-store-card__link
+                                "
+                                href="<?php
+                                echo esc_url(
+                                    $storeUrl
+                                );
+                                ?>"
+                            >
+
+                                <div
+                                    class="
+                                        dsm-home-store-card__logo
+                                    "
+                                >
+
+                                    <?php if (
+                                        $storeLogo !== ''
+                                    ) : ?>
+
+                                        <img
+                                            src="<?php
+                                            echo esc_url(
+                                                $storeLogo
+                                            );
+                                            ?>"
+                                            alt="<?php
+                                            echo esc_attr(
+                                                $storeName
+                                            );
+                                            ?>"
+                                            loading="lazy"
+                                        >
+
+                                    <?php else : ?>
+
+                                        <span>
+                                            <?php
+                                            echo esc_html(
+                                                mb_strtoupper(
+                                                    mb_substr(
+                                                        $storeName,
+                                                        0,
+                                                        1
+                                                    )
+                                                )
+                                            );
+                                            ?>
+                                        </span>
+
+                                    <?php endif; ?>
+
+                                </div>
+
+                                <div
+                                    class="
+                                        dsm-home-store-card__body
+                                    "
+                                >
+
+                                    <h4>
+                                        <?php
+                                        echo esc_html(
+                                            $storeName
+                                        );
+                                        ?>
+                                    </h4>
+
+                                    <?php if (
+                                        $storeLocation !== ''
+                                    ) : ?>
+
+                                        <p>
+                                            <?php
+                                            echo esc_html(
+                                                $storeLocation
+                                            );
+                                            ?>
+                                        </p>
+
+                                    <?php elseif (
+                                        $storeIsland !== ''
+                                    ) : ?>
+
+                                        <p>
+                                            <?php
+                                            echo esc_html(
+                                                $storeIsland
+                                            );
+                                            ?>
+                                        </p>
+
+                                    <?php endif; ?>
+
+                                    <span
+                                        class="
+                                            dsm-home-store-card__action
+                                        "
+                                    >
+                                        Ver catálogo
+                                    </span>
+
+                                </div>
+
+                            </a>
+
+                        </article>
+
+                    <?php endforeach; ?>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        <?php endif; ?>
+
+        <?php
         $listingColumns =
             dsm_theme_home_listing_columns();
         ?>

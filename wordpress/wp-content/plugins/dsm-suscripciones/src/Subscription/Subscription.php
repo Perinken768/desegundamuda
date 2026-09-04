@@ -22,11 +22,14 @@ final class Subscription
         private readonly DateTimeImmutable $startsAt,
         private readonly ?DateTimeImmutable $endsAt,
         private readonly ?DateTimeImmutable $cancelledAt,
+        private readonly ?DateTimeImmutable $cancelRequestedAt,
         private readonly ?float $pricePaid,
         private readonly ?string $currency,
         private readonly ?string $sourceType,
         private readonly ?string $sourceReference,
         private readonly bool $autoRenew,
+        private readonly ?string $provider,
+        private readonly ?string $providerSubscriptionId,
         private readonly DateTimeImmutable $createdAt,
         private readonly DateTimeImmutable $updatedAt
     ) {
@@ -73,6 +76,15 @@ final class Subscription
         ) {
             throw new InvalidArgumentException(
                 'La moneda de la suscripción no es válida.'
+            );
+        }
+
+        if (
+            $this->providerSubscriptionId !== null
+            && $this->provider === null
+        ) {
+            throw new InvalidArgumentException(
+                'Una suscripción externa debe indicar su proveedor.'
             );
         }
     }
@@ -132,6 +144,12 @@ final class Subscription
                     ?? null
                 ),
 
+            cancelRequestedAt:
+                self::optionalDateTime(
+                    $data['cancel_requested_at']
+                    ?? null
+                ),
+
             pricePaid:
                 isset($data['price_paid'])
                 && $data['price_paid'] !== null
@@ -139,29 +157,39 @@ final class Subscription
                     : null,
 
             currency:
-                isset($data['currency'])
-                && $data['currency'] !== null
-                    ? strtoupper(
-                        (string) $data['currency']
-                    )
-                    : null,
+                self::optionalUppercaseString(
+                    $data['currency']
+                    ?? null
+                ),
 
             sourceType:
-                isset($data['source_type'])
-                && $data['source_type'] !== null
-                    ? (string) $data['source_type']
-                    : null,
+                self::optionalString(
+                    $data['source_type']
+                    ?? null
+                ),
 
             sourceReference:
-                isset($data['source_reference'])
-                && $data['source_reference'] !== null
-                    ? (string) $data['source_reference']
-                    : null,
+                self::optionalString(
+                    $data['source_reference']
+                    ?? null
+                ),
 
             autoRenew:
                 self::toBool(
                     $data['auto_renew']
                     ?? false
+                ),
+
+            provider:
+                self::optionalString(
+                    $data['provider']
+                    ?? null
+                ),
+
+            providerSubscriptionId:
+                self::optionalString(
+                    $data['provider_subscription_id']
+                    ?? null
                 ),
 
             createdAt:
@@ -218,6 +246,11 @@ final class Subscription
         return $this->cancelledAt;
     }
 
+    public function getCancelRequestedAt(): ?DateTimeImmutable
+    {
+        return $this->cancelRequestedAt;
+    }
+
     public function getPricePaid(): ?float
     {
         return $this->pricePaid;
@@ -241,6 +274,16 @@ final class Subscription
     public function isAutoRenew(): bool
     {
         return $this->autoRenew;
+    }
+
+    public function getProvider(): ?string
+    {
+        return $this->provider;
+    }
+
+    public function getProviderSubscriptionId(): ?string
+    {
+        return $this->providerSubscriptionId;
     }
 
     public function getCreatedAt(): DateTimeImmutable
@@ -280,6 +323,17 @@ final class Subscription
         }
 
         return true;
+    }
+
+    public function hasCancellationRequested(): bool
+    {
+        return $this->cancelRequestedAt !== null;
+    }
+
+    public function isProviderManaged(): bool
+    {
+        return $this->provider !== null
+            && $this->providerSubscriptionId !== null;
     }
 
     private static function toBool(
@@ -326,5 +380,37 @@ final class Subscription
         return new DateTimeImmutable(
             (string) $value
         );
+    }
+
+    private static function optionalString(
+        mixed $value
+    ): ?string {
+        if (
+            $value === null
+            || trim(
+                (string) $value
+            ) === ''
+        ) {
+            return null;
+        }
+
+        return trim(
+            (string) $value
+        );
+    }
+
+    private static function optionalUppercaseString(
+        mixed $value
+    ): ?string {
+        $value =
+            self::optionalString(
+                $value
+            );
+
+        return $value !== null
+            ? strtoupper(
+                $value
+            )
+            : null;
     }
 }

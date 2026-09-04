@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use DSM\Suscripciones\Admin\SubscriptionPlansPage;
+use DSM\Suscripciones\Frontend\SubscriptionCancelController;
 use DSM\Suscripciones\Frontend\SubscriptionPurchaseController;
+use DSM\Suscripciones\Frontend\SubscriptionReactivateController;
 use DSM\Suscripciones\Subscription\Subscription;
 use DSM\Suscripciones\Subscription\SubscriptionPlan;
 
@@ -68,7 +70,14 @@ $intervalLabels = [
     </header>
 
     <?php if (
-        $status === 'purchase_error'
+        in_array(
+            $status,
+            [
+                'purchase_error',
+                'subscription_action_error',
+            ],
+            true
+        )
         && $error !== ''
     ) : ?>
 
@@ -79,6 +88,42 @@ $intervalLabels = [
             "
         >
             <?php echo esc_html($error); ?>
+        </div>
+
+    <?php elseif (
+        $status === 'cancellation_requested'
+    ) : ?>
+
+        <div
+            class="
+                dsm-account-notice
+                dsm-account-notice--success
+            "
+        >
+            <?php
+            esc_html_e(
+                'La renovación automática se ha cancelado correctamente. Mantendrás el servicio hasta que finalice el período ya pagado.',
+                'dsm-suscripciones'
+            );
+            ?>
+        </div>
+
+    <?php elseif (
+        $status === 'renewal_reactivated'
+    ) : ?>
+
+        <div
+            class="
+                dsm-account-notice
+                dsm-account-notice--success
+            "
+        >
+            <?php
+            esc_html_e(
+                'La renovación automática de la suscripción se ha reactivado correctamente.',
+                'dsm-suscripciones'
+            );
+            ?>
         </div>
 
     <?php endif; ?>
@@ -299,7 +344,6 @@ $intervalLabels = [
 
                             <?php endif; ?>
 
-
                             <?php if (
                                 !empty(
                                     $features['advertising']
@@ -316,7 +360,6 @@ $intervalLabels = [
                                 </li>
 
                             <?php endif; ?>
-
 
                             <?php if (
                                 !empty(
@@ -338,7 +381,6 @@ $intervalLabels = [
                         </ul>
 
                     <?php endif; ?>
-
 
                     <?php if ($plan->isFree()) : ?>
 
@@ -385,27 +427,219 @@ $intervalLabels = [
                                 <br>
 
                                 <?php
-                                printf(
-                                    esc_html__(
-                                        'Activo hasta el %s.',
-                                        'dsm-suscripciones'
-                                    ),
-                                    esc_html(
-                                        $activeSubscription
-                                            ->getEndsAt()
-                                            ->setTimezone(
-                                                wp_timezone()
-                                            )
-                                            ->format(
-                                                'd/m/Y H:i'
-                                            )
-                                    )
+                                if (
+                                    $activeSubscription
+                                        ->hasCancellationRequested()
+                                ) {
+                                    printf(
+                                        esc_html__(
+                                            'Tu suscripción finalizará el %s. No se realizarán más renovaciones.',
+                                            'dsm-suscripciones'
+                                        ),
+                                        esc_html(
+                                            $activeSubscription
+                                                ->getEndsAt()
+                                                ->setTimezone(
+                                                    wp_timezone()
+                                                )
+                                                ->format(
+                                                    'd/m/Y H:i'
+                                                )
+                                        )
+                                    );
+                                } else {
+                                    printf(
+                                        esc_html__(
+                                            'Activo hasta el %s.',
+                                            'dsm-suscripciones'
+                                        ),
+                                        esc_html(
+                                            $activeSubscription
+                                                ->getEndsAt()
+                                                ->setTimezone(
+                                                    wp_timezone()
+                                                )
+                                                ->format(
+                                                    'd/m/Y H:i'
+                                                )
+                                        )
+                                    );
+                                }
+                                ?>
+
+                            <?php endif; ?>
+
+                            <?php if (
+                                $activeSubscription
+                                    ->isProviderManaged()
+                                && $activeSubscription
+                                    ->getProvider()
+                                    === 'stripe'
+                                && $activeSubscription
+                                    ->isAutoRenew()
+                                && !$activeSubscription
+                                    ->hasCancellationRequested()
+                            ) : ?>
+
+                                <br>
+
+                                <?php
+                                esc_html_e(
+                                    'Renovación automática activada.',
+                                    'dsm-suscripciones'
                                 );
                                 ?>
 
                             <?php endif; ?>
 
                         </div>
+
+                        <?php if (
+                            $activeSubscription
+                                ->isProviderManaged()
+                            && $activeSubscription
+                                ->getProvider()
+                                === 'stripe'
+                        ) : ?>
+
+                            <?php if (
+                                $activeSubscription
+                                    ->hasCancellationRequested()
+                                && !$activeSubscription
+                                    ->isAutoRenew()
+                            ) : ?>
+
+                                <form
+                                    method="post"
+                                    action="<?php
+                                    echo esc_url(
+                                        admin_url(
+                                            'admin-post.php'
+                                        )
+                                    );
+                                    ?>"
+                                >
+                                    <input
+                                        type="hidden"
+                                        name="action"
+                                        value="<?php
+                                        echo esc_attr(
+                                            SubscriptionReactivateController::
+                                                ACTION
+                                        );
+                                        ?>"
+                                    >
+
+                                    <input
+                                        type="hidden"
+                                        name="subscription_id"
+                                        value="<?php
+                                        echo esc_attr(
+                                            (string) $activeSubscription
+                                                ->getId()
+                                        );
+                                        ?>"
+                                    >
+
+                                    <?php
+                                    wp_nonce_field(
+                                        SubscriptionReactivateController::
+                                            getNonceAction(
+                                                $activeSubscription
+                                                    ->getId()
+                                            ),
+                                        SubscriptionReactivateController::
+                                            NONCE_FIELD
+                                    );
+                                    ?>
+
+                                    <button
+                                        type="submit"
+                                        class="
+                                            dsm-button
+                                            dsm-button--secondary
+                                        "
+                                    >
+                                        <?php
+                                        esc_html_e(
+                                            'Reactivar renovación',
+                                            'dsm-suscripciones'
+                                        );
+                                        ?>
+                                    </button>
+                                </form>
+
+                            <?php elseif (
+                                $activeSubscription
+                                    ->isAutoRenew()
+                            ) : ?>
+
+                                <form
+                                    method="post"
+                                    action="<?php
+                                    echo esc_url(
+                                        admin_url(
+                                            'admin-post.php'
+                                        )
+                                    );
+                                    ?>"
+                                    onsubmit="return confirm(
+                                        '¿Quieres cancelar la renovación automática? Seguirás teniendo acceso hasta que termine el período que ya has pagado.'
+                                    );"
+                                >
+                                    <input
+                                        type="hidden"
+                                        name="action"
+                                        value="<?php
+                                        echo esc_attr(
+                                            SubscriptionCancelController::
+                                                ACTION
+                                        );
+                                        ?>"
+                                    >
+
+                                    <input
+                                        type="hidden"
+                                        name="subscription_id"
+                                        value="<?php
+                                        echo esc_attr(
+                                            (string) $activeSubscription
+                                                ->getId()
+                                        );
+                                        ?>"
+                                    >
+
+                                    <?php
+                                    wp_nonce_field(
+                                        SubscriptionCancelController::
+                                            getNonceAction(
+                                                $activeSubscription
+                                                    ->getId()
+                                            ),
+                                        SubscriptionCancelController::
+                                            NONCE_FIELD
+                                    );
+                                    ?>
+
+                                    <button
+                                        type="submit"
+                                        class="
+                                            dsm-button
+                                            dsm-button--danger
+                                        "
+                                    >
+                                        <?php
+                                        esc_html_e(
+                                            'Cancelar renovación',
+                                            'dsm-suscripciones'
+                                        );
+                                        ?>
+                                    </button>
+                                </form>
+
+                            <?php endif; ?>
+
+                        <?php endif; ?>
 
                     <?php elseif ($customerId <= 0) : ?>
 

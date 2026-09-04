@@ -144,6 +144,36 @@ add_action(
         );
 
         if (is_front_page()) {
+            /*
+             * Usamos la fecha de modificación de los archivos
+             * como versión.
+             *
+             * Así evitamos que el navegador conserve CSS o JS
+             * antiguos durante el desarrollo y después de cada
+             * actualización del tema.
+             */
+            $frontPageCssPath =
+                get_template_directory()
+                . '/assets/css/front-page.css';
+
+            $frontPageJsPath =
+                get_template_directory()
+                . '/assets/js/front-page.js';
+
+            $frontPageCssVersion =
+                file_exists($frontPageCssPath)
+                    ? (string) filemtime(
+                        $frontPageCssPath
+                    )
+                    : $version;
+
+            $frontPageJsVersion =
+                file_exists($frontPageJsPath)
+                    ? (string) filemtime(
+                        $frontPageJsPath
+                    )
+                    : $version;
+
             wp_enqueue_style(
                 'dsm-front-page',
                 get_template_directory_uri()
@@ -151,7 +181,7 @@ add_action(
                 [
                     'dsm-components',
                 ],
-                $version
+                $frontPageCssVersion
             );
 
             wp_enqueue_script(
@@ -159,7 +189,7 @@ add_action(
                 get_template_directory_uri()
                     . '/assets/js/front-page.js',
                 [],
-                $version,
+                $frontPageJsVersion,
                 true
             );
         }

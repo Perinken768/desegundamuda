@@ -1090,6 +1090,39 @@ if (!defined('ABSPATH')) {
                         $storeBaseUrl
                     );
 
+                $reservedInventoryUrl =
+                    add_query_arg(
+                        [
+                            'store_section' =>
+                                'inventory',
+                            'inventory_status' =>
+                                'reserved',
+                        ],
+                        $storeBaseUrl
+                    );
+
+                $availableInventoryUrl =
+                    add_query_arg(
+                        [
+                            'store_section' =>
+                                'inventory',
+                            'inventory_status' =>
+                                'available',
+                        ],
+                        $storeBaseUrl
+                    );
+
+                $completedReservationsUrl =
+                    add_query_arg(
+                        [
+                            'store_section' =>
+                                'reservations',
+                            'reservation_history_status' =>
+                                'completed',
+                        ],
+                        $storeBaseUrl
+                    );
+
                 ?>
 
                 <div class="dsm-store-dashboard__grid">
@@ -1179,7 +1212,7 @@ if (!defined('ABSPATH')) {
                         class="dsm-store-dashboard__card"
                         href="<?php
                         echo esc_url(
-                            $inventoryUrl
+                            $reservedInventoryUrl
                         );
                         ?>"
                     >
@@ -1206,7 +1239,7 @@ if (!defined('ABSPATH')) {
                         class="dsm-store-dashboard__card"
                         href="<?php
                         echo esc_url(
-                            $inventoryUrl
+                            $availableInventoryUrl
                         );
                         ?>"
                     >
@@ -1260,7 +1293,7 @@ if (!defined('ABSPATH')) {
                         class="dsm-store-dashboard__card"
                         href="<?php
                         echo esc_url(
-                            $reservationsUrl
+                            $completedReservationsUrl
                         );
                         ?>"
                     >

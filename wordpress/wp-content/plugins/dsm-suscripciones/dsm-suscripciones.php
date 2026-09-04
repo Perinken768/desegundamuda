@@ -21,7 +21,7 @@ define(
 
 define(
     'DSM_SUSCRIPCIONES_DB_VERSION',
-    2
+    3
 );
 
 define(
@@ -41,11 +41,16 @@ use DSM\Suscripciones\Admin\SubscriptionGrantPage;
 use DSM\Suscripciones\Admin\SubscriptionPlansPage;
 use DSM\Suscripciones\Admin\SubscriptionsPage;
 use DSM\Suscripciones\Database\Installer;
+use DSM\Suscripciones\Frontend\SubscriptionCancelController;
 use DSM\Suscripciones\Frontend\SubscriptionPlansShortcode;
 use DSM\Suscripciones\Frontend\SubscriptionPurchaseController;
-use DSM\Suscripciones\Integration\PaymentSubscriptionIntegration;
-use DSM\Suscripciones\Support\Autoloader;
+use DSM\Suscripciones\Frontend\SubscriptionReactivateController;
+use DSM\Suscripciones\Integration\CustomerAccountIntegration;
 use DSM\Suscripciones\Integration\CustomerEntitlementIntegration;
+use DSM\Suscripciones\Integration\PaymentSubscriptionIntegration;
+use DSM\Suscripciones\Integration\StripeSubscriptionIntegration;
+use DSM\Suscripciones\Integration\SubscriptionCheckoutIntegration;
+use DSM\Suscripciones\Support\Autoloader;
 
 /*
  * Autoload.
@@ -56,6 +61,22 @@ Autoloader::register();
  * Contratos públicos de derechos de suscripción.
  */
 CustomerEntitlementIntegration::register();
+
+/*
+ * Integración con el dashboard "Mi cuenta".
+ */
+CustomerAccountIntegration::register();
+
+/*
+ * Datos recurrentes utilizados por dsm-pagos
+ * al crear Stripe Checkout.
+ */
+SubscriptionCheckoutIntegration::register();
+
+/*
+ * Eventos recurrentes recibidos desde Stripe.
+ */
+StripeSubscriptionIntegration::register();
 
 /*
  * Administración.
@@ -69,6 +90,8 @@ SubscriptionGrantPage::register();
  */
 SubscriptionPlansShortcode::register();
 SubscriptionPurchaseController::register();
+SubscriptionCancelController::register();
+SubscriptionReactivateController::register();
 
 /*
  * Integraciones.
