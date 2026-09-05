@@ -273,30 +273,125 @@ final class HomeThemeIntegration
                      */
 
                     if ($search !== '') {
-                        $haystack =
+                        /*
+                         * Búsqueda tolerante con singular/plural.
+                         *
+                         * Conservamos siempre el término original
+                         * y añadimos variantes sencillas:
+                         *
+                         * camisas   -> camisas, camisa
+                         * faldas    -> faldas, falda
+                         * vestidos  -> vestidos, vestido
+                         * pantalones -> pantalones, pantalone, pantalon
+                         *
+                         * remove_accents() permite además que
+                         * pantalon coincida con pantalón.
+                         */
+                        $normalizedSearch =
                             mb_strtolower(
-                                implode(
-                                    ' ',
-                                    array_filter(
-                                        [
-                                            $product
-                                                ->getName(),
-
-                                            $product
-                                                ->getDescription(),
-                                        ]
+                                remove_accents(
+                                    trim(
+                                        $search
                                     )
                                 )
                             );
 
+                        $searchTerms = [
+                            $normalizedSearch,
+                        ];
+
                         if (
-                            !str_contains(
-                                $haystack,
-                                mb_strtolower(
-                                    $search
-                                )
+                            mb_strlen(
+                                $normalizedSearch
+                            ) > 3
+                            && str_ends_with(
+                                $normalizedSearch,
+                                's'
                             )
                         ) {
+                            $singular =
+                                mb_substr(
+                                    $normalizedSearch,
+                                    0,
+                                    -1
+                                );
+
+                            if ($singular !== '') {
+                                $searchTerms[] =
+                                    $singular;
+                            }
+                        }
+
+                        if (
+                            mb_strlen(
+                                $normalizedSearch
+                            ) > 4
+                            && str_ends_with(
+                                $normalizedSearch,
+                                'es'
+                            )
+                        ) {
+                            $singular =
+                                mb_substr(
+                                    $normalizedSearch,
+                                    0,
+                                    -2
+                                );
+
+                            if ($singular !== '') {
+                                $searchTerms[] =
+                                    $singular;
+                            }
+                        }
+
+                        $searchTerms =
+                            array_values(
+                                array_unique(
+                                    array_filter(
+                                        $searchTerms
+                                    )
+                                )
+                            );
+
+                        $haystack =
+                            mb_strtolower(
+                                remove_accents(
+                                    implode(
+                                        ' ',
+                                        array_filter(
+                                            [
+                                                $product
+                                                    ->getName(),
+
+                                                $product
+                                                    ->getDescription(),
+                                            ]
+                                        )
+                                    )
+                                )
+                            );
+
+                        $matchesSearch =
+                            false;
+
+                        foreach (
+                            $searchTerms
+                            as $searchTerm
+                        ) {
+                            if (
+                                str_contains(
+                                    $haystack,
+                                    $searchTerm
+                                )
+                            ) {
+                                $matchesSearch =
+                                    true;
+
+                                break;
+                            }
+                        }
+
+                        if (!$matchesSearch) {
                             continue;
                         }
                     }

@@ -457,3 +457,20 @@ if (!defined('ABSPATH')) {
 
     <?php endif; ?>
 </div>
+
+
+<style>
+/*
+ * ============================================================
+ * PLANES DE PROMOCIÓN - CAMPO NOMBRE
+ * ============================================================
+ *
+ * Evita que el input supere el ancho disponible de su tarjeta.
+ */
+input[name="name"] {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+</style>

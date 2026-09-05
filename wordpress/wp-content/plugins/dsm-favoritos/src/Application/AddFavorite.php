@@ -13,18 +13,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/**
- * Caso de uso para añadir un anuncio a favoritos.
- *
- * Reglas:
- *
- * - el cliente debe existir;
- * - el cliente debe estar activo;
- * - el anuncio debe existir;
- * - el anuncio debe ser público;
- * - el cliente no puede marcar su propio anuncio;
- * - una relación cliente/anuncio no puede duplicarse.
- */
 final class AddFavorite
 {
     private FavoriteRepository $favoriteRepository;
@@ -46,7 +34,8 @@ final class AddFavorite
 
     public function execute(
         int $customerId,
-        int $advertisementId
+        string $itemType,
+        int $itemId
     ): Favorite {
         if ($customerId <= 0) {
             throw new RuntimeException(
@@ -54,18 +43,74 @@ final class AddFavorite
             );
         }
 
-        if ($advertisementId <= 0) {
+        $itemType =
+            sanitize_key(
+                $itemType
+            );
+
+        if (
+            !Favorite::isValidType(
+                $itemType
+            )
+        ) {
             throw new RuntimeException(
-                'El anuncio indicado no es válido.'
+                'El tipo de favorito indicado no es válido.'
             );
         }
 
-        /*
-         * Validación neutral contra DSM Clientes.
-         *
-         * DSM Favoritos no conoce CustomerRepository ni
-         * las tablas internas de clientes.
-         */
+        if ($itemId <= 0) {
+            throw new RuntimeException(
+                'El elemento indicado no es válido.'
+            );
+        }
+
+        $this->validateCustomer(
+            $customerId
+        );
+
+        if (
+            $itemType
+            === Favorite::TYPE_ADVERTISEMENT
+        ) {
+            $this->validateAdvertisement(
+                $customerId,
+                $itemId
+            );
+        } elseif (
+            $itemType
+            === Favorite::TYPE_STORE_PRODUCT
+        ) {
+            $this->validateStoreProduct(
+                $customerId,
+                $itemId
+            );
+        }
+
+        return $this->favoriteRepository
+            ->createItem(
+                $customerId,
+                $itemType,
+                $itemId
+            );
+    }
+
+    /*
+     * Compatibilidad temporal con llamadas antiguas.
+     */
+    public function executeAdvertisement(
+        int $customerId,
+        int $advertisementId
+    ): Favorite {
+        return $this->execute(
+            $customerId,
+            Favorite::TYPE_ADVERTISEMENT,
+            $advertisementId
+        );
+    }
+
+    private function validateCustomer(
+        int $customerId
+    ): void {
         $customerContext =
             apply_filters(
                 'dsm_customer_context_by_id',
@@ -110,7 +155,12 @@ final class AddFavorite
                 'La cuenta del cliente no está activa.'
             );
         }
+    }
 
+    private function validateAdvertisement(
+        int $customerId,
+        int $advertisementId
+    ): void {
         $advertisement =
             $this->advertisementRepository
                 ->findById(
@@ -137,11 +187,76 @@ final class AddFavorite
                 'No puedes añadir tu propio anuncio a favoritos.'
             );
         }
+    }
 
-        return $this->favoriteRepository
-            ->create(
-                $customerId,
-                $advertisementId
+    private function validateStoreProduct(
+        int $customerId,
+        int $productId
+    ): void {
+        /*
+         * DSM Favoritos no debe conocer las tablas internas
+         * de Multitienda/Catálogo.
+         *
+         * El producto se valida mediante contrato público.
+         */
+        $productContext =
+            apply_filters(
+                'dsm_store_product_favorite_context',
+                null,
+                $productId
             );
+
+        if (!is_array($productContext)) {
+            throw new RuntimeException(
+                'El producto indicado no existe o no está disponible.'
+            );
+        }
+
+        $resolvedProductId =
+            max(
+                0,
+                (int) (
+                    $productContext['id']
+                    ?? 0
+                )
+            );
+
+        if (
+            $resolvedProductId <= 0
+            || $resolvedProductId !== $productId
+        ) {
+            throw new RuntimeException(
+                'El producto indicado no es válido.'
+            );
+        }
+
+        $isPublic =
+            !empty(
+                $productContext['is_public']
+            );
+
+        if (!$isPublic) {
+            throw new RuntimeException(
+                'El producto no está disponible públicamente.'
+            );
+        }
+
+        $ownerCustomerId =
+            max(
+                0,
+                (int) (
+                    $productContext['owner_customer_id']
+                    ?? 0
+                )
+            );
+
+        if (
+            $ownerCustomerId > 0
+            && $ownerCustomerId === $customerId
+        ) {
+            throw new RuntimeException(
+                'No puedes añadir un producto de tu propia tienda a favoritos.'
+            );
+        }
     }
 }

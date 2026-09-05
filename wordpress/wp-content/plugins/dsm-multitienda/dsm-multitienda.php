@@ -129,3 +129,71 @@ add_action(
         'migrate',
     ]
 );
+
+
+/*
+ * ============================================================
+ * FAVORITOS - CONTEXTO PÚBLICO DE PRODUCTO
+ * ============================================================
+ */
+
+add_filter(
+    'dsm_store_product_favorite_context',
+    static function (
+        mixed $currentContext,
+        mixed $productId
+    ): ?array {
+        if (is_array($currentContext)) {
+            return $currentContext;
+        }
+
+        $productId =
+            max(
+                0,
+                (int) $productId
+            );
+
+        if ($productId <= 0) {
+            return null;
+        }
+
+        $productRepository =
+            new \DSM\Catalogo\Product\ProductRepository();
+
+        $product =
+            $productRepository->findById(
+                $productId
+            );
+
+        if ($product === null) {
+            return null;
+        }
+
+        $storeRepository =
+            new \DSM\Multitienda\Store\StoreRepository();
+
+        $store =
+            $storeRepository->findById(
+                $product->getStoreId()
+            );
+
+        if ($store === null) {
+            return null;
+        }
+
+        return [
+            'id' =>
+                $product->getId(),
+
+            'is_public' =>
+                $product->getStatus()
+                    === \DSM\Catalogo\Product\ProductStatus::ACTIVE
+                && $store->isActive(),
+
+            'owner_customer_id' =>
+                $store->getCustomerId(),
+        ];
+    },
+    10,
+    2
+);

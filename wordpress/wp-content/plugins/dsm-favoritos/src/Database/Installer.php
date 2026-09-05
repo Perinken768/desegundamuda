@@ -96,6 +96,11 @@ final class Installer
                 DSM_FAVORITOS_PATH
                 . 'database/migrations/'
                 . '001-create-favorites.php',
+
+            2 =>
+                DSM_FAVORITOS_PATH
+                . 'database/migrations/'
+                . '002-generalize-favorites.php',
         ];
     }
 

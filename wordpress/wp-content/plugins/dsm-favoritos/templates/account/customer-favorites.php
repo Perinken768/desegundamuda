@@ -89,7 +89,7 @@ $currentUrl =
             <p class="dsm-customer-favorites__description">
                 <?php
                 esc_html_e(
-                    'Aquí encontrarás los anuncios que has guardado para verlos más tarde.',
+                    'Aquí encontrarás los anuncios y productos que has guardado para verlos más tarde.',
                     'dsm-favoritos'
                 );
                 ?>
@@ -136,7 +136,7 @@ $currentUrl =
             <p>
                 <?php
                 esc_html_e(
-                    'Guarda los anuncios que te interesen y aparecerán aquí.',
+                    'Guarda los anuncios y productos que te interesen y aparecerán aquí.',
                     'dsm-favoritos'
                 );
                 ?>
@@ -164,20 +164,37 @@ $currentUrl =
                 as $favorite
             ) : ?>
                 <?php
-                $advertisementId =
+                $itemType =
+                    sanitize_key(
+                        (string) (
+                            $favorite[
+                                'item_type'
+                            ]
+                            ?? ''
+                        )
+                    );
+
+                $itemId =
                     max(
                         0,
                         (int) (
                             $favorite[
-                                'advertisement_id'
+                                'item_id'
                             ]
                             ?? 0
                         )
                     );
 
-                if ($advertisementId <= 0) {
+                if (
+                    $itemType === ''
+                    || $itemId <= 0
+                ) {
                     continue;
                 }
+
+                $isStoreProduct =
+                    $itemType
+                    === 'store_product';
 
                 $title =
                     trim(
@@ -254,12 +271,33 @@ $currentUrl =
                         ]
                     );
 
+                $sourceLabel =
+                    trim(
+                        (string) (
+                            $favorite[
+                                'source_label'
+                            ]
+                            ?? ''
+                        )
+                    );
+
+                $actionLabel =
+                    trim(
+                        (string) (
+                            $favorite[
+                                'action_label'
+                            ]
+                            ?? ''
+                        )
+                    );
+
                 $nonceAction =
                     FavoriteController::
                         getNonceAction(
                             FavoriteController::
                                 ACTION_REMOVE,
-                            $advertisementId
+                            $itemId,
+                            $itemType
                         );
                 ?>
 
@@ -272,8 +310,11 @@ $currentUrl =
                                 : ''
                         )
                     ); ?>"
-                    data-advertisement-id="<?php echo esc_attr(
-                        (string) $advertisementId
+                    data-item-type="<?php echo esc_attr(
+                        $itemType
+                    ); ?>"
+                    data-item-id="<?php echo esc_attr(
+                        (string) $itemId
                     ); ?>"
                 >
                     <a
@@ -334,9 +375,17 @@ $currentUrl =
 
                         <input
                             type="hidden"
-                            name="advertisement_id"
+                            name="item_type"
                             value="<?php echo esc_attr(
-                                (string) $advertisementId
+                                $itemType
+                            ); ?>"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="item_id"
+                            value="<?php echo esc_attr(
+                                (string) $itemId
                             ); ?>"
                         >
 
@@ -392,6 +441,16 @@ $currentUrl =
                                 ); ?>
                             </a>
                         </h2>
+
+                        <?php if ($sourceLabel !== '') : ?>
+                            <p class="dsm-customer-favorite__source">
+                                <?php
+                                echo esc_html(
+                                    $sourceLabel
+                                );
+                                ?>
+                            </p>
+                        <?php endif; ?>
 
                         <div class="dsm-customer-favorite__price">
                             <strong>
@@ -479,9 +538,13 @@ $currentUrl =
                                 ); ?>"
                             >
                                 <?php
-                                esc_html_e(
-                                    'Ver anuncio',
-                                    'dsm-favoritos'
+                                echo esc_html(
+                                    $actionLabel !== ''
+                                        ? $actionLabel
+                                        : __(
+                                            'Ver',
+                                            'dsm-favoritos'
+                                        )
                                 );
                                 ?>
                             </a>

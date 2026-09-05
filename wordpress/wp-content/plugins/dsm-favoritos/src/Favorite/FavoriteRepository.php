@@ -12,22 +12,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/**
- * Persistencia de favoritos.
- *
- * Este repositorio trabaja exclusivamente con
- * wp_dsm_favorites.
- *
- * No comprueba:
- *
- * - si el cliente existe;
- * - si el cliente está activo;
- * - si el anuncio existe;
- * - si el anuncio está publicado.
- *
- * Esas comprobaciones pertenecen a la capa
- * Application.
- */
 final class FavoriteRepository
 {
     private wpdb $database;
@@ -61,7 +45,8 @@ final class FavoriteRepository
                     SELECT
                         id,
                         customer_id,
-                        advertisement_id,
+                        item_type,
+                        item_id,
                         created_at
                     FROM {$this->table}
                     WHERE id = %d
@@ -72,22 +57,27 @@ final class FavoriteRepository
                 ARRAY_A
             );
 
-        if (!is_array($row)) {
-            return null;
-        }
-
-        return $this->hydrate(
-            $row
-        );
+        return is_array($row)
+            ? $this->hydrate($row)
+            : null;
     }
 
-    public function findByCustomerAndAdvertisement(
+    public function findByCustomerAndItem(
         int $customerId,
-        int $advertisementId
+        string $itemType,
+        int $itemId
     ): ?Favorite {
+        $itemType =
+            sanitize_key(
+                $itemType
+            );
+
         if (
             $customerId <= 0
-            || $advertisementId <= 0
+            || $itemId <= 0
+            || !Favorite::isValidType(
+                $itemType
+            )
         ) {
             return null;
         }
@@ -99,95 +89,94 @@ final class FavoriteRepository
                     SELECT
                         id,
                         customer_id,
-                        advertisement_id,
+                        item_type,
+                        item_id,
                         created_at
                     FROM {$this->table}
                     WHERE customer_id = %d
-                      AND advertisement_id = %d
+                      AND item_type = %s
+                      AND item_id = %d
                     LIMIT 1
                     ",
                     $customerId,
-                    $advertisementId
+                    $itemType,
+                    $itemId
                 ),
                 ARRAY_A
             );
 
-        if (!is_array($row)) {
-            return null;
-        }
-
-        return $this->hydrate(
-            $row
-        );
+        return is_array($row)
+            ? $this->hydrate($row)
+            : null;
     }
 
-    public function exists(
+    public function existsItem(
         int $customerId,
-        int $advertisementId
+        string $itemType,
+        int $itemId
     ): bool {
-        if (
-            $customerId <= 0
-            || $advertisementId <= 0
-        ) {
-            return false;
-        }
+        return $this->findByCustomerAndItem(
+            $customerId,
+            $itemType,
+            $itemId
+        ) !== null;
+    }
 
-        $favoriteId =
-            $this->database->get_var(
-                $this->database->prepare(
-                    "
-                    SELECT id
-                    FROM {$this->table}
-                    WHERE customer_id = %d
-                      AND advertisement_id = %d
-                    LIMIT 1
-                    ",
-                    $customerId,
-                    $advertisementId
-                )
+    public function createItem(
+        int $customerId,
+        string $itemType,
+        int $itemId
+    ): Favorite {
+        $itemType =
+            sanitize_key(
+                $itemType
             );
 
-        return $favoriteId !== null;
-    }
-
-    public function create(
-        int $customerId,
-        int $advertisementId
-    ): Favorite {
         if ($customerId <= 0) {
             throw new \InvalidArgumentException(
                 'El ID del cliente debe ser mayor que cero.'
             );
         }
 
-        if ($advertisementId <= 0) {
+        if (
+            !Favorite::isValidType(
+                $itemType
+            )
+        ) {
             throw new \InvalidArgumentException(
-                'El ID del anuncio debe ser mayor que cero.'
+                'El tipo de favorito no es válido.'
             );
         }
 
-        /*
-         * La operación es idempotente a nivel de dominio:
-         * si la relación ya existe, devolvemos la existente.
-         *
-         * La restricción UNIQUE de la base de datos continúa
-         * siendo la protección definitiva frente a carreras.
-         */
+        if ($itemId <= 0) {
+            throw new \InvalidArgumentException(
+                'El ID del elemento debe ser mayor que cero.'
+            );
+        }
+
         $existing =
-            $this->findByCustomerAndAdvertisement(
+            $this->findByCustomerAndItem(
                 $customerId,
-                $advertisementId
+                $itemType,
+                $itemId
             );
 
         if ($existing !== null) {
             return $existing;
         }
 
-        $createdAt =
-            current_time(
-                'mysql',
-                true
-            );
+        /*
+         * advertisement_id continúa siendo NOT NULL durante
+         * esta fase de compatibilidad.
+         *
+         * Para anuncios guardamos el mismo ID.
+         * Para productos de tienda usamos 0 temporalmente.
+         */
+        $legacyAdvertisementId =
+            $itemType
+                === Favorite::TYPE_ADVERTISEMENT
+                    ? $itemId
+                    : 0;
 
         $inserted =
             $this->database->insert(
@@ -196,13 +185,24 @@ final class FavoriteRepository
                     'customer_id' =>
                         $customerId,
 
+                    'item_type' =>
+                        $itemType,
+
+                    'item_id' =>
+                        $itemId,
+
                     'advertisement_id' =>
-                        $advertisementId,
+                        $legacyAdvertisementId,
 
                     'created_at' =>
-                        $createdAt,
+                        current_time(
+                            'mysql',
+                            true
+                        ),
                 ],
                 [
+                    '%d',
+                    '%s',
                     '%d',
                     '%d',
                     '%s',
@@ -210,37 +210,14 @@ final class FavoriteRepository
             );
 
         if ($inserted === false) {
-            /*
-             * Puede haberse producido una carrera entre
-             * dos peticiones que intentaron crear exactamente
-             * el mismo favorito.
-             *
-             * Si la relación existe ahora, devolvemos esa
-             * relación en lugar de tratarlo como un fallo.
-             */
-            $existing =
-                $this->findByCustomerAndAdvertisement(
-                    $customerId,
-                    $advertisementId
-                );
-
-            if ($existing !== null) {
-                return $existing;
-            }
-
             throw new RuntimeException(
-                'No se pudo guardar el favorito.'
+                'No se pudo crear el favorito.'
             );
         }
 
         $favoriteId =
-            (int) $this->database->insert_id;
-
-        if ($favoriteId <= 0) {
-            throw new RuntimeException(
-                'No se pudo obtener el ID del favorito creado.'
-            );
-        }
+            (int) $this->database
+                ->insert_id;
 
         $favorite =
             $this->findById(
@@ -249,48 +226,29 @@ final class FavoriteRepository
 
         if ($favorite === null) {
             throw new RuntimeException(
-                'El favorito se creó, pero no pudo recuperarse.'
+                'El favorito se creó pero no pudo recuperarse.'
             );
         }
 
         return $favorite;
     }
 
-    public function delete(
-        int $favoriteId
-    ): bool {
-        if ($favoriteId <= 0) {
-            return false;
-        }
-
-        $deleted =
-            $this->database->delete(
-                $this->table,
-                [
-                    'id' =>
-                        $favoriteId,
-                ],
-                [
-                    '%d',
-                ]
-            );
-
-        if ($deleted === false) {
-            throw new RuntimeException(
-                'No se pudo eliminar el favorito.'
-            );
-        }
-
-        return $deleted > 0;
-    }
-
-    public function deleteByCustomerAndAdvertisement(
+    public function deleteByCustomerAndItem(
         int $customerId,
-        int $advertisementId
+        string $itemType,
+        int $itemId
     ): bool {
+        $itemType =
+            sanitize_key(
+                $itemType
+            );
+
         if (
             $customerId <= 0
-            || $advertisementId <= 0
+            || $itemId <= 0
+            || !Favorite::isValidType(
+                $itemType
+            )
         ) {
             return false;
         }
@@ -302,22 +260,63 @@ final class FavoriteRepository
                     'customer_id' =>
                         $customerId,
 
-                    'advertisement_id' =>
-                        $advertisementId,
+                    'item_type' =>
+                        $itemType,
+
+                    'item_id' =>
+                        $itemId,
                 ],
                 [
                     '%d',
+                    '%s',
+                    '%d',
+                ]
+            );
+
+        return $deleted !== false;
+    }
+
+    public function deleteByItem(
+        string $itemType,
+        int $itemId
+    ): int {
+        $itemType =
+            sanitize_key(
+                $itemType
+            );
+
+        if (
+            $itemId <= 0
+            || !Favorite::isValidType(
+                $itemType
+            )
+        ) {
+            return 0;
+        }
+
+        $deleted =
+            $this->database->delete(
+                $this->table,
+                [
+                    'item_type' =>
+                        $itemType,
+
+                    'item_id' =>
+                        $itemId,
+                ],
+                [
+                    '%s',
                     '%d',
                 ]
             );
 
         if ($deleted === false) {
             throw new RuntimeException(
-                'No se pudo eliminar el favorito.'
+                'No se pudieron eliminar los favoritos del elemento.'
             );
         }
 
-        return $deleted > 0;
+        return (int) $deleted;
     }
 
     /**
@@ -354,13 +353,13 @@ final class FavoriteRepository
                     SELECT
                         id,
                         customer_id,
-                        advertisement_id,
+                        item_type,
+                        item_id,
                         created_at
                     FROM {$this->table}
                     WHERE customer_id = %d
                     ORDER BY created_at DESC, id DESC
-                    LIMIT %d
-                    OFFSET %d
+                    LIMIT %d OFFSET %d
                     ",
                     $customerId,
                     $limit,
@@ -390,52 +389,57 @@ final class FavoriteRepository
     }
 
     /**
-     * Devuelve únicamente los IDs de anuncios favoritos.
-     *
-     * Es útil para integraciones con listados de anuncios
-     * donde no necesitamos hidratar entidades Favorite.
-     *
      * @return array<int, int>
      */
-    public function findAdvertisementIdsByCustomer(
-        int $customerId
+    public function findItemIdsByCustomer(
+        int $customerId,
+        string $itemType
     ): array {
-        if ($customerId <= 0) {
+        $itemType =
+            sanitize_key(
+                $itemType
+            );
+
+        if (
+            $customerId <= 0
+            || !Favorite::isValidType(
+                $itemType
+            )
+        ) {
             return [];
         }
 
-        $values =
+        $ids =
             $this->database->get_col(
                 $this->database->prepare(
                     "
-                    SELECT advertisement_id
+                    SELECT item_id
                     FROM {$this->table}
                     WHERE customer_id = %d
+                      AND item_type = %s
                     ORDER BY created_at DESC, id DESC
                     ",
-                    $customerId
+                    $customerId,
+                    $itemType
                 )
             );
 
-        if (!is_array($values)) {
+        if (!is_array($ids)) {
             return [];
         }
 
-        $advertisementIds = [];
-
-        foreach ($values as $value) {
-            $advertisementId =
-                (int) $value;
-
-            if ($advertisementId <= 0) {
-                continue;
-            }
-
-            $advertisementIds[] =
-                $advertisementId;
-        }
-
-        return $advertisementIds;
+        return array_values(
+            array_filter(
+                array_map(
+                    static fn ($id): int =>
+                        max(
+                            0,
+                            (int) $id
+                        ),
+                    $ids
+                )
+            )
+        );
     }
 
     public function countByCustomer(
@@ -447,38 +451,53 @@ final class FavoriteRepository
 
         return max(
             0,
-            (int) $this->database->get_var(
-                $this->database->prepare(
-                    "
-                    SELECT COUNT(*)
-                    FROM {$this->table}
-                    WHERE customer_id = %d
-                    ",
-                    $customerId
+            (int) $this->database
+                ->get_var(
+                    $this->database->prepare(
+                        "
+                        SELECT COUNT(*)
+                        FROM {$this->table}
+                        WHERE customer_id = %d
+                        ",
+                        $customerId
+                    )
                 )
-            )
         );
     }
 
-    public function countByAdvertisement(
-        int $advertisementId
+    public function countByItem(
+        string $itemType,
+        int $itemId
     ): int {
-        if ($advertisementId <= 0) {
+        $itemType =
+            sanitize_key(
+                $itemType
+            );
+
+        if (
+            $itemId <= 0
+            || !Favorite::isValidType(
+                $itemType
+            )
+        ) {
             return 0;
         }
 
         return max(
             0,
-            (int) $this->database->get_var(
-                $this->database->prepare(
-                    "
-                    SELECT COUNT(*)
-                    FROM {$this->table}
-                    WHERE advertisement_id = %d
-                    ",
-                    $advertisementId
+            (int) $this->database
+                ->get_var(
+                    $this->database->prepare(
+                        "
+                        SELECT COUNT(*)
+                        FROM {$this->table}
+                        WHERE item_type = %s
+                          AND item_id = %d
+                        ",
+                        $itemType,
+                        $itemId
+                    )
                 )
-            )
         );
     }
 
@@ -507,40 +526,86 @@ final class FavoriteRepository
             );
         }
 
-        return max(
-            0,
-            (int) $deleted
+        return (int) $deleted;
+    }
+
+    /*
+     * =========================================================
+     * COMPATIBILIDAD CON FAVORITOS DE ANUNCIOS
+     * =========================================================
+     */
+
+    public function findByCustomerAndAdvertisement(
+        int $customerId,
+        int $advertisementId
+    ): ?Favorite {
+        return $this->findByCustomerAndItem(
+            $customerId,
+            Favorite::TYPE_ADVERTISEMENT,
+            $advertisementId
+        );
+    }
+
+    public function exists(
+        int $customerId,
+        int $advertisementId
+    ): bool {
+        return $this->existsItem(
+            $customerId,
+            Favorite::TYPE_ADVERTISEMENT,
+            $advertisementId
+        );
+    }
+
+    public function create(
+        int $customerId,
+        int $advertisementId
+    ): Favorite {
+        return $this->createItem(
+            $customerId,
+            Favorite::TYPE_ADVERTISEMENT,
+            $advertisementId
+        );
+    }
+
+    public function deleteByCustomerAndAdvertisement(
+        int $customerId,
+        int $advertisementId
+    ): bool {
+        return $this->deleteByCustomerAndItem(
+            $customerId,
+            Favorite::TYPE_ADVERTISEMENT,
+            $advertisementId
         );
     }
 
     public function deleteByAdvertisement(
         int $advertisementId
     ): int {
-        if ($advertisementId <= 0) {
-            return 0;
-        }
+        return $this->deleteByItem(
+            Favorite::TYPE_ADVERTISEMENT,
+            $advertisementId
+        );
+    }
 
-        $deleted =
-            $this->database->delete(
-                $this->table,
-                [
-                    'advertisement_id' =>
-                        $advertisementId,
-                ],
-                [
-                    '%d',
-                ]
-            );
+    /**
+     * @return array<int, int>
+     */
+    public function findAdvertisementIdsByCustomer(
+        int $customerId
+    ): array {
+        return $this->findItemIdsByCustomer(
+            $customerId,
+            Favorite::TYPE_ADVERTISEMENT
+        );
+    }
 
-        if ($deleted === false) {
-            throw new RuntimeException(
-                'No se pudieron eliminar los favoritos del anuncio.'
-            );
-        }
-
-        return max(
-            0,
-            (int) $deleted
+    public function countByAdvertisement(
+        int $advertisementId
+    ): int {
+        return $this->countByItem(
+            Favorite::TYPE_ADVERTISEMENT,
+            $advertisementId
         );
     }
 
@@ -550,69 +615,76 @@ final class FavoriteRepository
     private function hydrate(
         array $row
     ): Favorite {
-        $id =
-            isset($row['id'])
-                ? (int) $row['id']
-                : 0;
-
-        $customerId =
-            isset($row['customer_id'])
-                ? (int) $row[
-                    'customer_id'
-                ]
-                : 0;
-
-        $advertisementId =
-            isset($row['advertisement_id'])
-                ? (int) $row[
-                    'advertisement_id'
-                ]
-                : 0;
-
-        $createdAtRaw =
-            isset($row['created_at'])
-                ? trim(
-                    (string) $row[
-                        'created_at'
-                    ]
+        $itemType =
+            sanitize_key(
+                (string) (
+                    $row['item_type']
+                    ?? ''
                 )
-                : '';
+            );
+
+        $itemId =
+            max(
+                0,
+                (int) (
+                    $row['item_id']
+                    ?? 0
+                )
+            );
 
         if (
-            $id <= 0
-            || $customerId <= 0
-            || $advertisementId <= 0
-            || $createdAtRaw === ''
+            $itemType === ''
+            && isset(
+                $row['advertisement_id']
+            )
         ) {
-            throw new RuntimeException(
-                'Los datos almacenados del favorito no son válidos.'
-            );
+            $itemType =
+                Favorite::TYPE_ADVERTISEMENT;
+
+            $itemId =
+                max(
+                    0,
+                    (int) $row[
+                        'advertisement_id'
+                    ]
+                );
         }
 
+        $createdAtRaw =
+            (string) (
+                $row['created_at']
+                ?? ''
+            );
+
         try {
-            /*
-             * created_at se almacena en UTC mediante
-             * current_time("mysql", true).
-             */
             $createdAt =
                 new DateTimeImmutable(
-                    $createdAtRaw,
-                    new \DateTimeZone(
-                        'UTC'
-                    )
+                    $createdAtRaw
                 );
-        } catch (\Throwable $exception) {
-            throw new RuntimeException(
-                'La fecha del favorito almacenado no es válida.',
-                0,
-                $exception
-            );
+        } catch (\Throwable) {
+            $createdAt =
+                new DateTimeImmutable(
+                    'now'
+                );
         }
 
         return new Favorite(
-            $id,
-            $customerId,
-            $advertisementId,
+            max(
+                0,
+                (int) (
+                    $row['id']
+                    ?? 0
+                )
+            ),
+            max(
+                0,
+                (int) (
+                    $row['customer_id']
+                    ?? 0
+                )
+            ),
+            $itemType,
+            $itemId,
             $createdAt
         );
     }

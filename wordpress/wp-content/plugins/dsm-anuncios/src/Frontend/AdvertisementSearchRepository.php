@@ -1474,29 +1474,51 @@ final class AdvertisementSearchRepository
         }
 
         if ($filters['search'] !== '') {
-            $like =
-                '%'
-                . $this->database->esc_like(
+            $searchTerms =
+                $this->buildSearchTerms(
                     $filters['search']
-                )
-                . '%';
+                );
 
-            $conditions[] = '
-                (
-                    advertisements.title LIKE %s
-                    OR advertisements.description LIKE %s
-                    OR advertisements.brand LIKE %s
-                    OR categories.name LIKE %s
-                )
-            ';
+            $searchConditions = [];
 
-            for (
-                $index = 0;
-                $index < 4;
-                $index++
+            foreach (
+                $searchTerms
+                as $searchTerm
             ) {
-                $parameters[] =
-                    $like;
+                $like =
+                    '%'
+                    . $this->database->esc_like(
+                        $searchTerm
+                    )
+                    . '%';
+
+                $searchConditions[] = '
+                    (
+                        advertisements.title LIKE %s
+                        OR advertisements.description LIKE %s
+                        OR advertisements.brand LIKE %s
+                        OR categories.name LIKE %s
+                    )
+                ';
+
+                for (
+                    $index = 0;
+                    $index < 4;
+                    $index++
+                ) {
+                    $parameters[] =
+                        $like;
+                }
+            }
+
+            if ($searchConditions !== []) {
+                $conditions[] =
+                    '('
+                    . implode(
+                        ' OR ',
+                        $searchConditions
+                    )
+                    . ')';
             }
         }
 
@@ -1506,6 +1528,88 @@ final class AdvertisementSearchRepository
                 $conditions
             );
     }
+
+    /**
+     * Genera variantes simples del término de búsqueda
+     * para tolerar singular/plural en español.
+     *
+     * Siempre conserva el término original.
+     *
+     * Ejemplos:
+     * - camisas   -> camisas, camisa
+     * - faldas    -> faldas, falda
+     * - vestidos  -> vestidos, vestido
+     * - chaquetas -> chaquetas, chaqueta
+     *
+     * @return array<int, string>
+     */
+    private function buildSearchTerms(
+        string $search
+    ): array {
+        $search =
+            trim(
+                mb_strtolower(
+                    $search
+                )
+            );
+
+        if ($search === '') {
+            return [];
+        }
+
+        $terms = [
+            $search,
+        ];
+
+        if (
+            mb_strlen($search) > 3
+            && str_ends_with(
+                $search,
+                's'
+            )
+        ) {
+            $singular =
+                mb_substr(
+                    $search,
+                    0,
+                    -1
+                );
+
+            if ($singular !== '') {
+                $terms[] =
+                    $singular;
+            }
+        }
+
+        if (
+            mb_strlen($search) > 4
+            && str_ends_with(
+                $search,
+                'es'
+            )
+        ) {
+            $singular =
+                mb_substr(
+                    $search,
+                    0,
+                    -2
+                );
+
+            if ($singular !== '') {
+                $terms[] =
+                    $singular;
+            }
+        }
+
+        return array_values(
+            array_unique(
+                array_filter(
+                    $terms
+                )
+            )
+        );
+    }
+
 
     /**
      * @param array<string, mixed> $filters

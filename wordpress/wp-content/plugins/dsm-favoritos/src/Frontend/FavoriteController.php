@@ -6,6 +6,7 @@ namespace DSM\Favoritos\Frontend;
 
 use DSM\Favoritos\Application\AddFavorite;
 use DSM\Favoritos\Application\RemoveFavorite;
+use DSM\Favoritos\Favorite\Favorite;
 use RuntimeException;
 use Throwable;
 
@@ -13,22 +14,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/**
- * Gestiona las acciones HTTP de favoritos realizadas
- * por clientes desde el frontend.
- *
- * Acciones:
- *
- * - añadir un anuncio a favoritos;
- * - quitar un anuncio de favoritos.
- *
- * El controlador nunca utiliza el ID del usuario de
- * WordPress como customer_id.
- *
- * El cliente DSM se obtiene mediante el contrato público:
- *
- * dsm_current_customer_context
- */
 final class FavoriteController
 {
     public const ACTION_ADD =
@@ -60,9 +45,6 @@ final class FavoriteController
             ?? new RemoveFavorite();
     }
 
-    /**
-     * Registra las acciones admin-post.
-     */
     public function register(): void
     {
         add_action(
@@ -74,16 +56,6 @@ final class FavoriteController
             ]
         );
 
-        /*
-         * IMPORTANTE:
-         *
-         * Los clientes DSM no son usuarios WordPress.
-         * Por tanto, incluso un cliente DSM autenticado
-         * entra por admin_post_nopriv_*.
-         *
-         * La autenticación real se comprueba después
-         * mediante dsm_current_customer_context.
-         */
         add_action(
             'admin_post_nopriv_'
             . self::ACTION_ADD,
@@ -112,18 +84,18 @@ final class FavoriteController
         );
     }
 
-    /**
-     * Añade un anuncio a favoritos.
-     */
     public function handleAdd(): void
     {
         try {
-            $advertisementId =
-                $this->resolveAdvertisementId();
+            [
+                $itemType,
+                $itemId,
+            ] = $this->resolveItem();
 
             $this->verifyNonce(
                 self::ACTION_ADD,
-                $advertisementId
+                $itemType,
+                $itemId
             );
 
             $customer =
@@ -132,12 +104,14 @@ final class FavoriteController
             $this->addFavorite
                 ->execute(
                     (int) $customer['id'],
-                    $advertisementId
+                    $itemType,
+                    $itemId
                 );
 
             $this->redirect(
                 'added',
-                $advertisementId
+                $itemType,
+                $itemId
             );
         } catch (Throwable $exception) {
             $this->redirectError(
@@ -146,18 +120,18 @@ final class FavoriteController
         }
     }
 
-    /**
-     * Quita un anuncio de favoritos.
-     */
     public function handleRemove(): void
     {
         try {
-            $advertisementId =
-                $this->resolveAdvertisementId();
+            [
+                $itemType,
+                $itemId,
+            ] = $this->resolveItem();
 
             $this->verifyNonce(
                 self::ACTION_REMOVE,
-                $advertisementId
+                $itemType,
+                $itemId
             );
 
             $customer =
@@ -166,12 +140,14 @@ final class FavoriteController
             $this->removeFavorite
                 ->execute(
                     (int) $customer['id'],
-                    $advertisementId
+                    $itemType,
+                    $itemId
                 );
 
             $this->redirect(
                 'removed',
-                $advertisementId
+                $itemType,
+                $itemId
             );
         } catch (Throwable $exception) {
             $this->redirectError(
@@ -180,132 +156,198 @@ final class FavoriteController
         }
     }
 
-    /**
-     * Gestiona peticiones realizadas sin una sesión
-     * de cliente DSM autenticada.
-     *
-     * Los clientes de DeSegundaMuda no utilizan
-     * el sistema de usuarios de WordPress, por lo
-     * que nunca debemos enviarlos a wp-login.php.
-     *
-     * Conservamos la URL original para regresar
-     * después del inicio de sesión.
-     */
-    public function handleGuest(): never
-    {
-        $redirectUrl =
-            $this->resolveRedirectUrl();
-
-        $loginUrl =
-            home_url(
-                '/iniciar-sesion/'
-            );
-
-        $loginUrl =
-            add_query_arg(
-                [
-                    'redirect_to' =>
-                        $redirectUrl,
-                ],
-                $loginUrl
-            );
-
-        $loginUrl =
-            (string) apply_filters(
-                'dsm_customer_login_url',
-                $loginUrl,
-                $redirectUrl
-            );
-
-        wp_safe_redirect(
-            $loginUrl
-        );
-
-        exit;
-    }
-
-    /**
-     * Devuelve la acción utilizada para generar/verificar
-     * el nonce de un anuncio.
-     */
     public static function getNonceAction(
         string $action,
-        int $advertisementId
+        int $itemId,
+        string $itemType = Favorite::TYPE_ADVERTISEMENT
     ): string {
         $action =
             sanitize_key(
                 $action
             );
 
-        if (
-            !in_array(
-                $action,
-                [
-                    self::ACTION_ADD,
-                    self::ACTION_REMOVE,
-                ],
-                true
-            )
-        ) {
-            throw new \InvalidArgumentException(
-                'La acción de favorito no es válida.'
+        $itemType =
+            sanitize_key(
+                $itemType
             );
-        }
-
-        if ($advertisementId <= 0) {
-            throw new \InvalidArgumentException(
-                'El ID del anuncio debe ser mayor que cero.'
-            );
-        }
 
         return self::NONCE_ACTION_PREFIX
             . $action
             . '_'
-            . $advertisementId;
+            . $itemType
+            . '_'
+            . max(
+                0,
+                $itemId
+            );
     }
 
     /**
-     * Obtiene el contexto neutral proporcionado por
-     * dsm-clientes.
-     *
+     * @return array{0:string,1:int}
+     */
+    private function resolveItem(): array
+    {
+        $itemType = '';
+        $itemId = 0;
+
+        /*
+         * Nuevo formato genérico.
+         */
+        if (
+            isset($_POST['item_type'])
+            && is_scalar(
+                $_POST['item_type']
+            )
+        ) {
+            $itemType =
+                sanitize_key(
+                    (string) wp_unslash(
+                        $_POST['item_type']
+                    )
+                );
+        }
+
+        if (
+            isset($_POST['item_id'])
+            && is_scalar(
+                $_POST['item_id']
+            )
+        ) {
+            $itemId =
+                max(
+                    0,
+                    (int) $_POST['item_id']
+                );
+        }
+
+        /*
+         * Compatibilidad con formularios antiguos
+         * de anuncios.
+         */
+        if (
+            $itemType === ''
+            && isset(
+                $_POST['advertisement_id']
+            )
+        ) {
+            $itemType =
+                Favorite::TYPE_ADVERTISEMENT;
+
+            $itemId =
+                max(
+                    0,
+                    (int) $_POST[
+                        'advertisement_id'
+                    ]
+                );
+        }
+
+        if (
+            !Favorite::isValidType(
+                $itemType
+            )
+        ) {
+            throw new RuntimeException(
+                'El tipo de favorito no es válido.'
+            );
+        }
+
+        if ($itemId <= 0) {
+            throw new RuntimeException(
+                'No se pudo identificar el elemento favorito.'
+            );
+        }
+
+        return [
+            $itemType,
+            $itemId,
+        ];
+    }
+
+    private function verifyNonce(
+        string $action,
+        string $itemType,
+        int $itemId
+    ): void {
+        $nonce = '';
+
+        if (
+            isset(
+                $_POST[
+                    self::NONCE_FIELD
+                ]
+            )
+            && is_scalar(
+                $_POST[
+                    self::NONCE_FIELD
+                ]
+            )
+        ) {
+            $nonce =
+                (string) wp_unslash(
+                    $_POST[
+                        self::NONCE_FIELD
+                    ]
+                );
+        }
+
+        if (
+            $nonce === ''
+            || !wp_verify_nonce(
+                $nonce,
+                self::getNonceAction(
+                    $action,
+                    $itemId,
+                    $itemType
+                )
+            )
+        ) {
+            throw new RuntimeException(
+                'La solicitud de favoritos no es válida.'
+            );
+        }
+    }
+
+    /**
      * @return array{id:int,status:string}
      */
     private function resolveCurrentCustomer(): array
     {
-        $context =
+        $customer =
             apply_filters(
                 'dsm_current_customer_context',
                 null
             );
 
-        if (!is_array($context)) {
-            $this->handleGuest();
+        if (!is_array($customer)) {
+            throw new RuntimeException(
+                'Debes iniciar sesión para gestionar favoritos.'
+            );
         }
 
         $customerId =
             max(
                 0,
                 (int) (
-                    $context['id']
+                    $customer['id']
                     ?? 0
                 )
             );
 
-        if ($customerId <= 0) {
-            $this->handleGuest();
-        }
-
         $status =
             sanitize_key(
                 (string) (
-                    $context['status']
+                    $customer['status']
                     ?? ''
                 )
             );
 
-        if ($status !== 'active') {
+        if (
+            $customerId <= 0
+            || $status !== 'active'
+        ) {
             throw new RuntimeException(
-                'La cuenta del cliente no está activa.'
+                'Debes iniciar sesión para gestionar favoritos.'
             );
         }
 
@@ -318,78 +360,10 @@ final class FavoriteController
         ];
     }
 
-    /**
-     * Obtiene advertisement_id de la petición.
-     */
-    private function resolveAdvertisementId(): int
-    {
-        $advertisementId =
-            isset($_POST['advertisement_id'])
-                ? absint(
-                    wp_unslash(
-                        (string) $_POST[
-                            'advertisement_id'
-                        ]
-                    )
-                )
-                : 0;
-
-        if ($advertisementId <= 0) {
-            throw new RuntimeException(
-                'El anuncio indicado no es válido.'
-            );
-        }
-
-        return $advertisementId;
-    }
-
-    /**
-     * Verifica el nonce correspondiente a la acción y
-     * al anuncio.
-     */
-    private function verifyNonce(
-        string $action,
-        int $advertisementId
-    ): void {
-        $nonce =
-            isset($_POST[self::NONCE_FIELD])
-                ? sanitize_text_field(
-                    wp_unslash(
-                        (string) $_POST[
-                            self::NONCE_FIELD
-                        ]
-                    )
-                )
-                : '';
-
-        if ($nonce === '') {
-            throw new RuntimeException(
-                'No se pudo validar la solicitud.'
-            );
-        }
-
-        $valid =
-            wp_verify_nonce(
-                $nonce,
-                self::getNonceAction(
-                    $action,
-                    $advertisementId
-                )
-            );
-
-        if ($valid === false) {
-            throw new RuntimeException(
-                'La solicitud ha caducado o no es válida.'
-            );
-        }
-    }
-
-    /**
-     * Redirección tras una operación correcta.
-     */
     private function redirect(
         string $result,
-        int $advertisementId
+        string $itemType,
+        int $itemId
     ): never {
         $redirectUrl =
             $this->resolveRedirectUrl();
@@ -402,8 +376,11 @@ final class FavoriteController
                             $result
                         ),
 
-                    'dsm_favorite_ad' =>
-                        $advertisementId,
+                    'dsm_favorite_type' =>
+                        $itemType,
+
+                    'dsm_favorite_item' =>
+                        $itemId,
                 ],
                 $redirectUrl
             );
@@ -415,9 +392,6 @@ final class FavoriteController
         exit;
     }
 
-    /**
-     * Redirección tras un error.
-     */
     private function redirectError(
         Throwable $exception
     ): never {
@@ -453,13 +427,6 @@ final class FavoriteController
         exit;
     }
 
-    /**
-     * Obtiene una URL de retorno segura.
-     *
-     * El formulario podrá enviar redirect_to.
-     * Si no existe, usamos el referer.
-     * Como último recurso volvemos a home_url().
-     */
     private function resolveRedirectUrl(): string
     {
         $redirectUrl = '';
@@ -495,15 +462,13 @@ final class FavoriteController
                 home_url('/');
         }
 
-        /*
-         * Evitamos conservar mensajes anteriores de
-         * favoritos en la nueva redirección.
-         */
         $redirectUrl =
             remove_query_arg(
                 [
                     'dsm_favorite_result',
                     'dsm_favorite_ad',
+                    'dsm_favorite_type',
+                    'dsm_favorite_item',
                     'dsm_favorite_message',
                 ],
                 $redirectUrl

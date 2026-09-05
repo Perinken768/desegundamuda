@@ -7,28 +7,20 @@ namespace DSM\Favoritos\Frontend;
 use DSM\Anuncios\Advertisement\Advertisement;
 use DSM\Anuncios\Advertisement\AdvertisementRepository;
 use DSM\Anuncios\Image\AdvertisementImageRepository;
+use DSM\Catalogo\Image\ProductImageRepository;
+use DSM\Catalogo\Product\Product;
+use DSM\Catalogo\Product\ProductRepository;
+use DSM\Catalogo\Product\ProductStatus;
 use DSM\Favoritos\Favorite\Favorite;
 use DSM\Favoritos\Favorite\FavoriteRepository;
+use DSM\Multitienda\Store\Store;
+use DSM\Multitienda\Store\StoreRepository;
 use Throwable;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-/**
- * Página "Mis favoritos".
- *
- * Shortcode:
- *
- * [dsm_customer_favorites]
- *
- * DSM Favoritos almacena únicamente la relación:
- *
- * customer_id + advertisement_id
- *
- * Los datos visuales del anuncio continúan perteneciendo
- * a DSM Anuncios.
- */
 final class CustomerFavoritesShortcode
 {
     public const SHORTCODE =
@@ -46,7 +38,95 @@ final class CustomerFavoritesShortcode
                 'render',
             ]
         );
+
+        /*
+         * Protegemos las páginas que contienen
+         * el shortcode de favoritos.
+         *
+         * La redirección se realiza antes de que
+         * WordPress empiece a renderizar la plantilla,
+         * evitando mostrar una página intermedia al
+         * visitante anónimo.
+         */
+        add_action(
+            'template_redirect',
+            [
+                self::class,
+                'protectFavoritesPage',
+            ]
+        );
     }
+
+    /**
+     * Impide acceder a una página de favoritos
+     * sin una sesión activa de DSM Clientes.
+     *
+     * Conservamos la URL solicitada para que,
+     * después de iniciar sesión correctamente,
+     * DSM Clientes devuelva al cliente exactamente
+     * a la página de favoritos.
+     */
+    public static function protectFavoritesPage(): void
+    {
+        if (
+            is_admin()
+            || wp_doing_ajax()
+            || !is_singular()
+        ) {
+            return;
+        }
+
+        $post =
+            get_queried_object();
+
+        if (
+            !($post instanceof \WP_Post)
+            || !has_shortcode(
+                $post->post_content,
+                self::SHORTCODE
+            )
+        ) {
+            return;
+        }
+
+        if (
+            self::resolveCurrentCustomer()
+            !== null
+        ) {
+            return;
+        }
+
+        $favoritesUrl =
+            get_permalink(
+                $post
+            );
+
+        if (
+            !is_string($favoritesUrl)
+            || $favoritesUrl === ''
+        ) {
+            $favoritesUrl =
+                home_url(
+                    '/favoritos/'
+                );
+        }
+
+        $loginUrl =
+            add_query_arg(
+                'redirect_to',
+                $favoritesUrl,
+                home_url(
+                    '/iniciar-sesion/'
+                )
+            );
+
+        wp_safe_redirect(
+            $loginUrl
+        );
+
+        exit;
+    }
+
 
     public static function render(): string
     {
@@ -67,8 +147,17 @@ final class CustomerFavoritesShortcode
             $advertisementRepository =
                 new AdvertisementRepository();
 
-            $imageRepository =
+            $advertisementImageRepository =
                 new AdvertisementImageRepository();
+
+            $productRepository =
+                new ProductRepository();
+
+            $productImageRepository =
+                new ProductImageRepository();
+
+            $storeRepository =
+                new StoreRepository();
 
             $favorites =
                 $favoriteRepository
@@ -82,7 +171,10 @@ final class CustomerFavoritesShortcode
                 self::prepareItems(
                     $favorites,
                     $advertisementRepository,
-                    $imageRepository
+                    $advertisementImageRepository,
+                    $productRepository,
+                    $productImageRepository,
+                    $storeRepository
                 );
 
             return self::renderTemplate(
@@ -133,7 +225,10 @@ final class CustomerFavoritesShortcode
     private static function prepareItems(
         array $favorites,
         AdvertisementRepository $advertisementRepository,
-        AdvertisementImageRepository $imageRepository
+        AdvertisementImageRepository $advertisementImageRepository,
+        ProductRepository $productRepository,
+        ProductImageRepository $productImageRepository,
+        StoreRepository $storeRepository
     ): array {
         $items = [];
 
@@ -142,105 +237,282 @@ final class CustomerFavoritesShortcode
                 continue;
             }
 
-            $advertisement =
-                $advertisementRepository
-                    ->findById(
-                        $favorite->getAdvertisementId()
+            if ($favorite->isAdvertisement()) {
+                $item =
+                    self::prepareAdvertisement(
+                        $favorite,
+                        $advertisementRepository,
+                        $advertisementImageRepository
                     );
 
-            /*
-             * "Mis favoritos" solo muestra anuncios que
-             * continúan siendo públicos.
-             *
-             * Una relación antigua puede sobrevivir unos
-             * instantes hasta que FavoriteCleanup la elimine.
-             */
-            if (
-                !($advertisement instanceof Advertisement)
-                || !$advertisement->isPublic()
-            ) {
+                if ($item !== null) {
+                    $items[] =
+                        $item;
+                }
+
                 continue;
             }
 
-            $cover =
-                $imageRepository
-                    ->findCoverByAdvertisementId(
-                        $advertisement->getId()
+            if ($favorite->isStoreProduct()) {
+                $item =
+                    self::prepareStoreProduct(
+                        $favorite,
+                        $productRepository,
+                        $productImageRepository,
+                        $storeRepository
                     );
 
-            $coverAttachmentId =
-                $cover?->getAttachmentId();
-
-            $coverUrl = '';
-
-            if (
-                $coverAttachmentId !== null
-                && $coverAttachmentId > 0
-            ) {
-                $resolvedCoverUrl =
-                    wp_get_attachment_image_url(
-                        $coverAttachmentId,
-                        'medium'
-                    );
-
-                if (is_string($resolvedCoverUrl)) {
-                    $coverUrl =
-                        $resolvedCoverUrl;
+                if ($item !== null) {
+                    $items[] =
+                        $item;
                 }
             }
-
-            $items[] = [
-                'favorite_id' =>
-                    $favorite->getId(),
-
-                'advertisement_id' =>
-                    $advertisement->getId(),
-
-                'title' =>
-                    $advertisement->getTitle(),
-
-                'slug' =>
-                    $advertisement->getSlug(),
-
-                'brand' =>
-                    $advertisement->getBrand(),
-
-                'price' =>
-                    $advertisement->getPrice(),
-
-                'original_price' =>
-                    $advertisement->getOriginalPrice(),
-
-                'condition_code' =>
-                    $advertisement->getConditionCode(),
-
-                'status' =>
-                    $advertisement->getStatus(),
-
-                'is_reserved' =>
-                    $advertisement->isReserved(),
-
-                'cover_attachment_id' =>
-                    $coverAttachmentId,
-
-                'cover_url' =>
-                    $coverUrl,
-
-                'public_url' =>
-                    self::resolvePublicUrl(
-                        $advertisement
-                    ),
-
-                'favorited_at' =>
-                    $favorite
-                        ->getCreatedAt()
-                        ->format(
-                            'Y-m-d H:i:s'
-                        ),
-            ];
         }
 
         return $items;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private static function prepareAdvertisement(
+        Favorite $favorite,
+        AdvertisementRepository $advertisementRepository,
+        AdvertisementImageRepository $imageRepository
+    ): ?array {
+        $advertisement =
+            $advertisementRepository
+                ->findById(
+                    $favorite->getItemId()
+                );
+
+        if (
+            !($advertisement instanceof Advertisement)
+            || !$advertisement->isPublic()
+        ) {
+            return null;
+        }
+
+        $cover =
+            $imageRepository
+                ->findCoverByAdvertisementId(
+                    $advertisement->getId()
+                );
+
+        $coverAttachmentId =
+            $cover?->getAttachmentId();
+
+        $coverUrl =
+            self::resolveAttachmentUrl(
+                $coverAttachmentId
+            );
+
+        return [
+            'favorite_id' =>
+                $favorite->getId(),
+
+            'item_type' =>
+                Favorite::TYPE_ADVERTISEMENT,
+
+            'item_id' =>
+                $advertisement->getId(),
+
+            'advertisement_id' =>
+                $advertisement->getId(),
+
+            'title' =>
+                $advertisement->getTitle(),
+
+            'brand' =>
+                $advertisement->getBrand(),
+
+            'price' =>
+                $advertisement->getPrice(),
+
+            'original_price' =>
+                $advertisement->getOriginalPrice(),
+
+            'condition_code' =>
+                $advertisement->getConditionCode(),
+
+            'is_reserved' =>
+                $advertisement->isReserved(),
+
+            'cover_url' =>
+                $coverUrl,
+
+            'public_url' =>
+                self::resolveAdvertisementUrl(
+                    $advertisement
+                ),
+
+            'source_label' =>
+                __(
+                    'Particular',
+                    'dsm-favoritos'
+                ),
+
+            'action_label' =>
+                __(
+                    'Ver anuncio',
+                    'dsm-favoritos'
+                ),
+
+            'favorited_at' =>
+                $favorite
+                    ->getCreatedAt()
+                    ->format(
+                        'Y-m-d H:i:s'
+                    ),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private static function prepareStoreProduct(
+        Favorite $favorite,
+        ProductRepository $productRepository,
+        ProductImageRepository $imageRepository,
+        StoreRepository $storeRepository
+    ): ?array {
+        $product =
+            $productRepository
+                ->findById(
+                    $favorite->getItemId()
+                );
+
+        if (!($product instanceof Product)) {
+            return null;
+        }
+
+        if (
+            $product->getStatus()
+            !== ProductStatus::ACTIVE
+        ) {
+            return null;
+        }
+
+        $store =
+            $storeRepository
+                ->findById(
+                    $product->getStoreId()
+                );
+
+        if (
+            !($store instanceof Store)
+            || !$store->isActive()
+        ) {
+            return null;
+        }
+
+        $cover =
+            $imageRepository
+                ->findCoverByProductId(
+                    $product->getId()
+                );
+
+        $coverAttachmentId =
+            $cover?->getAttachmentId();
+
+        $coverUrl =
+            self::resolveAttachmentUrl(
+                $coverAttachmentId
+            );
+
+        $publicUrl =
+            home_url(
+                '/tienda/'
+                . rawurlencode(
+                    $store->getSlug()
+                )
+                . '/'
+                . rawurlencode(
+                    $product->getSlug()
+                )
+                . '/'
+            );
+
+        return [
+            'favorite_id' =>
+                $favorite->getId(),
+
+            'item_type' =>
+                Favorite::TYPE_STORE_PRODUCT,
+
+            'item_id' =>
+                $product->getId(),
+
+            'advertisement_id' =>
+                0,
+
+            'title' =>
+                $product->getName(),
+
+            'brand' =>
+                '',
+
+            'price' =>
+                $product->getDefaultPrice(),
+
+            'original_price' =>
+                $product->getOriginalPrice(),
+
+            'condition_code' =>
+                '',
+
+            'is_reserved' =>
+                false,
+
+            'cover_url' =>
+                $coverUrl,
+
+            'public_url' =>
+                $publicUrl,
+
+            'source_label' =>
+                sprintf(
+                    __(
+                        'Tienda · %s',
+                        'dsm-favoritos'
+                    ),
+                    $store->getName()
+                ),
+
+            'action_label' =>
+                __(
+                    'Ver producto',
+                    'dsm-favoritos'
+                ),
+
+            'favorited_at' =>
+                $favorite
+                    ->getCreatedAt()
+                    ->format(
+                        'Y-m-d H:i:s'
+                    ),
+        ];
+    }
+
+    private static function resolveAttachmentUrl(
+        ?int $attachmentId
+    ): string {
+        if (
+            $attachmentId === null
+            || $attachmentId <= 0
+        ) {
+            return '';
+        }
+
+        $url =
+            wp_get_attachment_image_url(
+                $attachmentId,
+                'medium'
+            );
+
+        return is_string($url)
+            ? $url
+            : '';
     }
 
     /**
@@ -258,12 +530,6 @@ final class CustomerFavoritesShortcode
             return null;
         }
 
-        /*
-         * El contrato actual utiliza "id".
-         *
-         * Conservamos customer_id como compatibilidad
-         * defensiva con integraciones anteriores.
-         */
         $customerId =
             max(
                 0,
@@ -299,7 +565,7 @@ final class CustomerFavoritesShortcode
         ];
     }
 
-    private static function resolvePublicUrl(
+    private static function resolveAdvertisementUrl(
         Advertisement $advertisement
     ): string {
         $url =

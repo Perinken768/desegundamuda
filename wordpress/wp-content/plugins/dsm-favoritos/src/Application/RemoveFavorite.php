@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace DSM\Favoritos\Application;
 
+use DSM\Favoritos\Favorite\Favorite;
 use DSM\Favoritos\Favorite\FavoriteRepository;
 use RuntimeException;
 
@@ -11,20 +12,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/**
- * Caso de uso para quitar un anuncio de favoritos.
- *
- * La eliminación se realiza siempre mediante la pareja:
- *
- * customer_id + advertisement_id
- *
- * De esta forma un cliente nunca puede eliminar
- * accidentalmente el favorito perteneciente a otro cliente.
- *
- * La operación es idempotente:
- * si el favorito ya no existe, el estado final sigue siendo
- * correcto y no se considera un error.
- */
 final class RemoveFavorite
 {
     private FavoriteRepository $favoriteRepository;
@@ -39,7 +26,8 @@ final class RemoveFavorite
 
     public function execute(
         int $customerId,
-        int $advertisementId
+        string $itemType,
+        int $itemId
     ): bool {
         if ($customerId <= 0) {
             throw new RuntimeException(
@@ -47,21 +35,33 @@ final class RemoveFavorite
             );
         }
 
-        if ($advertisementId <= 0) {
+        $itemType =
+            sanitize_key(
+                $itemType
+            );
+
+        if (
+            !Favorite::isValidType(
+                $itemType
+            )
+        ) {
             throw new RuntimeException(
-                'El anuncio indicado no es válido.'
+                'El tipo de favorito indicado no es válido.'
             );
         }
 
-        /*
-         * Si no existe, consideramos que el objetivo
-         * del caso de uso ya está cumplido.
-         */
+        if ($itemId <= 0) {
+            throw new RuntimeException(
+                'El elemento indicado no es válido.'
+            );
+        }
+
         if (
             !$this->favoriteRepository
-                ->exists(
+                ->existsItem(
                     $customerId,
-                    $advertisementId
+                    $itemType,
+                    $itemId
                 )
         ) {
             return true;
@@ -69,17 +69,29 @@ final class RemoveFavorite
 
         $deleted =
             $this->favoriteRepository
-                ->deleteByCustomerAndAdvertisement(
+                ->deleteByCustomerAndItem(
                     $customerId,
-                    $advertisementId
+                    $itemType,
+                    $itemId
                 );
 
         if (!$deleted) {
             throw new RuntimeException(
-                'No se pudo quitar el anuncio de favoritos.'
+                'No se pudo quitar el elemento de favoritos.'
             );
         }
 
         return true;
+    }
+
+    public function executeAdvertisement(
+        int $customerId,
+        int $advertisementId
+    ): bool {
+        return $this->execute(
+            $customerId,
+            Favorite::TYPE_ADVERTISEMENT,
+            $advertisementId
+        );
     }
 }

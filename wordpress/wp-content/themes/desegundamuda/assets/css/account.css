@@ -7399,3 +7399,1002 @@ a.is-current {
 
     text-decoration: none;
 }
+
+
+/* ==========================================================
+   PROMOCIONAR ANUNCIO
+   ========================================================== */
+
+.dsm-promote-advertisement {
+    width: min(
+        1180px,
+        calc(100% - 32px)
+    );
+
+    margin-inline: auto;
+
+    padding-block:
+        var(--dsm-space-7);
+}
+
+.dsm-promote-advertisement .dsm-account-header {
+    max-width: 760px;
+
+    margin-bottom:
+        var(--dsm-space-6);
+}
+
+.dsm-promote-advertisement .dsm-account-header h1 {
+    margin:
+        0
+        0
+        var(--dsm-space-2);
+
+    font-size:
+        clamp(
+            2rem,
+            4vw,
+            3rem
+        );
+}
+
+.dsm-promote-advertisement .dsm-account-header p {
+    margin: 0;
+
+    color:
+        var(--dsm-color-text-muted);
+
+    font-size:
+        var(--dsm-font-size-base);
+}
+
+
+/* ==========================================================
+   SECCIONES
+   ========================================================== */
+
+.dsm-promotion-section {
+    margin-top:
+        var(--dsm-space-7);
+}
+
+.dsm-promotion-section:first-of-type {
+    margin-top:
+        var(--dsm-space-6);
+}
+
+.dsm-promotion-section__header {
+    max-width: 760px;
+
+    margin-bottom:
+        var(--dsm-space-5);
+}
+
+.dsm-promotion-section__header h2 {
+    margin:
+        0
+        0
+        var(--dsm-space-2);
+
+    font-size:
+        1.55rem;
+}
+
+.dsm-promotion-section__header p {
+    margin: 0;
+
+    color:
+        var(--dsm-color-text-muted);
+
+    line-height:
+        1.55;
+}
+
+
+/* ==========================================================
+   ESTADO VACÍO
+   ========================================================== */
+
+.dsm-promotion-empty {
+    padding:
+        var(--dsm-space-5);
+
+    border:
+        1px dashed
+        var(--dsm-color-border);
+
+    border-radius:
+        18px;
+
+    background:
+        var(--dsm-color-surface);
+}
+
+.dsm-promotion-empty strong {
+    display: block;
+
+    margin-bottom:
+        var(--dsm-space-2);
+}
+
+.dsm-promotion-empty p {
+    margin: 0;
+
+    color:
+        var(--dsm-color-text-muted);
+
+    line-height:
+        1.5;
+}
+
+
+/* ==========================================================
+   GRID DE PLANES DE PROMOCIÓN
+   ========================================================== */
+
+.dsm-promotion-plans__grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            3,
+            minmax(0, 1fr)
+        );
+
+    gap:
+        var(--dsm-space-5);
+
+    align-items: stretch;
+}
+
+
+/* ==========================================================
+   TARJETA DE PLAN
+   ========================================================== */
+
+.dsm-promotion-plans__grid > .dsm-card {
+    position: relative;
+
+    display: flex;
+    flex-direction: column;
+
+    min-width: 0;
+    min-height: 100%;
+
+    padding:
+        clamp(
+            var(--dsm-space-5),
+            2vw,
+            var(--dsm-space-6)
+        );
+
+    border:
+        1px solid
+        var(--dsm-color-border);
+
+    border-radius:
+        22px;
+
+    background:
+        var(--dsm-color-surface);
+
+    box-shadow:
+        0 8px 28px
+        rgba(0, 0, 0, 0.05);
+
+    transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        border-color 0.18s ease;
+}
+
+.dsm-promotion-plans__grid > .dsm-card:hover {
+    transform:
+        translateY(-4px);
+
+    border-color:
+        var(--dsm-color-primary);
+
+    box-shadow:
+        0 16px 38px
+        rgba(0, 0, 0, 0.09);
+}
+
+
+/* ==========================================================
+   NOMBRE / DESCRIPCIÓN
+   ========================================================== */
+
+.dsm-promotion-plans__grid > .dsm-card h2 {
+    margin:
+        0
+        0
+        var(--dsm-space-3);
+
+    font-size:
+        1.35rem;
+}
+
+.dsm-promotion-plans__grid > .dsm-card > p:not(
+    .dsm-promotion-plan__price
+) {
+    margin:
+        0
+        0
+        var(--dsm-space-5);
+
+    color:
+        var(--dsm-color-text-muted);
+
+    line-height:
+        1.55;
+}
+
+
+/* ==========================================================
+   PRECIO
+   ========================================================== */
+
+.dsm-promotion-plan__price {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+
+    gap:
+        6px;
+
+    margin:
+        0
+        0
+        var(--dsm-space-5);
+}
+
+.dsm-promotion-plan__price strong {
+    font-size:
+        clamp(
+            1.8rem,
+            3vw,
+            2.35rem
+        );
+
+    line-height: 1;
+
+    letter-spacing:
+        -0.03em;
+}
+
+
+/* ==========================================================
+   BENEFICIOS
+   ========================================================== */
+
+.dsm-promotion-plans__grid > .dsm-card ul {
+    display: grid;
+
+    gap:
+        var(--dsm-space-3);
+
+    margin:
+        0
+        0
+        var(--dsm-space-6);
+
+    padding: 0;
+
+    list-style: none;
+}
+
+.dsm-promotion-plans__grid > .dsm-card li {
+    position: relative;
+
+    padding-left:
+        28px;
+
+    line-height:
+        1.45;
+}
+
+.dsm-promotion-plans__grid > .dsm-card li::before {
+    content: "✓";
+
+    position: absolute;
+
+    left: 0;
+    top: 0;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 20px;
+    height: 20px;
+
+    border-radius:
+        999px;
+
+    color:
+        var(--dsm-color-primary);
+
+    background:
+        color-mix(
+            in srgb,
+            var(--dsm-color-primary) 10%,
+            transparent
+        );
+
+    font-size:
+        0.75rem;
+
+    font-weight:
+        900;
+}
+
+
+/* ==========================================================
+   BOTÓN DE COMPRA
+   ========================================================== */
+
+.dsm-promotion-plans__grid > .dsm-card form {
+    width: 100%;
+
+    margin-top:
+        auto;
+}
+
+.dsm-promotion-plans__grid > .dsm-card form .dsm-button {
+    width: 100%;
+
+    min-height:
+        48px;
+
+    justify-content:
+        center;
+
+    border-radius:
+        12px;
+}
+
+
+/* ==========================================================
+   SALDOS REUTILIZABLES
+   ========================================================== */
+
+.dsm-promotion-wallets {
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0, 1fr)
+        );
+
+    gap:
+        var(--dsm-space-4);
+}
+
+.dsm-promotion-wallet {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap:
+        var(--dsm-space-5);
+
+    padding:
+        var(--dsm-space-5);
+
+    border-radius:
+        18px;
+}
+
+.dsm-promotion-wallet__label {
+    display: block;
+
+    margin-bottom:
+        4px;
+
+    color:
+        var(--dsm-color-text-muted);
+
+    font-size:
+        var(--dsm-font-size-sm);
+}
+
+.dsm-promotion-wallet__time {
+    display: block;
+
+    font-size:
+        1.45rem;
+}
+
+.dsm-promotion-wallet__origin {
+    display: block;
+
+    margin-top:
+        var(--dsm-space-2);
+
+    color:
+        var(--dsm-color-text-muted);
+
+    font-size:
+        var(--dsm-font-size-sm);
+}
+
+.dsm-promotion-wallet form {
+    flex: 0 0 auto;
+}
+
+
+/* ==========================================================
+   PROMOCIÓN ACTIVA
+   ========================================================== */
+
+.dsm-promotion-active-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap:
+        var(--dsm-space-6);
+
+    padding:
+        var(--dsm-space-6);
+
+    border:
+        1px solid
+        var(--dsm-color-primary);
+
+    border-radius:
+        22px;
+}
+
+.dsm-promotion-active-card__content {
+    display: flex;
+    flex-wrap: wrap;
+
+    gap:
+        var(--dsm-space-7);
+}
+
+.dsm-promotion-active-card__content > div {
+    display: grid;
+
+    gap:
+        4px;
+}
+
+.dsm-promotion-active-card__label {
+    color:
+        var(--dsm-color-text-muted);
+
+    font-size:
+        var(--dsm-font-size-sm);
+}
+
+
+/* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+
+@media (max-width: 1100px) {
+
+    .dsm-promotion-plans__grid {
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+    }
+
+    .dsm-promotion-wallets {
+        grid-template-columns:
+            1fr;
+    }
+
+}
+
+@media (max-width: 650px) {
+
+    .dsm-promote-advertisement {
+        width:
+            min(
+                100% - 24px,
+                1180px
+            );
+
+        padding-block:
+            var(--dsm-space-5);
+    }
+
+    .dsm-promotion-section {
+        margin-top:
+            var(--dsm-space-6);
+    }
+
+    .dsm-promotion-plans__grid {
+        grid-template-columns:
+            1fr;
+
+        gap:
+            var(--dsm-space-4);
+    }
+
+    .dsm-promotion-plans__grid > .dsm-card {
+        border-radius:
+            16px;
+    }
+
+    .dsm-promotion-plan__price strong {
+        font-size:
+            2rem;
+    }
+
+    .dsm-promotion-wallet,
+    .dsm-promotion-active-card {
+        align-items:
+            stretch;
+
+        flex-direction:
+            column;
+    }
+
+    .dsm-promotion-wallet form,
+    .dsm-promotion-wallet .dsm-button,
+    .dsm-promotion-active-card form,
+    .dsm-promotion-active-card .dsm-button {
+        width:
+            100%;
+    }
+
+    .dsm-promotion-active-card__content {
+        gap:
+            var(--dsm-space-4);
+    }
+
+}
+
+
+
+
+/* ==========================================================
+   AJUSTE CABECERAS DE SECCIONES DE PROMOCIÓN
+   ========================================================== */
+
+.dsm-promotion-section__header {
+    display: block;
+}
+
+.dsm-promotion-section__header h2 {
+    display: block;
+    width: 100%;
+}
+
+.dsm-promotion-section__header p {
+    display: block;
+    width: 100%;
+    margin-top:
+        var(--dsm-space-2);
+}
+
+
+/* ==========================================================
+   PUBLICAR ANUNCIO - ESTADOS DE BOTONES
+   ========================================================== */
+
+.dsm-advertisement-form-actions
+.dsm-button--secondary {
+    color:
+        var(--dsm-color-primary);
+
+    background:
+        var(--dsm-color-secondary);
+
+    border-color:
+        var(--dsm-color-border);
+}
+
+.dsm-advertisement-form-actions
+.dsm-button--secondary:hover,
+.dsm-advertisement-form-actions
+.dsm-button--secondary:focus-visible {
+    color:
+        var(--dsm-color-text-inverse);
+
+    background:
+        var(--dsm-color-primary);
+
+    border-color:
+        var(--dsm-color-primary);
+}
+
+.dsm-advertisement-form-actions
+.dsm-button--primary {
+    color:
+        var(--dsm-color-text-inverse);
+
+    background:
+        var(--dsm-color-primary);
+
+    border-color:
+        var(--dsm-color-primary);
+}
+
+.dsm-advertisement-form-actions
+.dsm-button--primary:hover,
+.dsm-advertisement-form-actions
+.dsm-button--primary:focus-visible {
+    color:
+        var(--dsm-color-text-inverse);
+
+    background:
+        var(--dsm-color-primary-hover);
+
+    border-color:
+        var(--dsm-color-primary-hover);
+}
+
+
+/* ==========================================================
+   MIS FAVORITOS - ORIGEN DEL ARTÍCULO
+   ========================================================== */
+
+.dsm-customer-favorite__source {
+    margin:
+        -4px
+        0
+        10px;
+
+    color:
+        var(--dsm-color-text-muted);
+
+    font-size:
+        var(--dsm-font-size-sm);
+}
+
+
+/* ==========================================================
+   CHECKOUT DE PAGOS
+   ========================================================== */
+
+.dsm-payment-checkout {
+    width:
+        min(
+            1180px,
+            calc(100% - 32px)
+        );
+
+    margin-inline:
+        auto;
+
+    padding-block:
+        var(--dsm-space-7);
+}
+
+
+/* ==========================================================
+   CABECERA
+   ========================================================== */
+
+.dsm-payment-checkout
+.dsm-account-section-header {
+    margin-bottom:
+        var(--dsm-space-6);
+}
+
+.dsm-payment-checkout
+.dsm-account-section-header__content {
+    max-width:
+        760px;
+}
+
+.dsm-payment-checkout
+.dsm-account-section-header h1 {
+    margin:
+        0
+        0
+        var(--dsm-space-2);
+
+    font-size:
+        clamp(
+            2rem,
+            4vw,
+            3rem
+        );
+
+    line-height:
+        1.08;
+}
+
+.dsm-payment-checkout
+.dsm-account-section-header p {
+    margin:
+        0;
+
+    color:
+        var(--dsm-color-text-muted);
+
+    font-size:
+        var(--dsm-font-size-base);
+}
+
+
+/* ==========================================================
+   TARJETA PRINCIPAL
+   ========================================================== */
+
+.dsm-payment-checkout > .dsm-card {
+    padding:
+        clamp(
+            var(--dsm-space-5),
+            3vw,
+            var(--dsm-space-7)
+        );
+
+    border:
+        1px solid
+        var(--dsm-color-border);
+
+    border-radius:
+        22px;
+
+    background:
+        var(--dsm-color-surface);
+
+    box-shadow:
+        0 10px 30px
+        rgba(0, 0, 0, 0.06);
+}
+
+.dsm-payment-checkout > .dsm-card > h2 {
+    margin:
+        0
+        0
+        var(--dsm-space-5);
+
+    font-size:
+        1.45rem;
+}
+
+
+/* ==========================================================
+   RESUMEN DEL PAGO
+   ========================================================== */
+
+.dsm-payment-checkout
+.dsm-definition-list {
+    margin:
+        0;
+
+    padding:
+        0;
+}
+
+.dsm-payment-checkout
+.dsm-definition-list > div {
+    display:
+        grid;
+
+    grid-template-columns:
+        minmax(140px, 0.45fr)
+        minmax(0, 1fr);
+
+    gap:
+        var(--dsm-space-4);
+
+    align-items:
+        center;
+
+    padding:
+        16px
+        0;
+
+    border-bottom:
+        1px solid
+        var(--dsm-color-border);
+}
+
+.dsm-payment-checkout
+.dsm-definition-list > div:first-child {
+    border-top:
+        1px solid
+        var(--dsm-color-border);
+}
+
+.dsm-payment-checkout
+.dsm-definition-list dt {
+    color:
+        var(--dsm-color-text-muted);
+
+    font-weight:
+        600;
+}
+
+.dsm-payment-checkout
+.dsm-definition-list dd {
+    margin:
+        0;
+
+    font-weight:
+        700;
+}
+
+
+/* ==========================================================
+   AVISO SIN MÉTODOS DE PAGO
+   ========================================================== */
+
+.dsm-payment-checkout
+.dsm-account-notice {
+    margin-top:
+        var(--dsm-space-5);
+
+    padding:
+        16px
+        18px;
+
+    border-radius:
+        var(--dsm-radius-md);
+}
+
+
+/* ==========================================================
+   MÉTODOS DE PAGO
+   ========================================================== */
+
+.dsm-payment-methods {
+    margin-top:
+        var(--dsm-space-7);
+
+    padding-top:
+        var(--dsm-space-6);
+
+    border-top:
+        1px solid
+        var(--dsm-color-border);
+}
+
+.dsm-payment-methods > h2 {
+    margin:
+        0
+        0
+        var(--dsm-space-5);
+
+    font-size:
+        1.4rem;
+}
+
+.dsm-payment-methods > .dsm-card {
+    display:
+        grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        auto;
+
+    column-gap:
+        var(--dsm-space-6);
+
+    align-items:
+        center;
+
+    margin-bottom:
+        var(--dsm-space-4);
+
+    padding:
+        var(--dsm-space-5);
+
+    border:
+        1px solid
+        var(--dsm-color-border);
+
+    border-radius:
+        var(--dsm-radius-lg);
+
+    background:
+        var(--dsm-color-surface);
+}
+
+.dsm-payment-methods > .dsm-card h3 {
+    margin:
+        0
+        0
+        var(--dsm-space-2);
+}
+
+.dsm-payment-methods > .dsm-card p {
+    margin:
+        0;
+
+    color:
+        var(--dsm-color-text-muted);
+}
+
+.dsm-payment-methods > .dsm-card form {
+    grid-column:
+        2;
+
+    grid-row:
+        1 / span 2;
+
+    min-width:
+        190px;
+}
+
+.dsm-payment-methods
+.dsm-button {
+    width:
+        100%;
+
+    min-height:
+        48px;
+
+    border-radius:
+        var(--dsm-radius-md);
+}
+
+
+/* ==========================================================
+   BOTÓN VOLVER
+   ========================================================== */
+
+.dsm-payment-checkout
+.dsm-button {
+    border-radius:
+        var(--dsm-radius-md);
+}
+
+
+/* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+
+@media (max-width: 760px) {
+
+    .dsm-payment-checkout {
+        width:
+            min(
+                100% - 24px,
+                1180px
+            );
+
+        padding-block:
+            var(--dsm-space-5);
+    }
+
+    .dsm-payment-checkout > .dsm-card {
+        padding:
+            var(--dsm-space-5);
+
+        border-radius:
+            16px;
+    }
+
+    .dsm-payment-checkout
+    .dsm-definition-list > div {
+        grid-template-columns:
+            1fr;
+
+        gap:
+            5px;
+    }
+
+    .dsm-payment-methods > .dsm-card {
+        grid-template-columns:
+            1fr;
+    }
+
+    .dsm-payment-methods > .dsm-card form {
+        grid-column:
+            1;
+
+        grid-row:
+            auto;
+
+        width:
+            100%;
+
+        margin-top:
+            var(--dsm-space-4);
+    }
+
+}

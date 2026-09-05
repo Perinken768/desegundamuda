@@ -185,10 +185,50 @@ $hasFavorites =
                     );
                     ?>"
                     href="<?php
-                    echo esc_url(
+                    $favoritesUrl =
                         home_url(
                             '/favoritos/'
+                        );
+
+                    $currentCustomer =
+                        apply_filters(
+                            'dsm_current_customer_context',
+                            null
+                        );
+
+                    $hasActiveCustomer =
+                        is_array(
+                            $currentCustomer
                         )
+                        && max(
+                            0,
+                            (int) (
+                                $currentCustomer['id']
+                                ?? 0
+                            )
+                        ) > 0
+                        && sanitize_key(
+                            (string) (
+                                $currentCustomer['status']
+                                ?? ''
+                            )
+                        ) === 'active';
+
+                    $favoritesDestination =
+                        $hasActiveCustomer
+                            ? $favoritesUrl
+                            : add_query_arg(
+                                [
+                                    'redirect_to' =>
+                                        $favoritesUrl,
+                                ],
+                                home_url(
+                                    '/iniciar-sesion/'
+                                )
+                            );
+
+                    echo esc_url(
+                        $favoritesDestination
                     );
                     ?>"
                     aria-label="<?php
@@ -264,6 +304,68 @@ $hasFavorites =
                     </span>
                 </a>
 
+                <?php
+                /*
+                 * =================================================
+                 * BOTÓN DE CUENTA
+                 * =================================================
+                 *
+                 * DeSegundaMuda utiliza su propia sesión de cliente,
+                 * independiente del usuario de WordPress.
+                 */
+                $headerCustomer =
+                    apply_filters(
+                        'dsm_current_customer_context',
+                        null
+                    );
+
+                $headerHasActiveCustomer =
+                    is_array(
+                        $headerCustomer
+                    )
+                    && max(
+                        0,
+                        (int) (
+                            $headerCustomer['id']
+                            ?? 0
+                        )
+                    ) > 0
+                    && sanitize_key(
+                        (string) (
+                            $headerCustomer['status']
+                            ?? ''
+                        )
+                    ) === 'active';
+
+                $headerAccountUrl =
+                    $headerHasActiveCustomer
+                        ? home_url(
+                            '/mi-cuenta/'
+                        )
+                        : add_query_arg(
+                            [
+                                'redirect_to' =>
+                                    home_url(
+                                        '/mi-cuenta/'
+                                    ),
+                            ],
+                            home_url(
+                                '/iniciar-sesion/'
+                            )
+                        );
+
+                $headerAccountLabel =
+                    $headerHasActiveCustomer
+                        ? __(
+                            'Mi cuenta',
+                            'desegundamuda'
+                        )
+                        : __(
+                            'Iniciar sesión',
+                            'desegundamuda'
+                        );
+                ?>
+
                 <a
                     class="
                         dsm-button
@@ -271,15 +373,13 @@ $hasFavorites =
                     "
                     href="<?php
                     echo esc_url(
-                        home_url(
-                            '/mi-cuenta/'
-                        )
+                        $headerAccountUrl
                     );
                     ?>"
                 >
                     <?php
                     echo esc_html(
-                        dsm_theme_account_label()
+                        $headerAccountLabel
                     );
                     ?>
                 </a>

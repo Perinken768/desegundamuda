@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace DSM\Favoritos\Frontend;
 
+use DSM\Favoritos\Favorite\Favorite;
 use DSM\Favoritos\Favorite\FavoriteRepository;
 use Throwable;
 
@@ -104,6 +105,16 @@ final class FavoriteIntegration
             [
                 $this,
                 'renderDetailAction',
+            ],
+            10,
+            1
+        );
+
+        add_action(
+            'dsm_store_product_detail_actions',
+            [
+                $this,
+                'renderStoreProductDetailAction',
             ],
             10,
             1
@@ -310,6 +321,107 @@ final class FavoriteIntegration
      *
      * @param mixed $advertisement
      */
+    /**
+     * Renderiza el corazón en el detalle
+     * de un producto de tienda.
+     *
+     * @param mixed $productContext
+     */
+    public function renderStoreProductDetailAction(
+        mixed $productContext
+    ): void {
+        if (!is_array($productContext)) {
+            return;
+        }
+
+        $itemId =
+            max(
+                0,
+                (int) (
+                    $productContext['id']
+                    ?? 0
+                )
+            );
+
+        if ($itemId <= 0) {
+            return;
+        }
+
+        $currentCustomer =
+            $this->resolveCurrentCustomer();
+
+        $customerId =
+            $currentCustomer !== null
+                ? (int) $currentCustomer['id']
+                : 0;
+
+        $ownerCustomerId =
+            max(
+                0,
+                (int) (
+                    $productContext[
+                        'owner_customer_id'
+                    ]
+                    ?? 0
+                )
+            );
+
+        if (
+            $customerId > 0
+            && $ownerCustomerId > 0
+            && $customerId === $ownerCustomerId
+        ) {
+            return;
+        }
+
+        $itemType =
+            Favorite::TYPE_STORE_PRODUCT;
+
+        $isFavorite =
+            $customerId > 0
+            && $this->favoriteRepository
+                ->existsItem(
+                    $customerId,
+                    $itemType,
+                    $itemId
+                );
+
+        $action =
+            $isFavorite
+                ? FavoriteController::ACTION_REMOVE
+                : FavoriteController::ACTION_ADD;
+
+        $context =
+            'detail';
+
+        $redirectUrl =
+            trim(
+                (string) (
+                    $productContext['public_url']
+                    ?? ''
+                )
+            );
+
+        if ($redirectUrl === '') {
+            $redirectUrl =
+                home_url('/');
+        }
+
+        $template =
+            DSM_FAVORITOS_PATH
+            . 'templates/public/'
+            . 'favorite-button.php';
+
+        if (!is_file($template)) {
+            return;
+        }
+
+        $this->enqueueAssets();
+
+        require $template;
+    }
+
+
     public function renderCardAction(
         mixed $advertisement
     ): void {

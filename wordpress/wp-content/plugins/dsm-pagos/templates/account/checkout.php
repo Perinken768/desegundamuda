@@ -16,6 +16,94 @@ if (!defined('ABSPATH')) {
  * @var array<string, PaymentProvider> $providers
  */
 
+/*
+ * ============================================================
+ * NOMBRE COMERCIAL DEL CONCEPTO
+ * ============================================================
+ *
+ * Los códigos internos del pago se conservan en base de datos,
+ * pero nunca deben mostrarse directamente al cliente.
+ */
+
+$paymentReference =
+    sanitize_key(
+        (string) (
+            $payment->getSourceReference()
+            ?? ''
+        )
+    );
+
+$paymentPurpose =
+    sanitize_key(
+        $payment->getPurpose()
+    );
+
+$conceptLabels = [
+    /*
+     * Promociones.
+     */
+    'promotion_3_days' =>
+        __(
+            'Promoción 3 días',
+            'dsm-pagos'
+        ),
+
+    'promotion_5_days' =>
+        __(
+            'Promoción 5 días',
+            'dsm-pagos'
+        ),
+
+    'promotion_7_days' =>
+        __(
+            'Promoción 7 días',
+            'dsm-pagos'
+        ),
+
+    /*
+     * Suscripciones.
+     */
+    'ads_50' =>
+        __(
+            '50 anuncios',
+            'dsm-pagos'
+        ),
+
+    'advertising' =>
+        __(
+            'Publicidad',
+            'dsm-pagos'
+        ),
+
+    'multistore' =>
+        __(
+            'Multitienda',
+            'dsm-pagos'
+        ),
+];
+
+$paymentConcept =
+    $conceptLabels[$paymentReference]
+    ?? match ($paymentPurpose) {
+        'promotion' =>
+            __(
+                'Promoción de anuncio',
+                'dsm-pagos'
+            ),
+
+        'subscription' =>
+            __(
+                'Suscripción',
+                'dsm-pagos'
+            ),
+
+        default =>
+            __(
+                'Compra en DeSegundaMuda',
+                'dsm-pagos'
+            ),
+    };
+
 ?>
 
 <section class="dsm-payment-checkout">
@@ -130,8 +218,7 @@ if (!defined('ABSPATH')) {
                 <dd>
                     <?php
                     echo esc_html(
-                        $payment->getSourceReference()
-                        ?? $payment->getPurpose()
+                        $paymentConcept
                     );
                     ?>
                 </dd>

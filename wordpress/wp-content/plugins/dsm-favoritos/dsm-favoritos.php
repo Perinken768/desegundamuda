@@ -21,7 +21,7 @@ define(
 
 define(
     'DSM_FAVORITOS_DB_VERSION',
-    1
+    2
 );
 
 define(

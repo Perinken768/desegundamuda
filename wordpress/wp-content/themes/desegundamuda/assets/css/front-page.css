@@ -1147,25 +1147,52 @@
 
 .dsm-product-detail {
     display: grid;
+
     grid-template-columns:
-        minmax(0, 1.15fr)
-        minmax(320px, 0.85fr);
-    gap: 48px;
+        minmax(0, 1.20fr)
+        minmax(360px, 0.90fr);
+
+    gap: 0;
+
     align-items: start;
+
+    border:
+        1px solid
+        var(--dsm-color-border);
+
+    border-radius:
+        22px;
+
+    background:
+        var(--dsm-color-surface);
+
+    box-shadow:
+        0 10px 30px
+        rgba(0, 0, 0, 0.06);
 }
 
 .dsm-product-gallery {
     min-width: 0;
+
+    padding:
+        24px;
 }
 
 .dsm-product-gallery__main {
     display: flex;
     align-items: center;
     justify-content: center;
+
     overflow: hidden;
-    aspect-ratio: 4 / 5;
-    border-radius: 18px;
-    background: var(--dsm-color-surface-muted);
+
+    aspect-ratio:
+        1 / 1;
+
+    border-radius:
+        14px;
+
+    background:
+        var(--dsm-color-surface-muted);
 }
 
 .dsm-product-gallery__main img {
@@ -1217,8 +1244,20 @@
 }
 
 .dsm-product-detail__information {
-    position: sticky;
-    top: 24px;
+    position: static;
+
+    align-self:
+        stretch;
+
+    padding:
+        32px;
+
+    border-left:
+        1px solid
+        var(--dsm-color-border);
+
+    background:
+        var(--dsm-color-surface);
 }
 
 .dsm-product-detail__store {
@@ -1375,12 +1414,34 @@
     }
 
     .dsm-product-detail {
-        grid-template-columns: 1fr;
-        gap: 24px;
+        grid-template-columns:
+            1fr;
+
+        gap:
+            0;
+
+        border-radius:
+            16px;
     }
 
     .dsm-product-detail__information {
-        position: static;
+        position:
+            static;
+
+        padding:
+            22px;
+
+        border-left:
+            0;
+
+        border-top:
+            1px solid
+            var(--dsm-color-border);
+    }
+
+    .dsm-product-gallery {
+        padding:
+            12px;
     }
 
     .dsm-product-gallery__main {
@@ -1797,4 +1858,33 @@
         transition: none;
     }
 
+}
+
+
+/* ==========================================================
+   PRODUCTO DE TIENDA - TÍTULO + FAVORITO
+   ========================================================== */
+
+.dsm-product-detail__heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+
+    gap:
+        16px;
+
+    margin-bottom:
+        14px;
+}
+
+.dsm-product-detail__heading
+.dsm-product-detail__title {
+    margin:
+        0;
+}
+
+.dsm-product-detail__heading
+.dsm-favorite-form {
+    flex:
+        0 0 auto;
 }

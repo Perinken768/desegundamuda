@@ -213,6 +213,8 @@ add_action(
                     'mis-favoritos',
                     'favoritos',
                     'mis-promociones',
+                    'promocionar-anuncio',
+                    'checkout-pago',
                     'suscripciones',
                     'mi-publicidad',
                     'mi-tienda',

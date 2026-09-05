@@ -486,3 +486,34 @@
     font-weight: 800;
     line-height: 1;
 }
+
+
+/* ==========================================================
+   HEADER - BOTÓN MI CUENTA
+   ========================================================== */
+
+.dsm-header-actions
+.dsm-button--primary {
+    color:
+        var(--dsm-color-text-inverse);
+
+    background:
+        var(--dsm-color-primary);
+
+    border-color:
+        var(--dsm-color-primary);
+}
+
+.dsm-header-actions
+.dsm-button--primary:hover,
+.dsm-header-actions
+.dsm-button--primary:focus-visible {
+    color:
+        var(--dsm-color-text-inverse);
+
+    background:
+        var(--dsm-color-primary-hover);
+
+    border-color:
+        var(--dsm-color-primary-hover);
+}
