@@ -1,0 +1,333 @@
+<?php
+
+declare(strict_types=1);
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+?>
+<!doctype html>
+
+<html <?php language_attributes(); ?>>
+
+<head>
+    <meta charset="<?php bloginfo('charset'); ?>">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <?php wp_head(); ?>
+</head>
+
+<body <?php body_class(); ?>>
+
+<?php wp_body_open(); ?>
+
+<?php
+$favoriteCount = 0;
+
+$customerContext =
+    apply_filters(
+        'dsm_current_customer_context',
+        null
+    );
+
+if (
+    is_array($customerContext)
+    && (int) (
+        $customerContext['id']
+        ?? 0
+    ) > 0
+    && sanitize_key(
+        (string) (
+            $customerContext['status']
+            ?? ''
+        )
+    ) === 'active'
+) {
+    $favoriteCount =
+        max(
+            0,
+            (int) apply_filters(
+                'dsm_favorite_customer_count',
+                0,
+                (int) $customerContext['id']
+            )
+        );
+}
+
+$hasFavorites =
+    $favoriteCount > 0;
+?>
+
+<header class="dsm-site-header">
+
+    <div class="dsm-container">
+
+        <div class="dsm-header-main">
+
+            <div class="dsm-header-brand">
+
+                <a
+                    class="dsm-site-brand"
+                    href="<?php
+                    echo esc_url(
+                        home_url('/')
+                    );
+                    ?>"
+                    rel="home"
+                >
+
+                    <?php if (has_custom_logo()) : ?>
+
+                        <?php
+                        $logoId =
+                            (int) get_theme_mod(
+                                'custom_logo'
+                            );
+
+                        echo wp_get_attachment_image(
+                            $logoId,
+                            'full',
+                            false,
+                            [
+                                'class' =>
+                                    'dsm-site-logo',
+                            ]
+                        );
+                        ?>
+
+                    <?php endif; ?>
+
+                    <?php if (
+                        dsm_theme_show_site_title()
+                    ) : ?>
+
+                        <span class="dsm-site-title">
+                            <?php
+                            bloginfo(
+                                'name'
+                            );
+                            ?>
+                        </span>
+
+                    <?php endif; ?>
+
+                </a>
+
+            </div>
+
+            <button
+                class="dsm-navigation-toggle"
+                type="button"
+                aria-expanded="false"
+                aria-controls="dsm-primary-navigation"
+            >
+                <span class="screen-reader-text">
+                    <?php
+                    esc_html_e(
+                        'Abrir navegación',
+                        'desegundamuda'
+                    );
+                    ?>
+                </span>
+
+                <span aria-hidden="true">
+                    ☰
+                </span>
+            </button>
+
+            <nav
+                id="dsm-primary-navigation"
+                class="dsm-primary-navigation"
+                aria-label="<?php
+                esc_attr_e(
+                    'Navegación principal',
+                    'desegundamuda'
+                );
+                ?>"
+            >
+
+                <?php
+                wp_nav_menu(
+                    [
+                        'theme_location' =>
+                            'primary',
+
+                        'container' =>
+                            false,
+
+                        'menu_class' =>
+                            'dsm-primary-menu',
+
+                        'fallback_cb' =>
+                            false,
+                    ]
+                );
+                ?>
+
+            </nav>
+
+            <div class="dsm-header-actions">
+
+                <a
+                    class="<?php
+                    echo esc_attr(
+                        'dsm-header-action '
+                        . 'dsm-header-action--favorites'
+                        . (
+                            $hasFavorites
+                                ? ' is-active'
+                                : ''
+                        )
+                    );
+                    ?>"
+                    href="<?php
+                    $favoritesUrl =
+                        home_url(
+                            '/favoritos/'
+                        );
+
+                    $currentCustomer =
+                        apply_filters(
+                            'dsm_current_customer_context',
+                            null
+                        );
+
+                    $hasActiveCustomer =
+                        is_array(
+                            $currentCustomer
+                        )
+                        && max(
+                            0,
+                            (int) (
+                                $currentCustomer['id']
+                                ?? 0
+                            )
+                        ) > 0
+                        && sanitize_key(
+                            (string) (
+                                $currentCustomer['status']
+                                ?? ''
+                            )
+                        ) === 'active';
+
+                    $favoritesDestination =
+                        $hasActiveCustomer
+                            ? $favoritesUrl
+                            : add_query_arg(
+                                [
+                                    'redirect_to' =>
+                                        $favoritesUrl,
+                                ],
+                                home_url(
+                                    '/iniciar-sesion/'
+                                )
+                            );
+
+                    echo esc_url(
+                        $favoritesDestination
+                    );
+                    ?>"
+                    aria-label="<?php
+                    echo esc_attr(
+                        $hasFavorites
+                            ? sprintf(
+                                'Favoritos: %d',
+                                $favoriteCount
+                            )
+                            : 'Favoritos'
+                    );
+                    ?>"
+                    title="<?php
+                    echo esc_attr(
+                        $hasFavorites
+                            ? sprintf(
+                                'Favoritos: %d',
+                                $favoriteCount
+                            )
+                            : 'Favoritos'
+                    );
+                    ?>"
+                >
+                    <svg
+                        class="dsm-header-favorites-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                        focusable="false"
+                    >
+                        <path
+                            d="
+                                M12 21
+                                C12 21 3 15.5 3 8.5
+                                C3 5.5 5.3 3.5 8 3.5
+                                C9.8 3.5 11.1 4.4 12 5.7
+                                C12.9 4.4 14.2 3.5 16 3.5
+                                C18.7 3.5 21 5.5 21 8.5
+                                C21 15.5 12 21 12 21
+                                Z
+                            "
+                        />
+                    </svg>
+
+                    <?php if ($hasFavorites) : ?>
+
+                        <span
+                            class="dsm-header-favorites-count"
+                            aria-hidden="true"
+                        >
+                            <?php
+                            echo esc_html(
+                                (string) min(
+                                    $favoriteCount,
+                                    99
+                                )
+                            );
+                            ?>
+                        </span>
+
+                    <?php endif; ?>
+
+                    <span class="screen-reader-text">
+                        <?php
+                        echo esc_html(
+                            $hasFavorites
+                                ? sprintf(
+                                    'Favoritos: %d',
+                                    $favoriteCount
+                                )
+                                : 'Favoritos'
+                        );
+                        ?>
+                    </span>
+                </a>
+
+                <a
+                    class="
+                        dsm-button
+                        dsm-button--primary
+                    "
+                    href="<?php
+                    echo esc_url(
+                        home_url(
+                            '/mi-cuenta/'
+                        )
+                    );
+                    ?>"
+                >
+                    <?php
+                    echo esc_html(
+                        dsm_theme_account_label()
+                    );
+                    ?>
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</header>

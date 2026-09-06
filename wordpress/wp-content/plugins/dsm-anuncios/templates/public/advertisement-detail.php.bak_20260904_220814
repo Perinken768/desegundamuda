@@ -1,0 +1,1382 @@
+<?php
+
+declare(strict_types=1);
+
+use DSM\Anuncios\Advertisement\AdvertisementStatus;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+/**
+ * Variables proporcionadas por AdvertisementDetailShortcode:
+ *
+ * @var array<string, mixed>      $advertisement
+ * @var array<string, mixed>|null $currentCustomer
+ * @var bool                      $isOwner
+ * @var bool                      $showBreadcrumbs
+ * @var bool                      $showSeller
+ * @var bool                      $showActions
+ */
+
+$advertisementId =
+    max(
+        0,
+        (int) (
+            $advertisement['id']
+            ?? 0
+        )
+    );
+
+$title =
+    trim(
+        (string) (
+            $advertisement['title']
+            ?? ''
+        )
+    );
+
+$description =
+    trim(
+        (string) (
+            $advertisement['description']
+            ?? ''
+        )
+    );
+
+$brand =
+    trim(
+        (string) (
+            $advertisement['brand']
+            ?? ''
+        )
+    );
+
+$categoryName =
+    trim(
+        (string) (
+            $advertisement['category_name']
+            ?? ''
+        )
+    );
+
+$categoryId =
+    max(
+        0,
+        (int) (
+            $advertisement['category_id']
+            ?? 0
+        )
+    );
+
+$conditionCode =
+    sanitize_key(
+        (string) (
+            $advertisement['condition_code']
+            ?? ''
+        )
+    );
+
+$status =
+    sanitize_key(
+        (string) (
+            $advertisement['status']
+            ?? ''
+        )
+    );
+
+$price =
+    (float) (
+        $advertisement['price']
+        ?? 0
+    );
+
+$originalPrice =
+    isset($advertisement['original_price'])
+    && $advertisement['original_price'] !== null
+        ? (float) $advertisement['original_price']
+        : null;
+
+$purchaseDate =
+    trim(
+        (string) (
+            $advertisement['purchase_date']
+            ?? ''
+        )
+    );
+
+$publishedAt =
+    trim(
+        (string) (
+            $advertisement['published_at']
+            ?? ''
+        )
+    );
+
+$updatedAt =
+    trim(
+        (string) (
+            $advertisement['updated_at']
+            ?? ''
+        )
+    );
+
+$isReserved =
+    $status
+    === AdvertisementStatus::RESERVED;
+
+$isPromoted =
+    !empty(
+        $advertisement['is_promoted']
+    );
+
+$images =
+    isset($advertisement['images'])
+    && is_array($advertisement['images'])
+        ? $advertisement['images']
+        : [];
+
+$location =
+    isset($advertisement['location'])
+    && is_array($advertisement['location'])
+        ? $advertisement['location']
+        : [];
+
+$seller =
+    isset($advertisement['seller'])
+    && is_array($advertisement['seller'])
+        ? $advertisement['seller']
+        : [];
+
+$promotion =
+    isset($advertisement['promotion'])
+    && is_array($advertisement['promotion'])
+        ? $advertisement['promotion']
+        : null;
+
+$areaName =
+    trim(
+        (string) (
+            $location['area_name']
+            ?? ''
+        )
+    );
+
+$municipalityName =
+    trim(
+        (string) (
+            $location['municipality_name']
+            ?? ''
+        )
+    );
+
+$sellerDisplayName =
+    trim(
+        (string) (
+            $seller['display_name']
+            ?? $advertisement[
+                'customer_display_name'
+            ]
+            ?? ''
+        )
+    );
+
+if ($sellerDisplayName === '') {
+    $sellerDisplayName =
+        __(
+            'Vendedor de DeSegundaMuda',
+            'dsm-anuncios'
+        );
+}
+
+$sellerAvatarUrl =
+    trim(
+        (string) (
+            $seller['avatar_url']
+            ?? $advertisement[
+                'customer_avatar_url'
+            ]
+            ?? ''
+        )
+    );
+
+$sellerProfileUrl =
+    trim(
+        (string) (
+            $seller['profile_url']
+            ?? ''
+        )
+    );
+
+$memberSince =
+    trim(
+        (string) (
+            $seller['member_since']
+            ?? ''
+        )
+    );
+
+$ratingAverage =
+    isset($seller['rating_average'])
+    && is_numeric(
+        $seller['rating_average']
+    )
+        ? (float) $seller['rating_average']
+        : null;
+
+$ratingCount =
+    max(
+        0,
+        (int) (
+            $seller['rating_count']
+            ?? 0
+        )
+    );
+
+/*
+ * Métodos públicos de contacto del vendedor.
+ *
+ * El teléfono no se muestra como texto. Solamente se utilizan
+ * las URLs generadas por DSM Clientes cuando el vendedor ha
+ * autorizado el método correspondiente.
+ */
+$sellerAllowsPhoneCalls =
+    !empty(
+        $seller['allows_phone_calls']
+    );
+
+$sellerAllowsWhatsapp =
+    !empty(
+        $seller['allows_whatsapp']
+    );
+
+$sellerHasValidContact =
+    !empty(
+        $seller['has_valid_contact']
+    );
+
+$sellerPhoneCallUrl =
+    trim(
+        (string) (
+            $seller['phone_call_url']
+            ?? ''
+        )
+    );
+
+$sellerWhatsappUrl =
+    trim(
+        (string) (
+            $seller['whatsapp_url']
+            ?? ''
+        )
+    );
+
+/*
+ * Evita mostrar un método como disponible si falta su URL.
+ */
+$canCallSeller =
+    $sellerHasValidContact
+    && $sellerAllowsPhoneCalls
+    && $sellerPhoneCallUrl !== '';
+
+$canWhatsappSeller =
+    $sellerHasValidContact
+    && $sellerAllowsWhatsapp
+    && $sellerWhatsappUrl !== '';
+
+$conditionLabels = [
+    'new_with_tags' =>
+        __(
+            'Nuevo con etiquetas',
+            'dsm-anuncios'
+        ),
+
+    'new_without_tags' =>
+        __(
+            'Nuevo sin etiquetas',
+            'dsm-anuncios'
+        ),
+
+    'very_good' =>
+        __(
+            'Muy buen estado',
+            'dsm-anuncios'
+        ),
+
+    'good' =>
+        __(
+            'Buen estado',
+            'dsm-anuncios'
+        ),
+
+    'satisfactory' =>
+        __(
+            'Estado satisfactorio',
+            'dsm-anuncios'
+        ),
+];
+
+$conditionLabel =
+    $conditionLabels[$conditionCode]
+    ?? (
+        $conditionCode !== ''
+            ? $conditionCode
+            : __(
+                'Sin especificar',
+                'dsm-anuncios'
+            )
+    );
+
+$marketplaceUrl =
+    home_url('/anuncios/');
+
+$categoryUrl =
+    $categoryId > 0
+        ? add_query_arg(
+            [
+                'dsm_category' =>
+                    $categoryId,
+            ],
+            $marketplaceUrl
+        )
+        : $marketplaceUrl;
+
+$mainImage =
+    $images[0]
+    ?? null;
+
+$mainImageUrl =
+    is_array($mainImage)
+        ? (
+            (string) (
+                $mainImage['large_url']
+                ?? $mainImage['full_url']
+                ?? ''
+            )
+        )
+        : '';
+
+$mainImageAlt =
+    is_array($mainImage)
+        ? trim(
+            (string) (
+                $mainImage['alt']
+                ?? ''
+            )
+        )
+        : '';
+
+if ($mainImageAlt === '') {
+    $mainImageAlt =
+        $title;
+}
+
+$formattedLocationParts = [];
+
+if ($municipalityName !== '') {
+    $formattedLocationParts[] =
+        $municipalityName;
+}
+
+if ($areaName !== '') {
+    $formattedLocationParts[] =
+        $areaName;
+}
+
+$formattedLocation =
+    implode(
+        ', ',
+        $formattedLocationParts
+    );
+
+$publishedLabel = '';
+
+if ($publishedAt !== '') {
+    $publishedTimestamp =
+        strtotime(
+            $publishedAt
+            . ' UTC'
+        );
+
+    if ($publishedTimestamp !== false) {
+        $publishedLabel =
+            sprintf(
+                __(
+                    'Publicado hace %s',
+                    'dsm-anuncios'
+                ),
+                human_time_diff(
+                    $publishedTimestamp,
+                    current_time(
+                        'timestamp',
+                        true
+                    )
+                )
+            );
+    }
+}
+
+
+$editUrl =
+    (string) apply_filters(
+        'dsm_advertisement_edit_url',
+        '',
+        $advertisementId,
+        $advertisement
+    );
+
+$markSoldUrl =
+    (string) apply_filters(
+        'dsm_advertisement_mark_sold_url',
+        '',
+        $advertisementId,
+        $advertisement
+    );
+
+$withdrawUrl =
+    (string) apply_filters(
+        'dsm_advertisement_withdraw_url',
+        '',
+        $advertisementId,
+        $advertisement
+    );
+
+$promoteUrl =
+    (string) apply_filters(
+        'dsm_advertisement_promote_url',
+        '',
+        $advertisementId,
+        $advertisement
+    );
+
+?>
+
+<article
+    class="<?php echo esc_attr(
+        'dsm-advertisement-detail'
+        . (
+            $isReserved
+                ? ' is-reserved'
+                : ''
+        )
+        . (
+            $isPromoted
+                ? ' is-promoted'
+                : ''
+        )
+    ); ?>"
+    data-advertisement-id="<?php echo esc_attr(
+        (string) $advertisementId
+    ); ?>"
+>
+    <?php if ($showBreadcrumbs) : ?>
+        <nav
+            class="dsm-advertisement-breadcrumbs"
+            aria-label="<?php echo esc_attr__(
+                'Ruta de navegación',
+                'dsm-anuncios'
+            ); ?>"
+        >
+            <a href="<?php echo esc_url(
+                home_url('/')
+            ); ?>">
+                <?php
+                esc_html_e(
+                    'Inicio',
+                    'dsm-anuncios'
+                );
+                ?>
+            </a>
+
+            <span aria-hidden="true">›</span>
+
+            <a href="<?php echo esc_url(
+                $marketplaceUrl
+            ); ?>">
+                <?php
+                esc_html_e(
+                    'Anuncios',
+                    'dsm-anuncios'
+                );
+                ?>
+            </a>
+
+            <?php if ($categoryName !== '') : ?>
+                <span aria-hidden="true">›</span>
+
+                <a href="<?php echo esc_url(
+                    $categoryUrl
+                ); ?>">
+                    <?php echo esc_html(
+                        $categoryName
+                    ); ?>
+                </a>
+            <?php endif; ?>
+
+            <span aria-hidden="true">›</span>
+
+            <span aria-current="page">
+                <?php echo esc_html($title); ?>
+            </span>
+        </nav>
+    <?php endif; ?>
+
+    <div class="dsm-advertisement-detail__layout">
+        <section class="dsm-advertisement-gallery">
+            <div
+                class="dsm-advertisement-gallery__main"
+                data-dsm-gallery-main
+            >
+                <?php if ($mainImageUrl !== '') : ?>
+                    <img
+                        src="<?php echo esc_url(
+                            $mainImageUrl
+                        ); ?>"
+                        alt="<?php echo esc_attr(
+                            $mainImageAlt
+                        ); ?>"
+                        data-dsm-gallery-main-image
+                    >
+                <?php else : ?>
+                    <div class="dsm-advertisement-gallery__placeholder">
+                        <span
+                            class="dashicons dashicons-format-image"
+                            aria-hidden="true"
+                        ></span>
+
+                        <span>
+                            <?php
+                            esc_html_e(
+                                'Este anuncio todavía no tiene imágenes.',
+                                'dsm-anuncios'
+                            );
+                            ?>
+                        </span>
+                    </div>
+                <?php endif; ?>
+
+                <div class="dsm-advertisement-detail__badges">
+                    <?php if ($isPromoted) : ?>
+                        <span class="dsm-badge dsm-badge--promoted">
+                            <span
+                                class="dashicons dashicons-star-filled"
+                                aria-hidden="true"
+                            ></span>
+
+                            <?php
+                            esc_html_e(
+                                'Destacado',
+                                'dsm-anuncios'
+                            );
+                            ?>
+                        </span>
+                    <?php endif; ?>
+
+                    <?php if ($isReserved) : ?>
+                        <span class="dsm-badge dsm-badge--reserved">
+                            <?php
+                            esc_html_e(
+                                'Reservado',
+                                'dsm-anuncios'
+                            );
+                            ?>
+                        </span>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <?php if (count($images) > 1) : ?>
+                <div
+                    class="dsm-advertisement-gallery__thumbnails"
+                    role="list"
+                    aria-label="<?php echo esc_attr__(
+                        'Imágenes del anuncio',
+                        'dsm-anuncios'
+                    ); ?>"
+                >
+                    <?php foreach (
+                        $images
+                        as $index => $image
+                    ) : ?>
+                        <?php
+                        if (!is_array($image)) {
+                            continue;
+                        }
+
+                        $largeUrl =
+                            trim(
+                                (string) (
+                                    $image['large_url']
+                                    ?? $image['full_url']
+                                    ?? ''
+                                )
+                            );
+
+                        $thumbnailUrl =
+                            trim(
+                                (string) (
+                                    $image[
+                                        'thumbnail_url'
+                                    ]
+                                    ?? $image[
+                                        'medium_url'
+                                    ]
+                                    ?? $largeUrl
+                                )
+                            );
+
+                        $imageAlt =
+                            trim(
+                                (string) (
+                                    $image['alt']
+                                    ?? ''
+                                )
+                            );
+
+                        if ($imageAlt === '') {
+                            $imageAlt =
+                                sprintf(
+                                    __(
+                                        '%1$s, imagen %2$d',
+                                        'dsm-anuncios'
+                                    ),
+                                    $title,
+                                    $index + 1
+                                );
+                        }
+
+                        if (
+                            $largeUrl === ''
+                            || $thumbnailUrl === ''
+                        ) {
+                            continue;
+                        }
+                        ?>
+
+                        <button
+                            class="<?php echo esc_attr(
+                                'dsm-advertisement-gallery__thumbnail'
+                                . (
+                                    $index === 0
+                                        ? ' is-active'
+                                        : ''
+                                )
+                            ); ?>"
+                            type="button"
+                            data-dsm-gallery-thumbnail
+                            data-image-url="<?php echo esc_url(
+                                $largeUrl
+                            ); ?>"
+                            data-image-alt="<?php echo esc_attr(
+                                $imageAlt
+                            ); ?>"
+                            aria-label="<?php echo esc_attr(
+                                sprintf(
+                                    __(
+                                        'Mostrar imagen %d',
+                                        'dsm-anuncios'
+                                    ),
+                                    $index + 1
+                                )
+                            ); ?>"
+                            aria-pressed="<?php echo esc_attr(
+                                $index === 0
+                                    ? 'true'
+                                    : 'false'
+                            ); ?>"
+                        >
+                            <img
+                                src="<?php echo esc_url(
+                                    $thumbnailUrl
+                                ); ?>"
+                                alt=""
+                                loading="lazy"
+                            >
+                        </button>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </section>
+
+        <aside class="dsm-advertisement-summary">
+            <?php if ($categoryName !== '') : ?>
+                <a
+                    class="dsm-advertisement-summary__category"
+                    href="<?php echo esc_url(
+                        $categoryUrl
+                    ); ?>"
+                >
+                    <?php echo esc_html(
+                        $categoryName
+                    ); ?>
+                </a>
+            <?php endif; ?>
+
+            <h1 class="dsm-advertisement-summary__title">
+                <?php echo esc_html($title); ?>
+            </h1>
+
+            <div class="dsm-advertisement-summary__price">
+                <strong>
+                    <?php
+                    echo esc_html(
+                        number_format_i18n(
+                            $price,
+                            2
+                        )
+                        . ' €'
+                    );
+                    ?>
+                </strong>
+
+                <?php if (
+                    $originalPrice !== null
+                    && $originalPrice > $price
+                ) : ?>
+                    <del>
+                        <?php
+                        echo esc_html(
+                            number_format_i18n(
+                                $originalPrice,
+                                2
+                            )
+                            . ' €'
+                        );
+                        ?>
+                    </del>
+
+                    <?php
+                    $discountPercentage =
+                        $originalPrice > 0
+                            ? (int) round(
+                                (
+                                    (
+                                        $originalPrice
+                                        - $price
+                                    )
+                                    / $originalPrice
+                                )
+                                * 100
+                            )
+                            : 0;
+                    ?>
+
+                    <?php if (
+                        $discountPercentage > 0
+                    ) : ?>
+                        <span class="dsm-advertisement-summary__discount">
+                            <?php
+                            printf(
+                                esc_html__(
+                                    '-%d%%',
+                                    'dsm-anuncios'
+                                ),
+                                $discountPercentage
+                            );
+                            ?>
+                        </span>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </div>
+
+            <?php if ($publishedLabel !== '') : ?>
+                <p class="dsm-advertisement-summary__published">
+                    <?php echo esc_html(
+                        $publishedLabel
+                    ); ?>
+                </p>
+            <?php endif; ?>
+
+            <dl class="dsm-advertisement-summary__attributes">
+                <?php if ($brand !== '') : ?>
+                    <div>
+                        <dt>
+                            <?php
+                            esc_html_e(
+                                'Marca',
+                                'dsm-anuncios'
+                            );
+                            ?>
+                        </dt>
+
+                        <dd>
+                            <?php echo esc_html(
+                                $brand
+                            ); ?>
+                        </dd>
+                    </div>
+                <?php endif; ?>
+
+                <div>
+                    <dt>
+                        <?php
+                        esc_html_e(
+                            'Estado',
+                            'dsm-anuncios'
+                        );
+                        ?>
+                    </dt>
+
+                    <dd>
+                        <?php echo esc_html(
+                            $conditionLabel
+                        ); ?>
+                    </dd>
+                </div>
+
+                <?php if (
+                    $purchaseDate !== ''
+                ) : ?>
+                    <div>
+                        <dt>
+                            <?php
+                            esc_html_e(
+                                'Fecha de compra',
+                                'dsm-anuncios'
+                            );
+                            ?>
+                        </dt>
+
+                        <dd>
+                            <?php
+                            $purchaseTimestamp =
+                                strtotime(
+                                    $purchaseDate
+                                );
+
+                            echo esc_html(
+                                $purchaseTimestamp !== false
+                                    ? wp_date(
+                                        get_option(
+                                            'date_format'
+                                        ),
+                                        $purchaseTimestamp
+                                    )
+                                    : $purchaseDate
+                            );
+                            ?>
+                        </dd>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (
+                    $formattedLocation !== ''
+                ) : ?>
+                    <div>
+                        <dt>
+                            <?php
+                            esc_html_e(
+                                'Ubicación',
+                                'dsm-anuncios'
+                            );
+                            ?>
+                        </dt>
+
+                        <dd>
+                            <?php echo esc_html(
+                                $formattedLocation
+                            ); ?>
+                        </dd>
+                    </div>
+                <?php endif; ?>
+            </dl>
+
+            <?php if ($showActions) : ?>
+                <div class="dsm-advertisement-actions">
+                    <?php if ($isOwner) : ?>
+                        <div class="dsm-advertisement-actions__owner-notice">
+                            <span
+                                class="dashicons dashicons-admin-users"
+                                aria-hidden="true"
+                            ></span>
+
+                            <span>
+                                <?php
+                                esc_html_e(
+                                    'Este anuncio es tuyo.',
+                                    'dsm-anuncios'
+                                );
+                                ?>
+                            </span>
+                        </div>
+
+                        <?php if ($editUrl !== '') : ?>
+                            <a
+                                class="dsm-button dsm-button--primary"
+                                href="<?php echo esc_url(
+                                    $editUrl
+                                ); ?>"
+                            >
+                                <?php
+                                esc_html_e(
+                                    'Editar anuncio',
+                                    'dsm-anuncios'
+                                );
+                                ?>
+                            </a>
+                        <?php endif; ?>
+
+                        <?php if (
+                            $promoteUrl !== ''
+                            && !$isReserved
+                        ) : ?>
+                            <a
+                                class="dsm-button dsm-button--promoted"
+                                href="<?php echo esc_url(
+                                    $promoteUrl
+                                ); ?>"
+                            >
+                                <span
+                                    class="dashicons dashicons-star-filled"
+                                    aria-hidden="true"
+                                ></span>
+
+                                <?php
+                                esc_html_e(
+                                    'Promocionar',
+                                    'dsm-anuncios'
+                                );
+                                ?>
+                            </a>
+                        <?php endif; ?>
+
+                        <?php if ($markSoldUrl !== '') : ?>
+                            <a
+                                class="dsm-button dsm-button--success"
+                                href="<?php echo esc_url(
+                                    $markSoldUrl
+                                ); ?>"
+                            >
+                                <?php
+                                esc_html_e(
+                                    'Marcar como vendido',
+                                    'dsm-anuncios'
+                                );
+                                ?>
+                            </a>
+                        <?php endif; ?>
+
+                        <?php if ($withdrawUrl !== '') : ?>
+                            <a
+                                class="dsm-button dsm-button--secondary"
+                                href="<?php echo esc_url(
+                                    $withdrawUrl
+                                ); ?>"
+                            >
+                                <?php
+                                esc_html_e(
+                                    'Retirar anuncio',
+                                    'dsm-anuncios'
+                                );
+                                ?>
+                            </a>
+                        <?php endif; ?>
+
+                    <?php else : ?>
+                        <?php if ($isReserved) : ?>
+                            <div class="dsm-advertisement-actions__reserved-notice">
+                                <span
+                                    class="dashicons dashicons-lock"
+                                    aria-hidden="true"
+                                ></span>
+
+                                <span>
+                                    <?php
+                                    esc_html_e(
+                                        'Este artículo está reservado actualmente.',
+                                        'dsm-anuncios'
+                                    );
+                                    ?>
+                                </span>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if (!$isReserved) : ?>
+                            <?php if ($canWhatsappSeller) : ?>
+                                <a
+                                    class="dsm-button dsm-button--success dsm-button--whatsapp"
+                                    href="<?php echo esc_url(
+                                        $sellerWhatsappUrl
+                                    ); ?>"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <span
+                                        class="dashicons dashicons-format-chat"
+                                        aria-hidden="true"
+                                    ></span>
+
+                                    <?php
+                                    esc_html_e(
+                                        'Contactar por WhatsApp',
+                                        'dsm-anuncios'
+                                    );
+                                    ?>
+                                </a>
+                            <?php endif; ?>
+
+                            <?php if ($canCallSeller) : ?>
+                                <a
+                                    class="dsm-button dsm-button--primary dsm-button--phone"
+                                    href="<?php echo esc_url(
+                                        $sellerPhoneCallUrl
+                                    ); ?>"
+                                >
+                                    <span
+                                        class="dashicons dashicons-phone"
+                                        aria-hidden="true"
+                                    ></span>
+
+                                    <?php
+                                    esc_html_e(
+                                        'Llamar al vendedor',
+                                        'dsm-anuncios'
+                                    );
+                                    ?>
+                                </a>
+                            <?php endif; ?>
+
+                            <?php if (
+                                !$canWhatsappSeller
+                                && !$canCallSeller
+                            ) : ?>
+                                <div class="dsm-advertisement-actions__contact-unavailable">
+                                    <span
+                                        class="dashicons dashicons-warning"
+                                        aria-hidden="true"
+                                    ></span>
+
+                                    <span>
+                                        <?php
+                                        esc_html_e(
+                                            'El vendedor no ha habilitado ningún método de contacto.',
+                                            'dsm-anuncios'
+                                        );
+                                        ?>
+                                    </span>
+                                </div>
+                            <?php endif; ?>
+                        <?php endif; ?>
+
+                        <?php
+                        /**
+                         * Punto de extensión para acciones adicionales
+                         * sobre el detalle público del anuncio.
+                         *
+                         * Los módulos externos pueden añadir aquí sus
+                         * propias acciones sin acoplar su lógica a
+                         * DSM Anuncios.
+                         *
+                         * @param array<string, mixed> $advertisement
+                         */
+                        do_action(
+                            'dsm_advertisement_detail_actions',
+                            $advertisement
+                        );
+                        ?>
+
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if (
+                $promotion !== null
+                && !empty(
+                    $promotion['label']
+                )
+            ) : ?>
+                <div class="dsm-advertisement-promotion-info">
+                    <span
+                        class="dashicons dashicons-star-filled"
+                        aria-hidden="true"
+                    ></span>
+
+                    <span>
+                        <?php echo esc_html(
+                            (string) $promotion['label']
+                        ); ?>
+                    </span>
+                </div>
+            <?php endif; ?>
+        </aside>
+    </div>
+
+    <div class="dsm-advertisement-detail__lower">
+        <section class="dsm-advertisement-description">
+            <h2>
+                <?php
+                esc_html_e(
+                    'Descripción',
+                    'dsm-anuncios'
+                );
+                ?>
+            </h2>
+
+            <div class="dsm-advertisement-description__content">
+                <?php
+                echo wp_kses_post(
+                    wpautop(
+                        esc_html(
+                            $description
+                        )
+                    )
+                );
+                ?>
+            </div>
+
+            <?php if ($updatedAt !== '') : ?>
+                <p class="dsm-advertisement-description__updated">
+                    <?php
+                    printf(
+                        esc_html__(
+                            'Última actualización: %s',
+                            'dsm-anuncios'
+                        ),
+                        esc_html(
+                            mysql2date(
+                                get_option(
+                                    'date_format'
+                                )
+                                . ' '
+                                . get_option(
+                                    'time_format'
+                                ),
+                                $updatedAt,
+                                false
+                            )
+                        )
+                    );
+                    ?>
+                </p>
+            <?php endif; ?>
+        </section>
+
+        <?php if ($showSeller) : ?>
+            <aside class="dsm-advertisement-seller">
+                <h2>
+                    <?php
+                    esc_html_e(
+                        'Vendedor',
+                        'dsm-anuncios'
+                    );
+                    ?>
+                </h2>
+
+                <div class="dsm-advertisement-seller__identity">
+                    <?php if ($sellerAvatarUrl !== '') : ?>
+                        <img
+                            src="<?php echo esc_url(
+                                $sellerAvatarUrl
+                            ); ?>"
+                            alt=""
+                            loading="lazy"
+                        >
+                    <?php else : ?>
+                        <span
+                            class="dsm-advertisement-seller__avatar-placeholder"
+                            aria-hidden="true"
+                        >
+                            <span class="dashicons dashicons-admin-users"></span>
+                        </span>
+                    <?php endif; ?>
+
+                    <div>
+                        <?php if ($sellerProfileUrl !== '') : ?>
+                            <a
+                                class="dsm-advertisement-seller__name"
+                                href="<?php echo esc_url(
+                                    $sellerProfileUrl
+                                ); ?>"
+                            >
+                                <?php echo esc_html(
+                                    $sellerDisplayName
+                                ); ?>
+                            </a>
+                        <?php else : ?>
+                            <strong class="dsm-advertisement-seller__name">
+                                <?php echo esc_html(
+                                    $sellerDisplayName
+                                ); ?>
+                            </strong>
+                        <?php endif; ?>
+
+                        <?php if ($memberSince !== '') : ?>
+                            <span class="dsm-advertisement-seller__member-since">
+                                <?php
+                                printf(
+                                    esc_html__(
+                                        'Miembro desde %s',
+                                        'dsm-anuncios'
+                                    ),
+                                    esc_html(
+                                        $memberSince
+                                    )
+                                );
+                                ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <?php if (!$isOwner) : ?>
+                    <div class="dsm-advertisement-seller__contact-methods">
+                        <strong>
+                            <?php
+                            esc_html_e(
+                                'Contacto disponible',
+                                'dsm-anuncios'
+                            );
+                            ?>
+                        </strong>
+
+                        <?php if ($canWhatsappSeller) : ?>
+                            <span>
+                                <span
+                                    class="dashicons dashicons-yes-alt"
+                                    aria-hidden="true"
+                                ></span>
+
+                                <?php
+                                esc_html_e(
+                                    'WhatsApp',
+                                    'dsm-anuncios'
+                                );
+                                ?>
+                            </span>
+                        <?php endif; ?>
+
+                        <?php if ($canCallSeller) : ?>
+                            <span>
+                                <span
+                                    class="dashicons dashicons-yes-alt"
+                                    aria-hidden="true"
+                                ></span>
+
+                                <?php
+                                esc_html_e(
+                                    'Llamadas',
+                                    'dsm-anuncios'
+                                );
+                                ?>
+                            </span>
+                        <?php endif; ?>
+
+                        <?php if (
+                            !$canWhatsappSeller
+                            && !$canCallSeller
+                        ) : ?>
+                            <span>
+                                <?php
+                                esc_html_e(
+                                    'Sin métodos habilitados',
+                                    'dsm-anuncios'
+                                );
+                                ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($ratingAverage !== null) : ?>
+                    <div class="dsm-advertisement-seller__rating">
+                        <span
+                            class="dashicons dashicons-star-filled"
+                            aria-hidden="true"
+                        ></span>
+
+                        <strong>
+                            <?php echo esc_html(
+                                number_format_i18n(
+                                    $ratingAverage,
+                                    1
+                                )
+                            ); ?>
+                        </strong>
+
+                        <span>
+                            <?php
+                            printf(
+                                esc_html(
+                                    _n(
+                                        '(%s valoración)',
+                                        '(%s valoraciones)',
+                                        $ratingCount,
+                                        'dsm-anuncios'
+                                    )
+                                ),
+                                esc_html(
+                                    number_format_i18n(
+                                        $ratingCount
+                                    )
+                                )
+                            );
+                            ?>
+                        </span>
+                    </div>
+                <?php else : ?>
+                    <p class="dsm-advertisement-seller__rating-empty">
+                        <?php
+                        esc_html_e(
+                            'Las valoraciones estarán disponibles próximamente.',
+                            'dsm-anuncios'
+                        );
+                        ?>
+                    </p>
+                <?php endif; ?>
+            </aside>
+        <?php endif; ?>
+    </div>
+
+    <?php
+    $shareTemplate =
+        DSM_ANUNCIOS_PATH
+        . 'templates/public/'
+        . 'advertisement-share.php';
+
+    if (is_file($shareTemplate)) {
+        require $shareTemplate;
+    }
+    ?>
+
+    <?php
+    $relatedTemplate =
+        DSM_ANUNCIOS_PATH
+        . 'templates/public/'
+        . 'advertisement-related.php';
+
+    if (
+        isset($relatedAdvertisements)
+        && is_array($relatedAdvertisements)
+        && $relatedAdvertisements !== []
+        && is_file($relatedTemplate)
+    ) {
+        require $relatedTemplate;
+    }
+    ?>
+
+    <footer class="dsm-advertisement-detail__footer">
+        <a href="<?php echo esc_url(
+            $marketplaceUrl
+        ); ?>">
+            ←
+            <?php
+            esc_html_e(
+                'Volver a todos los anuncios',
+                'dsm-anuncios'
+            );
+            ?>
+        </a>
+
+        <span>
+            <?php
+            printf(
+                esc_html__(
+                    'Referencia del anuncio: #%d',
+                    'dsm-anuncios'
+                ),
+                $advertisementId
+            );
+            ?>
+        </span>
+    </footer>
+</article>
