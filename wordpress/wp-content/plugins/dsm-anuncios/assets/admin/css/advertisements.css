@@ -222,3 +222,62 @@
         min-width: 1050px;
     }
 }
+
+/* ==========================================================
+   DSM ANUNCIOS - ESTADOS DE MODERACION
+   ========================================================== */
+
+.dsm-admin-status,
+.dsm-admin-report-status {
+    display: inline-flex;
+    align-items: center;
+
+    padding: 3px 8px;
+
+    border-radius: 999px;
+
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+
+    background: #f0f0f1;
+    color: #2c3338;
+}
+
+.dsm-admin-status--active {
+    background: #edfaef;
+    color: #116329;
+}
+
+.dsm-admin-status--reserved {
+    background: #fff8e5;
+    color: #8a6116;
+}
+
+.dsm-admin-status--closed,
+.dsm-admin-status--rejected {
+    background: #fce8e8;
+    color: #8a2424;
+}
+
+.dsm-admin-status--draft,
+.dsm-admin-status--pending {
+    background: #f0f0f1;
+    color: #50575e;
+}
+
+.dsm-admin-report-status--pending,
+.dsm-admin-report-status--reviewing {
+    background: #fff8e5;
+    color: #8a6116;
+}
+
+.dsm-admin-report-status--dismissed {
+    background: #f0f0f1;
+    color: #50575e;
+}
+
+.dsm-admin-report-status--actioned {
+    background: #fce8e8;
+    color: #8a2424;
+}

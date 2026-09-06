@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace DSM\Anuncios\Frontend;
 
+use DSM\Anuncios\Report\AdvertisementReportRepository;
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -244,6 +246,44 @@ final class AdvertisementDetailShortcode
                 ]
                 ?? 0
             );
+
+
+        $viewerCustomerId =
+            $currentCustomer !== null
+                ? max(
+                    0,
+                    (int) (
+                        $currentCustomer['id']
+                        ?? 0
+                    )
+                )
+                : 0;
+
+        $advertisementId =
+            max(
+                0,
+                (int) (
+                    $advertisement['id']
+                    ?? 0
+                )
+            );
+
+        $hasReportedAdvertisement =
+            false;
+
+        if (
+            $viewerCustomerId > 0
+            && !$isOwner
+            && $advertisementId > 0
+        ) {
+            $hasReportedAdvertisement =
+                (
+                    new AdvertisementReportRepository()
+                )->existsForReporter(
+                    $advertisementId,
+                    $viewerCustomerId
+                );
+        }
 
         /*
          * Los anuncios relacionados se obtienen únicamente

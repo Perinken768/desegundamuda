@@ -352,6 +352,21 @@ $renderActionForm =
     </header>
 
     <?php if (
+        $actionStatus === 'published'
+    ) : ?>
+        <div
+            class="dsm-account-notice dsm-account-notice--success"
+            role="status"
+        >
+            <?php
+            esc_html_e(
+                'El anuncio se publicó correctamente.',
+                'dsm-anuncios'
+            );
+            ?>
+        </div>
+
+    <?php elseif (
         $actionStatus === 'submitted'
     ) : ?>
         <div
@@ -1063,21 +1078,6 @@ $renderActionForm =
                             );
                             ?>
                         </a>
-                    <?php endif; ?>
-
-                    <?php if ($canSubmit) : ?>
-                        <?php
-                        $renderActionForm(
-                            $advertisementId,
-                            CustomerAdvertisementActionController::
-                                ACTION_SUBMIT,
-                            __(
-                                'Enviar a revisión',
-                                'dsm-anuncios'
-                            ),
-                            'dsm-button--primary'
-                        );
-                        ?>
                     <?php endif; ?>
 
                     <?php if ($canReserve) : ?>

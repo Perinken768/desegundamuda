@@ -30,6 +30,7 @@ final class Advertisement
         private readonly string $conditionCode,
         private readonly string $status,
         private readonly ?string $rejectionReason,
+        private readonly ?string $closureReason,
         private readonly ?DateTimeImmutable $reservedAt,
         private readonly ?DateTimeImmutable $publishedAt,
         private readonly ?DateTimeImmutable $closedAt,
@@ -181,6 +182,11 @@ final class Advertisement
                 ?? null
             ),
 
+            closureReason: self::nullableString(
+                $data['closure_reason']
+                ?? null
+            ),
+
             reservedAt: self::nullableDateTime(
                 $data['reserved_at']
                 ?? null
@@ -288,6 +294,11 @@ final class Advertisement
     public function getRejectionReason(): ?string
     {
         return $this->rejectionReason;
+    }
+
+    public function getClosureReason(): ?string
+    {
+        return $this->closureReason;
     }
 
     public function getReservedAt(): ?DateTimeImmutable

@@ -174,8 +174,11 @@ final class AdvertisementSearchRepository
                 advertisements.purchase_date,
                 advertisements.condition_code,
                 advertisements.status,
+                advertisements.rejection_reason,
+                advertisements.closure_reason,
                 advertisements.reserved_at,
                 advertisements.published_at,
+                advertisements.closed_at,
                 advertisements.created_at,
                 advertisements.updated_at,
 
@@ -350,6 +353,15 @@ final class AdvertisementSearchRepository
                 [
                     'advertisement_id' =>
                         $advertisementId,
+
+                    /*
+                     * La ficha histórica debe poder mostrar
+                     * también anuncios ya cerrados.
+                     *
+                     * Esto NO afecta al marketplace.
+                     */
+                    'include_closed_detail' =>
+                        true,
                 ],
                 1,
                 1
@@ -392,6 +404,13 @@ final class AdvertisementSearchRepository
                 [
                     'slug' =>
                         $slug,
+
+                    /*
+                     * Conservamos la URL histórica aunque
+                     * el anuncio ya no esté disponible.
+                     */
+                    'include_closed_detail' =>
+                        true,
                 ],
                 1,
                 1
@@ -867,21 +886,37 @@ final class AdvertisementSearchRepository
             ];
         }
 
+        $advertisementAreaId =
+            max(
+                0,
+                (int) (
+                    $advertisement[
+                        'area_id'
+                    ]
+                    ?? 0
+                )
+            );
+
+        $advertisementMunicipalityId =
+            max(
+                0,
+                (int) (
+                    $advertisement[
+                        'municipality_id'
+                    ]
+                    ?? 0
+                )
+            );
+
         $locationData =
             apply_filters(
                 'dsm_location_data',
                 [
                     'area_id' =>
-                        $advertisement[
-                            'area_id'
-                        ]
-                        ?? null,
+                        $advertisementAreaId,
 
                     'municipality_id' =>
-                        $advertisement[
-                            'municipality_id'
-                        ]
-                        ?? null,
+                        $advertisementMunicipalityId,
 
                     'area_name' =>
                         '',
@@ -889,7 +924,12 @@ final class AdvertisementSearchRepository
                     'municipality_name' =>
                         '',
                 ],
-                $advertisementId
+                $advertisementAreaId > 0
+                    ? $advertisementAreaId
+                    : null,
+                $advertisementMunicipalityId > 0
+                    ? $advertisementMunicipalityId
+                    : null
             );
 
         if (!is_array($locationData)) {
@@ -1243,6 +1283,19 @@ final class AdvertisementSearchRepository
         }
 
         return [
+            /*
+             * Filtro interno.
+             *
+             * Solo lo utilizan las búsquedas de ficha
+             * individual por ID/slug.
+             */
+            'include_closed_detail' =>
+                !empty(
+                    $filters[
+                        'include_closed_detail'
+                    ]
+                ),
+
             'advertisement_id' =>
                 max(
                     0,
@@ -1359,15 +1412,49 @@ final class AdvertisementSearchRepository
         array $filters,
         array &$parameters
     ): string {
-        $conditions = [
-            'advertisements.status IN (%s, %s)',
-        ];
+        if (
+            !empty(
+                $filters[
+                    'include_closed_detail'
+                ]
+            )
+        ) {
+            /*
+             * Una ficha concreta puede seguir existiendo
+             * después de cerrar el anuncio.
+             *
+             * CLOSED se recupera únicamente para mostrar
+             * su estado histórico.
+             */
+            $conditions = [
+                'advertisements.status IN (%s, %s, %s)',
+            ];
 
-        $parameters[] =
-            AdvertisementStatus::ACTIVE;
+            $parameters[] =
+                AdvertisementStatus::ACTIVE;
 
-        $parameters[] =
-            AdvertisementStatus::RESERVED;
+            $parameters[] =
+                AdvertisementStatus::RESERVED;
+
+            $parameters[] =
+                AdvertisementStatus::CLOSED;
+
+        } else {
+            /*
+             * Marketplace, búsquedas, filtros, portada...
+             *
+             * Aquí solo deben existir anuncios disponibles.
+             */
+            $conditions = [
+                'advertisements.status IN (%s, %s)',
+            ];
+
+            $parameters[] =
+                AdvertisementStatus::ACTIVE;
+
+            $parameters[] =
+                AdvertisementStatus::RESERVED;
+        }
 
         if (
             (int) $filters[

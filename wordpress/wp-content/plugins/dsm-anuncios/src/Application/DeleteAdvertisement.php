@@ -8,6 +8,7 @@ use DSM\Anuncios\Advertisement\Advertisement;
 use DSM\Anuncios\Advertisement\AdvertisementRepository;
 use DSM\Anuncios\Advertisement\AdvertisementStatus;
 use DSM\Anuncios\Image\AdvertisementImageRepository;
+use DSM\Anuncios\Moderation\AdvertisementModerationService;
 use DSM\Anuncios\Moderation\AdvertisementStatusHistoryRepository;
 use RuntimeException;
 use Throwable;
@@ -73,6 +74,25 @@ final class DeleteAdvertisement
         ) {
             throw new RuntimeException(
                 'El anuncio no se puede eliminar desde su estado actual.'
+            );
+        }
+
+        /*
+         * Los anuncios retirados por moderación deben
+         * conservarse junto con su historial y denuncias.
+         *
+         * Esta comprobación es de backend y no depende
+         * de que el botón Eliminar sea visible.
+         */
+        if (
+            $advertisement->getStatus()
+                === AdvertisementStatus::CLOSED
+            && $advertisement->getClosureReason()
+                === AdvertisementModerationService::
+                    CLOSURE_REASON_MODERATED
+        ) {
+            throw new RuntimeException(
+                'Los anuncios retirados por moderación no pueden eliminarse.'
             );
         }
 

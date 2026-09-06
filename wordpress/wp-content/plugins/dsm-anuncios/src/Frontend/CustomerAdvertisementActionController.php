@@ -138,10 +138,12 @@ final class CustomerAdvertisementActionController
      */
     public function register(): void
     {
-        $this->registerAction(
-            self::ACTION_SUBMIT,
-            'handleSubmit'
-        );
+        /*
+         * ACTION_SUBMIT se conserva por compatibilidad
+         * interna, pero ya no se expone al cliente.
+         *
+         * La publicación normal es directa.
+         */
 
         $this->registerAction(
             self::ACTION_RESERVE,

@@ -21,7 +21,7 @@ define(
 
 define(
     'DSM_ANUNCIOS_DB_VERSION',
-    7
+    8
 );
 
 define(
@@ -40,6 +40,8 @@ require_once DSM_ANUNCIOS_PATH
 use DSM\Anuncios\Admin\AdvertisementAdminController;
 use DSM\Anuncios\Admin\AdvertisementAdminRepository;
 use DSM\Anuncios\Admin\AdvertisementsPage;
+use DSM\Anuncios\Admin\AdvertisementReportsPage;
+use DSM\Anuncios\Admin\AdvertisementReportAdminController;
 use DSM\Anuncios\Admin\CategoriesPage;
 use DSM\Anuncios\Admin\CategoryAdminController;
 use DSM\Anuncios\Advertisement\AdvertisementIntegration;
@@ -52,12 +54,14 @@ use DSM\Anuncios\Frontend\AdvertisementFormController;
 use DSM\Anuncios\Frontend\AdvertisementFormIntegration;
 use DSM\Anuncios\Frontend\AdvertisementFormShortcode;
 use DSM\Anuncios\Frontend\AdvertisementListShortcode;
+use DSM\Anuncios\Frontend\AdvertisementReportController;
 use DSM\Anuncios\Frontend\AdvertisementSearchRepository;
 use DSM\Anuncios\Frontend\CustomerAdvertisementActionController;
 use DSM\Anuncios\Frontend\CustomerAdvertisementsShortcode;
 use DSM\Anuncios\Frontend\HomeThemeIntegration;
 use DSM\Anuncios\Frontend\RelatedAdvertisementRepository;
 use DSM\Anuncios\Integration\CustomerAccountIntegration;
+use DSM\Anuncios\Report\AdvertisementReportRepository;
 use DSM\Anuncios\Support\Autoloader;
 
 Autoloader::register();
@@ -114,6 +118,21 @@ $categoriesPage =
     );
 
 $categoriesPage->register();
+
+/*
+ * Administración de denuncias.
+ */
+$advertisementReportsPage =
+    new AdvertisementReportsPage(
+        new AdvertisementReportRepository()
+    );
+
+$advertisementReportsPage->register();
+
+$advertisementReportAdminController =
+    new AdvertisementReportAdminController();
+
+$advertisementReportAdminController->register();
 
 $categoryAdminController =
     new CategoryAdminController(
@@ -205,6 +224,17 @@ $advertisementDetailShortcode =
     );
 
 $advertisementDetailShortcode->register();
+
+/*
+ * Denuncias públicas de anuncios.
+ *
+ * La denuncia no modifica automáticamente el estado
+ * ni la visibilidad del anuncio.
+ */
+$advertisementReportController =
+    new AdvertisementReportController();
+
+$advertisementReportController->register();
 
 /*
  * Formulario de creación y edición.

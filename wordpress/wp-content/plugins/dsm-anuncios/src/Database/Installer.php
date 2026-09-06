@@ -127,6 +127,11 @@ final class Installer
                 DSM_ANUNCIOS_PATH
                 . 'database/migrations/'
                 . '007-rename-island-to-area.php',
+
+            8 =>
+                DSM_ANUNCIOS_PATH
+                . 'database/migrations/'
+                . '008-create-advertisement-reports.php',
         ];
     }
 

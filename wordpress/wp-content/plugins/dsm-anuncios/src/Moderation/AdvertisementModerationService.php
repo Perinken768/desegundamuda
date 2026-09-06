@@ -104,6 +104,64 @@ final class AdvertisementModerationService
     }
 
     /**
+     * Publica directamente un anuncio perteneciente al cliente.
+     *
+     * Flujo normal de DSM:
+     *
+     * - draft -> active
+     * - rejected -> active
+     * - active -> active
+     *
+     * El estado pending queda reservado para moderación
+     * administrativa o flujos internos.
+     */
+    public function publishByCustomer(
+        int $customerId,
+        int $advertisementId,
+        ?string $notes = null
+    ): Advertisement {
+        $advertisement =
+            $this->resolveOwnedAdvertisement(
+                $customerId,
+                $advertisementId
+            );
+
+        $status =
+            sanitize_key(
+                $advertisement->getStatus()
+            );
+
+        if ($status === AdvertisementStatus::ACTIVE) {
+            return $advertisement;
+        }
+
+        if (
+            !in_array(
+                $status,
+                [
+                    AdvertisementStatus::DRAFT,
+                    AdvertisementStatus::REJECTED,
+                ],
+                true
+            )
+        ) {
+            throw new RuntimeException(
+                'El anuncio no se puede publicar '
+                . 'desde su estado actual.'
+            );
+        }
+
+        return $this->changeStatusByCustomer(
+            $advertisement,
+            AdvertisementStatus::ACTIVE,
+            $customerId,
+            $notes
+                ?? 'Anuncio publicado directamente por el cliente.'
+        );
+    }
+
+
+    /**
      * Publica un anuncio pendiente desde administración.
      *
      * Transición:

@@ -113,6 +113,46 @@ $municipalities =
         ? $locations['municipalities']
         : [];
 
+
+/*
+ * DSM opera actualmente únicamente en España.
+ *
+ * Obtenemos el ID desde el catálogo de ubicaciones
+ * para no depender de un identificador fijo.
+ */
+$spainCountryId = 0;
+
+foreach ($countries as $country) {
+    if (!is_array($country)) {
+        continue;
+    }
+
+    $isoCode =
+        strtoupper(
+            trim(
+                (string) (
+                    $country['iso_code']
+                    ?? ''
+                )
+            )
+        );
+
+    if ($isoCode !== 'ES') {
+        continue;
+    }
+
+    $spainCountryId =
+        max(
+            0,
+            (int) (
+                $country['id']
+                ?? 0
+            )
+        );
+
+    break;
+}
+
 /*
  * Configuración.
  */
@@ -495,6 +535,12 @@ $formError =
             )
         )
         : '';
+
+if ($spainCountryId > 0) {
+    $countryId =
+        $spainCountryId;
+}
+
 ?>
 
 <section
@@ -529,7 +575,7 @@ $formError =
                 <?php
                 if ($isEditing) {
                     esc_html_e(
-                        'Actualiza los datos de tu anuncio antes de volver a enviarlo a revisión.',
+                        'Actualiza los datos de tu anuncio.',
                         'dsm-anuncios'
                     );
                 } else {
@@ -566,7 +612,7 @@ $formError =
         >
             <?php
             esc_html_e(
-                'El anuncio se guardó y se envió a revisión.',
+                'El anuncio se guardó correctamente.',
                 'dsm-anuncios'
             );
             ?>
@@ -1131,76 +1177,44 @@ $formError =
                 class="dsm-advertisement-form-grid"
                 data-dsm-advertisement-location
             >
-                <?php if ($countries !== []) : ?>
+                <?php if ($spainCountryId > 0) : ?>
+
                     <div class="dsm-form-field">
+
                         <label for="dsm-advertisement-country">
-                            <?php
-                            esc_html_e(
-                                'País',
-                                'dsm-anuncios'
-                            );
-                            ?>
+                            País
                         </label>
+
+                        <input
+                            type="hidden"
+                            name="country_id"
+                            value="<?php
+                            echo esc_attr(
+                                (string) $spainCountryId
+                            );
+                            ?>"
+                        >
 
                         <select
                             id="dsm-advertisement-country"
-                            name="country_id"
                             data-dsm-country
+                            disabled
+                            aria-disabled="true"
                         >
-                            <option value="0">
-                                <?php
-                                esc_html_e(
-                                    'Selecciona un país',
-                                    'dsm-anuncios'
+                            <option
+                                value="<?php
+                                echo esc_attr(
+                                    (string) $spainCountryId
                                 );
-                                ?>
+                                ?>"
+                                selected
+                            >
+                                España
                             </option>
-
-                            <?php foreach (
-                                $countries
-                                as $country
-                            ) : ?>
-                                <?php
-                                if (!is_array($country)) {
-                                    continue;
-                                }
-
-                                $currentCountryId =
-                                    max(
-                                        0,
-                                        (int) (
-                                            $country['id']
-                                            ?? 0
-                                        )
-                                    );
-
-                                if (
-                                    $currentCountryId
-                                    <= 0
-                                ) {
-                                    continue;
-                                }
-                                ?>
-
-                                <option
-                                    value="<?php echo esc_attr(
-                                        (string) $currentCountryId
-                                    ); ?>"
-                                    <?php selected(
-                                        $countryId,
-                                        $currentCountryId
-                                    ); ?>
-                                >
-                                    <?php echo esc_html(
-                                        (string) (
-                                            $country['name']
-                                            ?? ''
-                                        )
-                                    ); ?>
-                                </option>
-                            <?php endforeach; ?>
                         </select>
+
                     </div>
+
                 <?php endif; ?>
 
                 <div class="dsm-form-field">
@@ -1634,17 +1648,17 @@ $formError =
                         <?php
                         if ($isActiveEditing) {
                             esc_html_e(
-                                'Al modificar un anuncio publicado, los cambios deberán revisarse antes de volver a publicarse.',
+                                'Guarda los cambios y el anuncio continuará publicado.',
                                 'dsm-anuncios'
                             );
                         } elseif ($isEditing) {
                             esc_html_e(
-                                'Puedes guardar los cambios o volver a enviar el anuncio a revisión.',
+                                'Puedes guardar los cambios o publicar el anuncio.',
                                 'dsm-anuncios'
                             );
                         } else {
                             esc_html_e(
-                                'Puedes guardar el anuncio como borrador o enviarlo directamente a revisión.',
+                                'Puedes guardar el anuncio como borrador o publicarlo directamente.',
                                 'dsm-anuncios'
                             );
                         }
@@ -1726,13 +1740,12 @@ $formError =
                     ?>
                 </a>
 
-                <?php if (!$isActiveEditing) : ?>
-                    <button
-                        class="dsm-button dsm-button--secondary"
-                        type="submit"
-                        name="submit_intent"
-                        value="draft"
-                    >
+                <button
+                    class="dsm-button dsm-button--secondary"
+                    type="submit"
+                    name="submit_intent"
+                    value="draft"
+                >
                         <?php
                         if ($isEditing) {
                             esc_html_e(
@@ -1746,34 +1759,27 @@ $formError =
                             );
                         }
                         ?>
-                    </button>
-                <?php endif; ?>
+                </button>
+
+                <?php if (!$isActiveEditing) : ?>
 
                 <button
                     class="dsm-button dsm-button--primary"
                     type="submit"
                     name="submit_intent"
-                    value="review"
+                    value="publish"
                 >
                     <?php
-                    if ($isActiveEditing) {
-                        esc_html_e(
-                            'Guardar cambios y enviar a revisión',
-                            'dsm-anuncios'
-                        );
-                    } elseif ($autoPublishEnabled) {
-                        esc_html_e(
-                            'Guardar y publicar',
-                            'dsm-anuncios'
-                        );
-                    } else {
-                        esc_html_e(
-                            'Guardar y enviar a revisión',
-                            'dsm-anuncios'
-                        );
-                    }
+                    esc_html_e(
+                        $isEditing
+                            ? 'Publicar anuncio'
+                            : 'Publicar anuncio',
+                        'dsm-anuncios'
+                    );
                     ?>
                 </button>
+
+                <?php endif; ?>
             </div>
         </section>
     </form>

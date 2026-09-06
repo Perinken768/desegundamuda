@@ -7,6 +7,7 @@ namespace DSM\Anuncios\Frontend;
 use DSM\Anuncios\Advertisement\Advertisement;
 use DSM\Anuncios\Advertisement\AdvertisementRepository;
 use DSM\Anuncios\Advertisement\AdvertisementStatus;
+use DSM\Anuncios\Moderation\AdvertisementModerationService;
 use DSM\Anuncios\Image\AdvertisementImageRepository;
 use Throwable;
 
@@ -282,11 +283,15 @@ final class CustomerAdvertisementsShortcode
                             $advertisement->getStatus()
                         ),
 
+                /*
+                 * La revisión previa por parte del cliente
+                 * está desactivada.
+                 *
+                 * Los anuncios se publican directamente
+                 * desde el formulario.
+                 */
                 'can_submit' =>
-                    AdvertisementStatus::
-                        canBeSubmitted(
-                            $advertisement->getStatus()
-                        ),
+                    false,
 
                 'can_reserve' =>
                     AdvertisementStatus::
@@ -310,7 +315,14 @@ final class CustomerAdvertisementsShortcode
                     AdvertisementStatus::
                         canBeDeletedByCustomer(
                             $advertisement->getStatus()
-                        ),
+                        )
+                    && !(
+                        $advertisement->getStatus()
+                            === AdvertisementStatus::CLOSED
+                        && $advertisement->getClosureReason()
+                            === AdvertisementModerationService::
+                                CLOSURE_REASON_MODERATED
+                    ),
 
                 'public_url' =>
                     self::resolvePublicUrl(

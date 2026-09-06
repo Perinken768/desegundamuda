@@ -8,7 +8,7 @@ use DSM\Anuncios\Advertisement\Advertisement;
 use DSM\Anuncios\Advertisement\AdvertisementRepository;
 use DSM\Anuncios\Advertisement\AdvertisementStatus;
 use DSM\Anuncios\Application\CreateAdvertisement;
-use DSM\Anuncios\Application\SubmitAdvertisementForReview;
+use DSM\Anuncios\Application\PublishCustomerAdvertisement;
 use DSM\Anuncios\Application\UpdateAdvertisement;
 use DSM\Anuncios\Category\CategoryRepository;
 use DSM\Anuncios\Image\AdvertisementImage;
@@ -37,7 +37,7 @@ if (!defined('ABSPATH')) {
  * - validar la ubicación;
  * - crear o actualizar el anuncio;
  * - gestionar imágenes;
- * - enviar opcionalmente el anuncio a revisión;
+ * - publicar opcionalmente el anuncio directamente;
  * - redirigir al finalizar.
  *
  * La lógica de negocio se delega en:
@@ -45,7 +45,7 @@ if (!defined('ABSPATH')) {
  * - CreateAdvertisement;
  * - UpdateAdvertisement;
  * - AdvertisementImageService;
- * - SubmitAdvertisementForReview;
+ * - PublishCustomerAdvertisement;
  * - AdvertisementModerationService.
  */
 final class AdvertisementFormController
@@ -59,8 +59,8 @@ final class AdvertisementFormController
     private const INTENT_DRAFT =
         'draft';
 
-    private const INTENT_REVIEW =
-        'review';
+    private const INTENT_PUBLISH =
+        'publish';
 
     private const DEFAULT_LOGIN_PATH =
         '/iniciar-sesion/';
@@ -82,7 +82,7 @@ final class AdvertisementFormController
 
     private UpdateAdvertisement $updateAdvertisement;
 
-    private SubmitAdvertisementForReview $submitAdvertisementForReview;
+    private PublishCustomerAdvertisement $publishCustomerAdvertisement;
 
     private AdvertisementImageService $imageService;
 
@@ -118,9 +118,8 @@ final class AdvertisementFormController
                 $categoryRepository
             );
 
-        $this->submitAdvertisementForReview =
-            new SubmitAdvertisementForReview(
-                $this->advertisementRepository,
+        $this->publishCustomerAdvertisement =
+            new PublishCustomerAdvertisement(
                 $moderationService
             );
 
@@ -234,36 +233,37 @@ final class AdvertisementFormController
             );
 
             /*
-             * Un anuncio que ya estaba publicado no puede
-             * modificarse silenciosamente y continuar activo.
+             * =================================================
+             * PUBLICACIÓN DIRECTA
+             * =================================================
              *
-             * Cualquier edición de un anuncio ACTIVE obliga
-             * a pasar nuevamente por moderación.
+             * El cliente puede:
+             *
+             * - guardar como borrador;
+             * - publicar directamente.
+             *
+             * Si está editando un anuncio ACTIVE, UpdateAdvertisement
+             * conserva el estado ACTIVE y no es necesario realizar
+             * una transición adicional.
              */
-            $mustSubmitForReview =
-                $intent === self::INTENT_REVIEW
-                || (
-                    $advertisementId > 0
-                    && sanitize_key(
-                        $advertisement->getStatus()
-                    ) === AdvertisementStatus::ACTIVE
-                );
 
-            if ($mustSubmitForReview) {
-                $this->submitAdvertisementForReview
-                    ->execute(
-                        $customerId,
-                        $advertisementId
-                    );
+            if ($intent === self::INTENT_PUBLISH) {
+                $publishedAdvertisement =
+                    $this->publishCustomerAdvertisement
+                        ->execute(
+                            $customerId,
+                            $advertisementId
+                        );
 
                 do_action(
-                    'dsm_customer_advertisement_submitted',
+                    'dsm_customer_advertisement_published',
                     $advertisementId,
-                    $customerId
+                    $customerId,
+                    $publishedAdvertisement
                 );
 
                 $this->redirectToAdvertisements(
-                    'submitted'
+                    'published'
                 );
             }
 
@@ -964,7 +964,7 @@ final class AdvertisementFormController
                 $intent,
                 [
                     self::INTENT_DRAFT,
-                    self::INTENT_REVIEW,
+                    self::INTENT_PUBLISH,
                 ],
                 true
             )
