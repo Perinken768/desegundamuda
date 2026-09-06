@@ -84,6 +84,14 @@ final class AddFavorite
                 $customerId,
                 $itemId
             );
+        } elseif (
+            $itemType
+            === Favorite::TYPE_SELLER
+        ) {
+            $this->validateSeller(
+                $customerId,
+                $itemId
+            );
         }
 
         return $this->favoriteRepository
@@ -185,6 +193,72 @@ final class AddFavorite
         ) {
             throw new RuntimeException(
                 'No puedes añadir tu propio anuncio a favoritos.'
+            );
+        }
+    }
+
+    private function validateSeller(
+        int $customerId,
+        int $sellerCustomerId
+    ): void {
+        if ($sellerCustomerId <= 0) {
+            throw new RuntimeException(
+                'El vendedor indicado no es válido.'
+            );
+        }
+
+        if (
+            $sellerCustomerId
+            === $customerId
+        ) {
+            throw new RuntimeException(
+                'No puedes añadirte a ti mismo como vendedor favorito.'
+            );
+        }
+
+        $sellerContext =
+            apply_filters(
+                'dsm_customer_context_by_id',
+                null,
+                $sellerCustomerId
+            );
+
+        if (!is_array($sellerContext)) {
+            throw new RuntimeException(
+                'No se encontró el vendedor indicado.'
+            );
+        }
+
+        $resolvedSellerId =
+            max(
+                0,
+                (int) (
+                    $sellerContext['id']
+                    ?? 0
+                )
+            );
+
+        if (
+            $resolvedSellerId <= 0
+            || $resolvedSellerId
+                !== $sellerCustomerId
+        ) {
+            throw new RuntimeException(
+                'El vendedor indicado no es válido.'
+            );
+        }
+
+        $status =
+            sanitize_key(
+                (string) (
+                    $sellerContext['status']
+                    ?? ''
+                )
+            );
+
+        if ($status !== 'active') {
+            throw new RuntimeException(
+                'El vendedor no tiene una cuenta activa.'
             );
         }
     }

@@ -341,6 +341,13 @@ $renderActionForm =
                 );
                 ?>
             </a>
+            <?php
+            do_action(
+                'dsm_customer_advertisements_header_actions',
+                $customerId
+            );
+            ?>
+
         </div>
     </header>
 

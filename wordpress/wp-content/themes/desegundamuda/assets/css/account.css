@@ -8398,3 +8398,571 @@ a.is-current {
     }
 
 }
+
+
+/* ==========================================================
+   DSM DIRECTOS - INTEGRACIÓN ANUNCIOS / INVENTARIO
+   ========================================================== */
+
+.dsm-directos-toggle-form {
+    display: inline-flex;
+    margin: 0;
+    padding: 0;
+}
+
+.dsm-directos-toggle-form .dsm-button {
+    margin: 0;
+}
+
+.dsm-directos-inventory-toggle {
+    min-width: 0;
+    width: auto;
+    white-space: nowrap;
+}
+
+
+/* ==========================================================
+   DSM DIRECTOS - ACCIONES MI DIRECTO
+   ========================================================== */
+
+.dsm-direct-dashboard-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dsm-space-2);
+    margin-top: var(--dsm-space-3);
+}
+
+.dsm-direct-dashboard-actions__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--dsm-space-2);
+}
+
+
+/* ==========================================================
+   DSM DIRECTOS - SEPARACIÓN VERTICAL DE ACCIONES
+   ========================================================== */
+
+.dsm-direct-dashboard-actions {
+    row-gap: 14px;
+}
+
+
+/* ==========================================================
+   DSM DIRECTOS - ESPACIADO ENTRE FILAS DE ACCIONES
+   ========================================================== */
+
+.dsm-direct-dashboard-actions__row
++ .dsm-direct-dashboard-actions__row {
+    margin-top: 12px;
+}
+
+
+/* ==========================================================
+   DSM DIRECTOS - PANEL PRINCIPAL
+   ========================================================== */
+
+.dsm-customer-directs {
+    width: 100%;
+}
+
+.dsm-customer-directs
+> .dsm-account-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: var(--dsm-space-4);
+    margin-bottom: var(--dsm-space-4);
+}
+
+.dsm-customer-directs
+> .dsm-account-section-header
+h1 {
+    margin: 0 0 var(--dsm-space-2);
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    line-height: 1.1;
+}
+
+.dsm-customer-directs
+> .dsm-account-section-header
+p {
+    margin: 0;
+    color: var(--dsm-color-text-muted, #66736d);
+}
+
+
+/* Tarjetas principales */
+
+.dsm-customer-directs
+> .dsm-card {
+    margin-top: var(--dsm-space-4);
+    padding: clamp(
+        20px,
+        3vw,
+        30px
+    );
+    border: 1px solid
+        var(
+            --dsm-color-border,
+            #d7dfda
+        );
+    border-radius: 20px;
+    background: #fff;
+    box-shadow:
+        0 8px 24px
+        rgba(20, 45, 34, 0.04);
+}
+
+.dsm-customer-directs
+> .dsm-card:first-of-type {
+    margin-top: 0;
+}
+
+.dsm-customer-directs
+> .dsm-card h2 {
+    margin:
+        0
+        0
+        var(--dsm-space-3);
+    font-size: 1.55rem;
+    line-height: 1.2;
+}
+
+
+/* Estado del directo */
+
+.dsm-customer-directs
+.dsm-direct-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: var(--dsm-space-3);
+    padding: 7px 12px;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    background: #eef2ef;
+}
+
+.dsm-customer-directs
+.dsm-direct-status--live {
+    background: #e5f6ea;
+}
+
+
+/* Plataforma */
+
+.dsm-customer-directs
+.dsm-direct-platform {
+    margin:
+        0
+        0
+        var(--dsm-space-4);
+}
+
+
+/* Acciones */
+
+.dsm-direct-dashboard-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-top: 24px;
+}
+
+.dsm-direct-dashboard-actions__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--dsm-space-2);
+}
+
+.dsm-direct-dashboard-actions__row
++ .dsm-direct-dashboard-actions__row {
+    margin-top: 16px;
+}
+
+
+/* Fuentes */
+
+.dsm-customer-directs
+.dsm-direct-sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.dsm-customer-directs
+.dsm-direct-source {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 13px;
+    border-radius: 999px;
+    background: #edf4ef;
+    font-weight: 600;
+}
+
+
+/* Responsive */
+
+@media (max-width: 640px) {
+
+    .dsm-customer-directs
+    > .dsm-account-section-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .dsm-direct-dashboard-actions__row {
+        display: grid;
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+    }
+
+    .dsm-direct-dashboard-actions__row
+    .dsm-button {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+    }
+}
+
+
+/* ==========================================================
+   DSM DIRECTOS - DISEÑO DEFINITIVO CUENTA
+   ========================================================== */
+
+.dsm-customer-directs {
+    width: min(
+        1180px,
+        calc(100% - 32px)
+    );
+    margin: 0 auto;
+    padding:
+        clamp(32px, 5vw, 56px)
+        0
+        clamp(48px, 6vw, 72px);
+}
+
+
+/* ----------------------------------------------------------
+   CABECERA PRINCIPAL
+   ---------------------------------------------------------- */
+
+.dsm-customer-directs
+> .dsm-account-section-header {
+    margin-bottom: 28px;
+}
+
+.dsm-customer-directs
+> .dsm-account-section-header
+h1 {
+    margin: 0;
+    font-size: clamp(
+        2.35rem,
+        5vw,
+        3.2rem
+    );
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+}
+
+.dsm-customer-directs
+> .dsm-account-section-header
+p {
+    margin: 12px 0 0;
+    color: #637068;
+    font-size: 1rem;
+}
+
+
+/* ----------------------------------------------------------
+   TARJETAS
+   ---------------------------------------------------------- */
+
+.dsm-customer-directs
+.dsm-card {
+    margin: 0 0 20px;
+    padding: clamp(
+        24px,
+        3vw,
+        32px
+    );
+    border: 1px solid #d8e0db;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow:
+        0 8px 24px
+        rgba(18, 45, 33, 0.045);
+}
+
+.dsm-customer-directs
+.dsm-card h2 {
+    margin: 0 0 18px;
+    font-size: clamp(
+        1.45rem,
+        3vw,
+        1.75rem
+    );
+}
+
+
+/* ----------------------------------------------------------
+   PANEL MI DIRECTO
+   ---------------------------------------------------------- */
+
+.dsm-customer-directs
+.dsm-direct-platform {
+    margin:
+        14px
+        0
+        22px;
+}
+
+.dsm-customer-directs
+.dsm-direct-status {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    margin: 0 0 4px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: #eef2ef;
+    color: #33463d;
+    font-size: 0.88rem;
+    font-weight: 700;
+}
+
+.dsm-customer-directs
+.dsm-direct-status--live {
+    background: #e4f5e9;
+    color: #13652e;
+}
+
+
+/* Acciones en dos filas */
+
+.dsm-direct-dashboard-actions {
+    display: flex;
+    flex-direction: column;
+    margin-top: 24px;
+}
+
+.dsm-direct-dashboard-actions__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.dsm-direct-dashboard-actions__row
++ .dsm-direct-dashboard-actions__row {
+    margin-top: 16px;
+}
+
+
+/* ----------------------------------------------------------
+   FUENTES DISPONIBLES
+   ---------------------------------------------------------- */
+
+.dsm-customer-directs
+.dsm-direct-sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.dsm-customer-directs
+.dsm-direct-source {
+    display: inline-flex;
+    align-items: center;
+    padding: 9px 13px;
+    border-radius: 999px;
+    background: #edf4ef;
+    font-weight: 600;
+}
+
+
+/* ----------------------------------------------------------
+   CONFIGURAR MI DIRECTO
+   ---------------------------------------------------------- */
+
+.dsm-customer-directs
+.dsm-account-form {
+    display: grid;
+    gap: 22px;
+    max-width: 760px;
+}
+
+.dsm-customer-directs
+.dsm-account-form__field {
+    display: grid;
+    gap: 8px;
+}
+
+.dsm-customer-directs
+.dsm-account-form__field
+> label {
+    font-weight: 700;
+    color: #14271e;
+}
+
+.dsm-customer-directs
+.dsm-account-form
+input[type="text"],
+.dsm-customer-directs
+.dsm-account-form
+input[type="url"],
+.dsm-customer-directs
+.dsm-account-form
+select,
+.dsm-customer-directs
+.dsm-account-form
+textarea {
+    width: 100%;
+    min-height: 48px;
+    margin: 0;
+    padding: 11px 14px;
+    border: 1px solid #cfd9d3;
+    border-radius: 10px;
+    background: #fff;
+    color: #16271f;
+    font: inherit;
+    box-sizing: border-box;
+}
+
+.dsm-customer-directs
+.dsm-account-form
+textarea {
+    min-height: 130px;
+    resize: vertical;
+}
+
+.dsm-customer-directs
+.dsm-account-form
+input:focus,
+.dsm-customer-directs
+.dsm-account-form
+select:focus,
+.dsm-customer-directs
+.dsm-account-form
+textarea:focus {
+    outline: 2px solid
+        rgba(31, 67, 50, 0.18);
+    outline-offset: 1px;
+    border-color: #527161;
+}
+
+.dsm-customer-directs
+.dsm-account-form__field
+small {
+    color: #69766f;
+    line-height: 1.45;
+}
+
+.dsm-customer-directs
+.dsm-account-form__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+
+/* ----------------------------------------------------------
+   BOTÓN VOLVER A MI DIRECTO
+   ---------------------------------------------------------- */
+
+.dsm-directos-back-button {
+    white-space: nowrap;
+}
+
+
+/* Cabecera Inventario */
+
+.dsm-store-inventory__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.dsm-store-inventory__header-actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+}
+
+
+/* ----------------------------------------------------------
+   RESPONSIVE
+   ---------------------------------------------------------- */
+
+@media (max-width: 700px) {
+
+    .dsm-customer-directs {
+        width: min(
+            100% - 20px,
+            1180px
+        );
+        padding-top: 24px;
+    }
+
+    .dsm-customer-directs
+    .dsm-card {
+        padding: 20px;
+        border-radius: 16px;
+    }
+
+    .dsm-direct-dashboard-actions__row {
+        display: grid;
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+    }
+
+    .dsm-direct-dashboard-actions__row
+    .dsm-button {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .dsm-store-inventory__header {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 440px) {
+
+    .dsm-direct-dashboard-actions__row {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* ==========================================================
+   MIS ANUNCIOS - SEPARACIÓN BOTONES CABECERA EN MÓVIL
+   ========================================================== */
+
+@media (max-width: 700px) {
+
+    .dsm-customer-advertisements
+    .dsm-account-section-header__actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .dsm-customer-advertisements
+    .dsm-account-section-header__actions
+    .dsm-button {
+        margin: 0;
+    }
+}

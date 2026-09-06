@@ -39,6 +39,17 @@ if (!defined('ABSPATH')) {
 
             </div>
 
+            <div class="dsm-store-inventory__header-actions">
+
+                <?php
+                do_action(
+                    'dsm_store_inventory_header_actions',
+                    $store->getCustomerId()
+                );
+                ?>
+
+            </div>
+
         </header>
 
         <form
@@ -299,6 +310,13 @@ if (!defined('ABSPATH')) {
                                 Disponible
                             </th>
                             <th>Estado</th>
+
+                            <?php
+                            do_action(
+                                'dsm_store_inventory_direct_header'
+                            );
+                            ?>
+
                             <th class="is-action">
                                 Acción
                             </th>
@@ -442,7 +460,16 @@ if (!defined('ABSPATH')) {
 
                             ?>
 
-                            <tr>
+                            <tr
+                                <?php if ($variantId > 0) : ?>
+                                    id="<?php
+                                    echo esc_attr(
+                                        'dsm-inventory-row-'
+                                        . $variantId
+                                    );
+                                    ?>"
+                                <?php endif; ?>
+                            >
 
                                 <td
                                     data-label="Producto"
@@ -621,6 +648,13 @@ if (!defined('ABSPATH')) {
                                     </span>
 
                                 </td>
+
+                                <?php
+                                do_action(
+                                    'dsm_store_inventory_direct_cell',
+                                    $row
+                                );
+                                ?>
 
                                 <td
                                     data-label="Acción"

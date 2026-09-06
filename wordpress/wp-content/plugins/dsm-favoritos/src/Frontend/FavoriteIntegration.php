@@ -254,7 +254,7 @@ final class FavoriteIntegration
             return max(
                 0,
                 $this->favoriteRepository
-                    ->countByCustomer(
+                    ->countVisibleByCustomer(
                         $customerId
                     )
             );

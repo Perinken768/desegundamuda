@@ -517,3 +517,25 @@
     border-color:
         var(--dsm-color-primary-hover);
 }
+
+
+/* ==========================================================
+   DSM DIRECTOS - HEADER
+   ========================================================== */
+
+.dsm-header-action--directs {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dsm-header-directs-icon {
+    display: block;
+    width: 24px;
+    height: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}

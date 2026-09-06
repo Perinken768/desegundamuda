@@ -600,6 +600,41 @@ final class FavoriteRepository
         );
     }
 
+    /**
+     * Número de artículos que deben aparecer en el contador
+     * del corazón general de Favoritos.
+     *
+     * Los vendedores favoritos se utilizan para personalizar
+     * DSM Directos, pero NO forman parte del contador visual
+     * de artículos guardados.
+     */
+    public function countVisibleByCustomer(
+        int $customerId
+    ): int {
+        if ($customerId <= 0) {
+            return 0;
+        }
+
+        return max(
+            0,
+            (int) $this->database->get_var(
+                $this->database->prepare(
+                    "
+                    SELECT COUNT(*)
+                    FROM {$this->table}
+                    WHERE customer_id = %d
+                      AND item_type IN (
+                          'advertisement',
+                          'store_product'
+                      )
+                    ",
+                    $customerId
+                )
+            )
+        );
+    }
+
+
     public function countByAdvertisement(
         int $advertisementId
     ): int {

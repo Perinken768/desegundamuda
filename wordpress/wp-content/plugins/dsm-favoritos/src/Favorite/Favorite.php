@@ -19,9 +19,13 @@ final class Favorite
     public const TYPE_STORE_PRODUCT =
         'store_product';
 
+    public const TYPE_SELLER =
+        'seller';
+
     private const ALLOWED_TYPES = [
         self::TYPE_ADVERTISEMENT,
         self::TYPE_STORE_PRODUCT,
+        self::TYPE_SELLER,
     ];
 
     public function __construct(
@@ -97,6 +101,12 @@ final class Favorite
     {
         return $this->itemType
             === self::TYPE_STORE_PRODUCT;
+    }
+
+    public function isSeller(): bool
+    {
+        return $this->itemType
+            === self::TYPE_SELLER;
     }
 
     /*

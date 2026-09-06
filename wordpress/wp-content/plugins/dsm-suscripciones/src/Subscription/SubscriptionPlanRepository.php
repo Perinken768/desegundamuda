@@ -342,6 +342,200 @@ final class SubscriptionPlanRepository
     }
 
     /**
+     * Crea o actualiza una prestación de un plan.
+     */
+    public function setFeature(
+        int $planId,
+        string $featureKey,
+        string $featureValue
+    ): void {
+        global $wpdb;
+
+        if ($planId <= 0) {
+            throw new \RuntimeException(
+                'El identificador del plan no es válido.'
+            );
+        }
+
+        $plan =
+            $this->findById(
+                $planId
+            );
+
+        if ($plan === null) {
+            throw new \RuntimeException(
+                'No se encontró el plan.'
+            );
+        }
+
+        $featureKey =
+            sanitize_key(
+                $featureKey
+            );
+
+        if ($featureKey === '') {
+            throw new \RuntimeException(
+                'La clave de la prestación no es válida.'
+            );
+        }
+
+        $featureValue =
+            trim(
+                sanitize_text_field(
+                    $featureValue
+                )
+            );
+
+        $existingId =
+            $wpdb->get_var(
+                $wpdb->prepare(
+                    "
+                    SELECT id
+                    FROM {$this->featuresTable}
+                    WHERE plan_id = %d
+                      AND feature_key = %s
+                    LIMIT 1
+                    ",
+                    $planId,
+                    $featureKey
+                )
+            );
+
+        if ($wpdb->last_error !== '') {
+            throw new \RuntimeException(
+                sprintf(
+                    'No se pudo consultar la prestación: %s',
+                    $wpdb->last_error
+                )
+            );
+        }
+
+        if ($existingId !== null) {
+            $updated =
+                $wpdb->update(
+                    $this->featuresTable,
+                    [
+                        'feature_value' =>
+                            $featureValue,
+                    ],
+                    [
+                        'id' =>
+                            (int) $existingId,
+                    ],
+                    [
+                        '%s',
+                    ],
+                    [
+                        '%d',
+                    ]
+                );
+
+            if ($updated === false) {
+                throw new \RuntimeException(
+                    sprintf(
+                        'No se pudo actualizar la prestación: %s',
+                        $wpdb->last_error
+                    )
+                );
+            }
+
+            return;
+        }
+
+        $inserted =
+            $wpdb->insert(
+                $this->featuresTable,
+                [
+                    'plan_id' =>
+                        $planId,
+
+                    'feature_key' =>
+                        $featureKey,
+
+                    'feature_value' =>
+                        $featureValue,
+                ],
+                [
+                    '%d',
+                    '%s',
+                    '%s',
+                ]
+            );
+
+        if ($inserted === false) {
+            throw new \RuntimeException(
+                sprintf(
+                    'No se pudo crear la prestación: %s',
+                    $wpdb->last_error
+                )
+            );
+        }
+    }
+
+    /**
+     * Elimina una prestación de un plan.
+     */
+    public function deleteFeature(
+        int $planId,
+        string $featureKey
+    ): void {
+        global $wpdb;
+
+        if ($planId <= 0) {
+            throw new \RuntimeException(
+                'El identificador del plan no es válido.'
+            );
+        }
+
+        $plan =
+            $this->findById(
+                $planId
+            );
+
+        if ($plan === null) {
+            throw new \RuntimeException(
+                'No se encontró el plan.'
+            );
+        }
+
+        $featureKey =
+            sanitize_key(
+                $featureKey
+            );
+
+        if ($featureKey === '') {
+            throw new \RuntimeException(
+                'La clave de la prestación no es válida.'
+            );
+        }
+
+        $deleted =
+            $wpdb->delete(
+                $this->featuresTable,
+                [
+                    'plan_id' =>
+                        $planId,
+
+                    'feature_key' =>
+                        $featureKey,
+                ],
+                [
+                    '%d',
+                    '%s',
+                ]
+            );
+
+        if ($deleted === false) {
+            throw new \RuntimeException(
+                sprintf(
+                    'No se pudo eliminar la prestación: %s',
+                    $wpdb->last_error
+                )
+            );
+        }
+    }
+
+    /**
      * @param mixed $rows
      *
      * @return array<int, SubscriptionPlan>

@@ -173,6 +173,50 @@ $hasFavorites =
             <div class="dsm-header-actions">
 
                 <a
+                    class="
+                        dsm-header-action
+                        dsm-header-action--directs
+                    "
+                    href="<?php
+                    echo esc_url(
+                        home_url(
+                            '/directos/'
+                        )
+                    );
+                    ?>"
+                    aria-label="Directos"
+                    title="Directos"
+                >
+                    <svg
+                        class="dsm-header-directs-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                        focusable="false"
+                    >
+                        <rect
+                            x="3"
+                            y="6"
+                            width="13"
+                            height="12"
+                            rx="2"
+                        />
+                        <path
+                            d="
+                                M16 10
+                                L21 7.5
+                                V16.5
+                                L16 14
+                                Z
+                            "
+                        />
+                    </svg>
+
+                    <span class="screen-reader-text">
+                        Directos
+                    </span>
+                </a>
+
+                <a
                     class="<?php
                     echo esc_attr(
                         'dsm-header-action '
