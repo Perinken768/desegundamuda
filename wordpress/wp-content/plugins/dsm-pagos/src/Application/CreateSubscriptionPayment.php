@@ -50,9 +50,9 @@ final class CreateSubscriptionPayment
             );
         }
 
-        if ($amount <= 0) {
+        if ($amount < 0) {
             throw new RuntimeException(
-                'El importe del plan debe ser superior a cero.'
+                'El importe del plan no puede ser negativo.'
             );
         }
 

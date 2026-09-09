@@ -101,18 +101,37 @@ final class SubscriptionCheckoutIntegration
 
         /*
          * Protección contra manipulaciones o inconsistencias:
-         * el importe del Payment debe seguir coincidiendo
-         * con el plan actual.
+         *
+         * por defecto, el importe del Payment debe seguir
+         * coincidiendo con el precio actual del plan.
+         *
+         * Otros módulos DSM pueden autorizar una excepción
+         * comercial concreta mediante filtro.
+         *
+         * Ejemplo:
+         * DSM Ofertas puede permitir Payment = 0 € cuando
+         * existe un periodo gratuito válido y trazable.
          */
-        if (
+        $priceMatches =
             abs(
                 $plan->getPrice()
                 - $payment->getAmount()
-            ) > 0.00001
-        ) {
-            throw new RuntimeException(
-                'El precio del plan no coincide con el pago pendiente.'
-            );
+            ) <= 0.00001;
+
+        if (!$priceMatches) {
+            $priceOverrideAllowed =
+                (bool) apply_filters(
+                    'dsm_subscription_checkout_price_override_allowed',
+                    false,
+                    $payment,
+                    $plan
+                );
+
+            if (!$priceOverrideAllowed) {
+                throw new RuntimeException(
+                    'El precio del plan no coincide con el pago pendiente.'
+                );
+            }
         }
 
         if (

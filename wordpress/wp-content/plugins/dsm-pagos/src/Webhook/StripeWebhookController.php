@@ -221,25 +221,16 @@ final class StripeWebhookController
                 )
             );
 
-        if ($paymentStatus !== 'paid') {
-            return new WP_REST_Response(
-                [
-                    'received' =>
-                        true,
-
-                    'processed' =>
-                        false,
-
-                    'reason' =>
-                        'payment_not_paid',
-
-                    'mode' =>
-                        $mode,
-                ],
-                200
-            );
-        }
-
+        /*
+         * Necesitamos resolver primero el Payment DSM.
+         *
+         * En un trial de suscripción Stripe puede completar
+         * Checkout con payment_status=no_payment_required.
+         *
+         * Esa excepción NO se acepta genéricamente:
+         * debe ser autorizada expresamente por otro módulo
+         * mediante el filtro correspondiente.
+         */
         $paymentId =
             self::extractPaymentId(
                 $session
@@ -257,6 +248,43 @@ final class StripeWebhookController
         if ($payment === null) {
             throw new RuntimeException(
                 'No se encontró el pago DSM asociado.'
+            );
+        }
+
+        $paymentStatusAllowed =
+            $paymentStatus === 'paid';
+
+        if (!$paymentStatusAllowed) {
+            $paymentStatusAllowed =
+                (bool) apply_filters(
+                    'dsm_stripe_checkout_payment_status_allowed',
+                    false,
+                    $paymentStatus,
+                    $mode,
+                    $payment,
+                    $session
+                );
+        }
+
+        if (!$paymentStatusAllowed) {
+            return new WP_REST_Response(
+                [
+                    'received' =>
+                        true,
+
+                    'processed' =>
+                        false,
+
+                    'reason' =>
+                        'payment_not_paid',
+
+                    'payment_status' =>
+                        $paymentStatus,
+
+                    'mode' =>
+                        $mode,
+                ],
+                200
             );
         }
 

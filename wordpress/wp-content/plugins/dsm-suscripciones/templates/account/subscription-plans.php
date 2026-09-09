@@ -91,6 +91,19 @@ $intervalLabels = [
         </div>
 
     <?php elseif (
+        $status === 'retention_offer_accepted'
+    ) : ?>
+
+        <div
+            class="
+                dsm-account-notice
+                dsm-account-notice--success
+            "
+        >
+            La oferta se ha aceptado correctamente.
+        </div>
+
+    <?php elseif (
         $status === 'cancellation_requested'
     ) : ?>
 
@@ -164,6 +177,16 @@ $intervalLabels = [
             <?php foreach ($plans as $plan) : ?>
 
                 <?php
+                $offerPresentation =
+                    apply_filters(
+                        'dsm_subscription_plan_offer_presentation',
+                        null,
+                        $plan,
+                        $customerId
+                    );
+                ?>
+
+                <?php
                 $planCopy =
                     SubscriptionPlansPage::getPlanCopy(
                         $plan->getId()
@@ -190,6 +213,18 @@ $intervalLabels = [
                         $plan->getId()
                     ]
                     ?? null;
+
+                $retentionOfferPresentation =
+                    $activeSubscription
+                    instanceof Subscription
+                        ? apply_filters(
+                            'dsm_subscription_retention_offer_presentation',
+                            null,
+                            $plan,
+                            $activeSubscription,
+                            $customerId
+                        )
+                        : null;
 
                 $features =
                     $plan->getFeatures();
@@ -382,6 +417,60 @@ $intervalLabels = [
 
                     <?php endif; ?>
 
+                    <?php if (
+                        !$plan->isFree()
+                        && !(
+                            $activeSubscription
+                            instanceof Subscription
+                        )
+                        && is_array(
+                            $offerPresentation
+                        )
+                    ) : ?>
+
+                        <div class="dsm-subscription-offer">
+
+                            <strong class="dsm-subscription-offer__headline">
+                                <?php
+                                echo esc_html(
+                                    (string) (
+                                        $offerPresentation[
+                                            'headline'
+                                        ]
+                                        ?? ''
+                                    )
+                                );
+                                ?>
+                            </strong>
+
+                            <?php if (
+                                trim(
+                                    (string) (
+                                        $offerPresentation[
+                                            'description'
+                                        ]
+                                        ?? ''
+                                    )
+                                ) !== ''
+                            ) : ?>
+
+                                <span class="dsm-subscription-offer__description">
+                                    <?php
+                                    echo esc_html(
+                                        (string)
+                                        $offerPresentation[
+                                            'description'
+                                        ]
+                                    );
+                                    ?>
+                                </span>
+
+                            <?php endif; ?>
+
+                        </div>
+
+                    <?php endif; ?>
+
                     <?php if ($plan->isFree()) : ?>
 
                         <div
@@ -466,6 +555,90 @@ $intervalLabels = [
                                     );
                                 }
                                 ?>
+
+                            <?php endif; ?>
+
+                            <?php if (
+                                is_array(
+                                    $retentionOfferPresentation
+                                )
+                            ) : ?>
+
+                                <div class="dsm-subscription-offer dsm-subscription-offer--retention">
+
+                                    <strong class="dsm-subscription-offer__headline">
+                                        <?php
+                                        echo esc_html(
+                                            (string)
+                                            $retentionOfferPresentation[
+                                                'headline'
+                                            ]
+                                        );
+                                        ?>
+                                    </strong>
+
+                                    <span class="dsm-subscription-offer__description">
+                                        <?php
+                                        echo esc_html(
+                                            (string)
+                                            $retentionOfferPresentation[
+                                                'description'
+                                            ]
+                                        );
+                                        ?>
+                                    </span>
+
+                                    <form
+                                        method="post"
+                                        action="<?php
+                                        echo esc_url(
+                                            admin_url(
+                                                'admin-post.php'
+                                            )
+                                        );
+                                        ?>"
+                                    >
+
+                                        <input
+                                            type="hidden"
+                                            name="action"
+                                            value="dsm_offer_accept_retention"
+                                        >
+
+                                        <input
+                                            type="hidden"
+                                            name="subscription_id"
+                                            value="<?php
+                                            echo esc_attr(
+                                                (string)
+                                                $activeSubscription
+                                                    ->getId()
+                                            );
+                                            ?>"
+                                        >
+
+                                        <?php
+                                        wp_nonce_field(
+                                            DSM\Ofertas\Integration\RetentionOfferController::
+                                                getNonceAction(
+                                                    $activeSubscription
+                                                        ->getId()
+                                                ),
+                                            DSM\Ofertas\Integration\RetentionOfferController::
+                                                NONCE_FIELD
+                                        );
+                                        ?>
+
+                                        <button
+                                            type="submit"
+                                            class="dsm-button dsm-button--secondary"
+                                        >
+                                            Aceptar oferta
+                                        </button>
+
+                                    </form>
+
+                                </div>
 
                             <?php endif; ?>
 
@@ -732,6 +905,78 @@ $intervalLabels = [
                                     <?php
                                     echo esc_html(
                                         $customCtaLabel
+                                    );
+                                    ?>
+
+                                <?php elseif (
+                                    is_array(
+                                        $offerPresentation
+                                    )
+                                    && (
+                                        $offerPresentation[
+                                            'benefit_type'
+                                        ]
+                                        ?? ''
+                                    ) === 'free_months'
+                                ) : ?>
+
+                                    <?php
+                                    $freeMonths =
+                                        max(
+                                            1,
+                                            (int) (
+                                                $offerPresentation[
+                                                    'benefit_value'
+                                                ]
+                                                ?? 1
+                                            )
+                                        );
+
+                                    printf(
+                                        esc_html__(
+                                            'Empezar %1$d %2$s gratis',
+                                            'dsm-suscripciones'
+                                        ),
+                                        $freeMonths,
+                                        $freeMonths === 1
+                                            ? esc_html__(
+                                                'mes',
+                                                'dsm-suscripciones'
+                                            )
+                                            : esc_html__(
+                                                'meses',
+                                                'dsm-suscripciones'
+                                            )
+                                    );
+                                    ?>
+
+                                <?php elseif (
+                                    is_array(
+                                        $offerPresentation
+                                    )
+                                ) : ?>
+
+                                    <?php
+                                    printf(
+                                        esc_html__(
+                                            'Contratar por %1$s %2$s',
+                                            'dsm-suscripciones'
+                                        ),
+                                        esc_html(
+                                            number_format_i18n(
+                                                (float) (
+                                                    $offerPresentation[
+                                                        'promotional_price'
+                                                    ]
+                                                    ?? $plan
+                                                        ->getPrice()
+                                                ),
+                                                2
+                                            )
+                                        ),
+                                        esc_html(
+                                            $plan->getCurrency()
+                                        )
                                     );
                                     ?>
 

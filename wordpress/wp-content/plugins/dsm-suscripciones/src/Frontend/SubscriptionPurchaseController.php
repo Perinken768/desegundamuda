@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace DSM\Suscripciones\Frontend;
 
+use DSM\Ofertas\Application\ResolveOffer;
+use DSM\Ofertas\Offer\OfferCheckoutIntentRepository;
 use DSM\Pagos\Application\CreateSubscriptionPayment;
 use DSM\Suscripciones\Subscription\SubscriptionPlanRepository;
 use DSM\Suscripciones\Subscription\SubscriptionRepository;
@@ -34,13 +36,6 @@ final class SubscriptionPurchaseController
             ]
         );
 
-        /*
-         * Los clientes DSM no son usuarios WordPress.
-         *
-         * Por tanto, aunque tengan sesión DSM,
-         * WordPress puede procesar admin-post.php
-         * mediante admin_post_nopriv.
-         */
         add_action(
             'admin_post_nopriv_'
             . self::ACTION,
@@ -73,7 +68,8 @@ final class SubscriptionPurchaseController
             isset($_POST['plan_id'])
                 ? absint(
                     wp_unslash(
-                        (string) $_POST['plan_id']
+                        (string)
+                        $_POST['plan_id']
                     )
                 )
                 : 0;
@@ -100,9 +96,10 @@ final class SubscriptionPurchaseController
                 new SubscriptionPlanRepository();
 
             $plan =
-                $planRepository->findById(
-                    $planId
-                );
+                $planRepository
+                    ->findById(
+                        $planId
+                    );
 
             if ($plan === null) {
                 throw new RuntimeException(
@@ -124,7 +121,7 @@ final class SubscriptionPurchaseController
 
             if ($plan->getPrice() <= 0) {
                 throw new RuntimeException(
-                    'El plan seleccionado no tiene un precio válido para pago.'
+                    'El plan seleccionado no tiene un precio válido.'
                 );
             }
 
@@ -145,12 +142,56 @@ final class SubscriptionPurchaseController
             }
 
             /*
-             * El precio, moneda y código se leen
-             * exclusivamente desde el plan almacenado
-             * en la base de datos.
-             *
-             * El navegador solo envía el ID.
+             * =================================================
+             * DSM OFERTAS
+             * =================================================
              */
+
+            $offerResolution =
+                (
+                    new ResolveOffer()
+                )->execute(
+                    $customerId,
+                    $planId,
+                    'new_subscription'
+                );
+
+            $paymentAmount =
+                $plan->getPrice();
+
+            /*
+             * En un periodo gratis hoy se cobran 0 €.
+             *
+             * Stripe seguirá recibiendo posteriormente
+             * el precio recurrente real del plan.
+             */
+            if (
+                $offerResolution !== null
+                && $offerResolution
+                    ->isFreePeriod()
+            ) {
+                $paymentAmount =
+                    0.00;
+            }
+
+            /*
+             * Los descuentos temporales se conectarán
+             * posteriormente mediante Stripe Subscription
+             * Schedules.
+             *
+             * No los aplicamos incorrectamente como un
+             * descuento permanente.
+             */
+            if (
+                $offerResolution !== null
+                && !$offerResolution
+                    ->isFreePeriod()
+            ) {
+                throw new RuntimeException(
+                    'Esta modalidad de descuento todavía no está habilitada para contratación automática.'
+                );
+            }
+
             $useCase =
                 new CreateSubscriptionPayment();
 
@@ -166,11 +207,28 @@ final class SubscriptionPurchaseController
                         $plan->getCode(),
 
                     amount:
-                        $plan->getPrice(),
+                        $paymentAmount,
 
                     currency:
                         $plan->getCurrency()
                 );
+
+            /*
+             * La oferta todavía NO se consume.
+             *
+             * Solo guardamos la intención asociada
+             * al Payment.
+             */
+            if ($offerResolution !== null) {
+                (
+                    new OfferCheckoutIntentRepository()
+                )->create(
+                    $payment->getId(),
+                    $customerId,
+                    $offerResolution,
+                    'new_subscription'
+                );
+            }
 
             self::redirectToCheckout(
                 $payment->getId()
@@ -182,7 +240,8 @@ final class SubscriptionPurchaseController
                         'purchase_error',
 
                     'subscription_error' =>
-                        $exception->getMessage(),
+                        $exception
+                            ->getMessage(),
                 ]
             );
         }

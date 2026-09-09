@@ -109,15 +109,56 @@ final class StripePaymentProvider implements PaymentProvider
             );
         }
 
+        /*
+         * Una suscripción con periodo gratuito puede tener
+         * un Payment DSM inicial de 0 €, aunque su precio
+         * recurrente en Stripe sea superior a cero.
+         */
+        $isSubscription =
+            $this->isSubscriptionPayment(
+                $payment
+            );
+
+        $subscriptionData =
+            $isSubscription
+                ? $this->resolveSubscriptionCheckoutData(
+                    $payment
+                )
+                : null;
+
+        $stripeAmount =
+            $payment->getAmount();
+
+        if (
+            $isSubscription
+            && is_array($subscriptionData)
+            && isset(
+                $subscriptionData[
+                    'recurring_amount'
+                ]
+            )
+        ) {
+            $recurringAmount =
+                (float)
+                $subscriptionData[
+                    'recurring_amount'
+                ];
+
+            if ($recurringAmount > 0) {
+                $stripeAmount =
+                    $recurringAmount;
+            }
+        }
+
         $amountInCents =
             (int) round(
-                $payment->getAmount()
+                $stripeAmount
                 * 100
             );
 
         if ($amountInCents <= 0) {
             throw new RuntimeException(
-                'El importe del pago no es válido para Stripe.'
+                'El importe recurrente no es válido para Stripe.'
             );
         }
 
@@ -159,11 +200,6 @@ final class StripePaymentProvider implements PaymentProvider
          * Promociones, publicidad puntual futura, etc.
          * continúan utilizando mode=payment.
          */
-        $isSubscription =
-            $this->isSubscriptionPayment(
-                $payment
-            );
-
         $sessionData = [
             'mode' =>
                 $isSubscription
@@ -214,10 +250,11 @@ final class StripePaymentProvider implements PaymentProvider
         ];
 
         if ($isSubscription) {
-            $subscriptionData =
-                $this->resolveSubscriptionCheckoutData(
-                    $payment
+            if (!is_array($subscriptionData)) {
+                throw new RuntimeException(
+                    'No se pudieron resolver los datos de la suscripción.'
                 );
+            }
 
             /*
              * En Stripe, el precio debe ser recurrente
@@ -243,6 +280,16 @@ final class StripePaymentProvider implements PaymentProvider
              * futuras, donde ya no existe la Checkout
              * Session original.
              */
+            /*
+             * Incluso si hoy no hay cargo por existir trial,
+             * queremos que Checkout recoja el medio de pago
+             * para las renovaciones posteriores.
+             */
+            $sessionData[
+                'payment_method_collection'
+            ] =
+                'always';
+
             $sessionData['subscription_data'] = [
                 'metadata' => [
                     'dsm_initial_payment_id' =>
@@ -263,10 +310,50 @@ final class StripePaymentProvider implements PaymentProvider
                             'plan_code'
                         ],
 
+                    'dsm_offer_id' =>
+                        (string) (
+                            $subscriptionData[
+                                'offer_id'
+                            ]
+                            ?? 0
+                        ),
+
+                    'dsm_offer_rule_id' =>
+                        (string) (
+                            $subscriptionData[
+                                'offer_rule_id'
+                            ]
+                            ?? 0
+                        ),
+
                     'dsm_source' =>
                         'desegundamuda',
                 ],
             ];
+
+            $trialEnd =
+                isset(
+                    $subscriptionData[
+                        'trial_end'
+                    ]
+                )
+                    ? (int)
+                        $subscriptionData[
+                            'trial_end'
+                        ]
+                    : 0;
+
+            if (
+                $trialEnd
+                > time() + 60
+            ) {
+                $sessionData[
+                    'subscription_data'
+                ][
+                    'trial_end'
+                ] =
+                    $trialEnd;
+            }
         }
 
         $sessionData['line_items'] = [
@@ -469,6 +556,56 @@ final class StripePaymentProvider implements PaymentProvider
             );
         }
 
+        $trialEnd =
+            isset($data['trial_end'])
+                ? max(
+                    0,
+                    (int) $data[
+                        'trial_end'
+                    ]
+                )
+                : 0;
+
+        $recurringAmount =
+            isset(
+                $data[
+                    'recurring_amount'
+                ]
+            )
+                ? max(
+                    0,
+                    (float)
+                    $data[
+                        'recurring_amount'
+                    ]
+                )
+                : 0.0;
+
+        $offerId =
+            isset($data['offer_id'])
+                ? max(
+                    0,
+                    (int) $data[
+                        'offer_id'
+                    ]
+                )
+                : 0;
+
+        $offerRuleId =
+            isset(
+                $data[
+                    'offer_rule_id'
+                ]
+            )
+                ? max(
+                    0,
+                    (int)
+                    $data[
+                        'offer_rule_id'
+                    ]
+                )
+                : 0;
+
         return [
             'plan_id' =>
                 $planId,
@@ -484,6 +621,18 @@ final class StripePaymentProvider implements PaymentProvider
 
             'interval_count' =>
                 $intervalCount,
+
+            'trial_end' =>
+                $trialEnd,
+
+            'recurring_amount' =>
+                $recurringAmount,
+
+            'offer_id' =>
+                $offerId,
+
+            'offer_rule_id' =>
+                $offerRuleId,
         ];
     }
 
